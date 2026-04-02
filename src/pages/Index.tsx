@@ -173,6 +173,13 @@ const Index = () => {
           onClose={() => setShowSaveLoad(false)}
         />
       )}
+      {showRotation && (
+        <RotationPanel
+          plants={placedPlants}
+          onOptimize={handleOptimizeRotation}
+          onClose={() => setShowRotation(false)}
+        />
+      )}
     </div>
   );
 };
