@@ -4,32 +4,41 @@ import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
 import { PlotToolbar } from '@/components/PlotToolbar';
-import { Sprout } from 'lucide-react';
+import { PlantingCalendar } from '@/components/PlantingCalendar';
+import { AIChat } from '@/components/AIChat';
+import { AuthModal } from '@/components/AuthModal';
+import { SaveLoadPanel } from '@/components/SaveLoadPanel';
+import { useAuth } from '@/hooks/useAuth';
+import { exportGardenPDF } from '@/utils/exportPDF';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Index = () => {
-  const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6,
-    heightM: 4,
-    unit: 'meters',
-    cellSizePx: 32,
-  });
+  const { user, signOut, loading: authLoading } = useAuth();
 
+  const [settings, setSettings] = useState<PlotSettings>({
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32,
+  });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
   const [, setDragging] = useState<string | null>(null);
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [planName, setPlanName] = useState('My Garden');
+
+  // Modals
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showAI, setShowAI] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showSaveLoad, setShowSaveLoad] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
-    // Check if cell is occupied
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
     if (occupied) return;
-
-    const newPlant: PlacedPlant = {
+    setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      plantId,
-      x,
-      y,
-    };
-    setPlacedPlants(prev => [...prev, newPlant]);
+      plantId, x, y,
+    }]);
   }, [placedPlants]);
 
   const handleRemovePlant = useCallback((id: string) => {
@@ -41,6 +50,32 @@ const Index = () => {
     setPlacedPlants([]);
     setSelectedPlant(null);
   }, []);
+
+  const handleLoadPlan = useCallback((plan: any) => {
+    setCurrentPlanId(plan.id);
+    setPlanName(plan.name);
+    setSettings(plan.plot_settings as PlotSettings);
+    setPlacedPlants((plan.plants as PlacedPlant[]) || []);
+    setSelectedPlant(null);
+    toast.success(`Loaded "${plan.name}" 🌿`);
+  }, []);
+
+  const handleNewPlan = useCallback(() => {
+    setCurrentPlanId(null);
+    setPlanName('My Garden');
+    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32 });
+    setPlacedPlants([]);
+    setSelectedPlant(null);
+  }, []);
+
+  const handleExportPDF = async () => {
+    try {
+      await exportGardenPDF(settings, placedPlants, planName);
+      toast.success('PDF exported! 📄');
+    } catch (err) {
+      toast.error('Failed to export PDF');
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -55,15 +90,36 @@ const Index = () => {
             <p className="text-[10px] text-muted-foreground">Plan your perfect garden</p>
           </div>
         </div>
+
+        <div className="flex items-center gap-1 ml-auto">
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowCalendar(true)}>
+            <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowAI(true)}>
+            <Bot className="h-3.5 w-3.5 mr-1" /> AI Help
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleExportPDF}>
+            <Download className="h-3.5 w-3.5 mr-1" /> PDF
+          </Button>
+          {user ? (
+            <>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowSaveLoad(true)}>
+                <FolderOpen className="h-3.5 w-3.5 mr-1" /> My Gardens
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => signOut()}>
+                <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowAuth(true)}>
+              <User className="h-3.5 w-3.5 mr-1" /> Sign In
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Toolbar */}
-      <PlotToolbar
-        settings={settings}
-        onSettingsChange={setSettings}
-        plantCount={placedPlants.length}
-        onClear={handleClear}
-      />
+      <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
 
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden">
@@ -85,6 +141,23 @@ const Index = () => {
           />
         )}
       </div>
+
+      {/* Modals */}
+      {showCalendar && <PlantingCalendar placedPlants={placedPlants} onClose={() => setShowCalendar(false)} />}
+      {showAI && <AIChat settings={settings} plants={placedPlants} onClose={() => setShowAI(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showSaveLoad && user && (
+        <SaveLoadPanel
+          currentPlanId={currentPlanId}
+          currentName={planName}
+          settings={settings}
+          plants={placedPlants}
+          beds={[]}
+          onLoad={handleLoadPlan}
+          onNewPlan={handleNewPlan}
+          onClose={() => setShowSaveLoad(false)}
+        />
+      )}
     </div>
   );
 };
