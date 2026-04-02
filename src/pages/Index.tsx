@@ -8,9 +8,11 @@ import { PlantingCalendar } from '@/components/PlantingCalendar';
 import { AIChat } from '@/components/AIChat';
 import { AuthModal } from '@/components/AuthModal';
 import { SaveLoadPanel } from '@/components/SaveLoadPanel';
+import { RotationPanel } from '@/components/RotationPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut } from 'lucide-react';
+import { optimizeRotation } from '@/utils/rotationOptimizer';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
