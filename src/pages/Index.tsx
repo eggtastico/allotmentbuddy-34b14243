@@ -89,6 +89,7 @@ const Index = () => {
   }, [placedPlants, settings]);
 
 
+  return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="h-14 border-b border-border bg-card px-4 flex items-center gap-3 shrink-0">
