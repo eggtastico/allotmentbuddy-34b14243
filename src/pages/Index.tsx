@@ -79,8 +79,16 @@ const Index = () => {
       toast.error('Failed to export PDF');
     }
   };
+  const handleOptimizeRotation = useCallback(() => {
+    const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
+    const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? 4 : 1.2));
+    const optimized = optimizeRotation(placedPlants, cols, rows);
+    setPlacedPlants(optimized);
+    setSelectedPlant(null);
+    toast.success('Garden rotation optimized! 🔄');
+  }, [placedPlants, settings]);
 
-  return (
+
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="h-14 border-b border-border bg-card px-4 flex items-center gap-3 shrink-0">
