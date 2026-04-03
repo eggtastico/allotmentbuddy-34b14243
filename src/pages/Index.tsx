@@ -115,6 +115,9 @@ const Index = () => {
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowRotation(true)}>
             <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
           </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowWeather(true)}>
+            <CloudSun className="h-3.5 w-3.5 mr-1" /> Weather
+          </Button>
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleExportPDF}>
             <Download className="h-3.5 w-3.5 mr-1" /> PDF
           </Button>
