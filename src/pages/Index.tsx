@@ -167,9 +167,12 @@ const Index = () => {
         <GardenGrid
           settings={settings}
           plants={placedPlants}
+          structures={placedStructures}
           onPlacePlant={handlePlacePlant}
           onRemovePlant={handleRemovePlant}
           onSelectPlant={setSelectedPlant}
+          onPlaceStructure={handlePlaceStructure}
+          onRemoveStructure={handleRemoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
         />
         {selectedPlant && (
