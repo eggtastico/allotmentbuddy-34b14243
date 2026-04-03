@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { PlacedPlant, PlotSettings } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
+import { getStructureById } from '@/data/structures';
 import { PlotToolbar } from '@/components/PlotToolbar';
 import { PlantingCalendar } from '@/components/PlantingCalendar';
 import { AIChat } from '@/components/AIChat';
