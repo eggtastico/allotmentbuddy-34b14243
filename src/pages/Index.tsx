@@ -35,6 +35,7 @@ const Index = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [showRotation, setShowRotation] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
