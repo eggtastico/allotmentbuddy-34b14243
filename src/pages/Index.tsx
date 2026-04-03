@@ -9,10 +9,11 @@ import { AIChat } from '@/components/AIChat';
 import { AuthModal } from '@/components/AuthModal';
 import { SaveLoadPanel } from '@/components/SaveLoadPanel';
 import { RotationPanel } from '@/components/RotationPanel';
+import { WeatherYieldPanel } from '@/components/WeatherYieldPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -34,6 +35,7 @@ const Index = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [showRotation, setShowRotation] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
@@ -113,6 +115,9 @@ const Index = () => {
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowRotation(true)}>
             <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
           </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowWeather(true)}>
+            <CloudSun className="h-3.5 w-3.5 mr-1" /> Weather
+          </Button>
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleExportPDF}>
             <Download className="h-3.5 w-3.5 mr-1" /> PDF
           </Button>
@@ -172,6 +177,9 @@ const Index = () => {
           onNewPlan={handleNewPlan}
           onClose={() => setShowSaveLoad(false)}
         />
+      )}
+      {showWeather && (
+        <WeatherYieldPanel plants={placedPlants} onClose={() => setShowWeather(false)} />
       )}
       {showRotation && (
         <RotationPanel
