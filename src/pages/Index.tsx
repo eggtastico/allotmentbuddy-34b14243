@@ -26,6 +26,7 @@ const Index = () => {
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
+  const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
   const [, setDragging] = useState<string | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
