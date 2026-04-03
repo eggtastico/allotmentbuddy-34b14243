@@ -1,17 +1,22 @@
 import { useRef, useState, useCallback } from 'react';
-import { PlacedPlant, PlotSettings } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
+import { getStructureById } from '@/data/structures';
+import { X } from 'lucide-react';
 
 interface GardenGridProps {
   settings: PlotSettings;
   plants: PlacedPlant[];
+  structures: PlacedStructure[];
   onPlacePlant: (plantId: string, x: number, y: number) => void;
   onRemovePlant: (id: string) => void;
   onSelectPlant: (plant: PlacedPlant | null) => void;
+  onPlaceStructure: (structureId: string, x: number, y: number) => void;
+  onRemoveStructure: (id: string) => void;
   selectedPlantId: string | null;
 }
 
-export function GardenGrid({ settings, plants, onPlacePlant, onRemovePlant, onSelectPlant, selectedPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, selectedPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -33,10 +38,14 @@ export function GardenGrid({ settings, plants, onPlacePlant, onRemovePlant, onSe
     e.preventDefault();
     setDragOver(false);
     const plantId = e.dataTransfer.getData('plantId');
-    if (!plantId) return;
+    const structureId = e.dataTransfer.getData('structureId');
     const { x, y } = snapToGrid(e.clientX, e.clientY);
-    onPlacePlant(plantId, x, y);
-  }, [snapToGrid, onPlacePlant]);
+    if (structureId) {
+      onPlaceStructure(structureId, x, y);
+    } else if (plantId) {
+      onPlacePlant(plantId, x, y);
+    }
+  }, [snapToGrid, onPlacePlant, onPlaceStructure]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -74,6 +83,41 @@ export function GardenGrid({ settings, plants, onPlacePlant, onRemovePlant, onSe
           )
         ))}
 
+        {/* Placed structures */}
+        {structures.map(struct => {
+          const data = getStructureById(struct.structureId);
+          if (!data) return null;
+          return (
+            <div
+              key={struct.id}
+              className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group"
+              style={{
+                left: struct.x * cellSize,
+                top: struct.y * cellSize,
+                width: struct.widthCells * cellSize,
+                height: struct.heightCells * cellSize,
+                backgroundColor: data.color,
+                borderColor: data.canGrowInside ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
+                zIndex: 1,
+              }}
+              title={`${data.name} — ${data.description}`}
+            >
+              <span className="text-lg">{data.emoji}</span>
+              <span className="text-[10px] font-medium text-foreground/80">{data.name}</span>
+              {data.canGrowInside && (
+                <span className="text-[8px] text-primary font-medium">🌱 Grow inside</span>
+              )}
+              <button
+                onClick={e => { e.stopPropagation(); onRemoveStructure(struct.id); }}
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove structure"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          );
+        })}
+
         {/* Placed plants */}
         {plants.map(placed => {
           const plantData = getPlantById(placed.plantId);
@@ -82,7 +126,7 @@ export function GardenGrid({ settings, plants, onPlacePlant, onRemovePlant, onSe
           return (
             <div
               key={placed.id}
-              className={`absolute flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-110 z-10' : ''}`}
+              className={`absolute flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-110 z-10' : 'z-[2]'}`}
               style={{
                 left: placed.x * cellSize,
                 top: placed.y * cellSize,
@@ -105,10 +149,10 @@ export function GardenGrid({ settings, plants, onPlacePlant, onRemovePlant, onSe
         })}
 
         {/* Empty state */}
-        {plants.length === 0 && (
+        {plants.length === 0 && structures.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-muted-foreground text-sm bg-card/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-              Drag plants from the sidebar to start planning 🌱
+              Drag plants or structures from the sidebar to start planning 🌱
             </p>
           </div>
         )}
