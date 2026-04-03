@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { PlacedPlant, PlotSettings } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
+import { getStructureById } from '@/data/structures';
 import { PlotToolbar } from '@/components/PlotToolbar';
 import { PlantingCalendar } from '@/components/PlantingCalendar';
 import { AIChat } from '@/components/AIChat';
@@ -25,6 +26,7 @@ const Index = () => {
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
+  const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
   const [, setDragging] = useState<string | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
@@ -51,8 +53,26 @@ const Index = () => {
     if (selectedPlant?.id === id) setSelectedPlant(null);
   }, [selectedPlant]);
 
+  const handlePlaceStructure = useCallback((structureId: string, x: number, y: number) => {
+    const structData = getStructureById(structureId);
+    if (!structData) return;
+    setPlacedStructures(prev => [...prev, {
+      id: `${structureId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      structureId,
+      x,
+      y,
+      widthCells: structData.widthCells,
+      heightCells: structData.heightCells,
+    }]);
+  }, []);
+
+  const handleRemoveStructure = useCallback((id: string) => {
+    setPlacedStructures(prev => prev.filter(s => s.id !== id));
+  }, []);
+
   const handleClear = useCallback(() => {
     setPlacedPlants([]);
+    setPlacedStructures([]);
     setSelectedPlant(null);
   }, []);
 
@@ -147,9 +167,12 @@ const Index = () => {
         <GardenGrid
           settings={settings}
           plants={placedPlants}
+          structures={placedStructures}
           onPlacePlant={handlePlacePlant}
           onRemovePlant={handleRemovePlant}
           onSelectPlant={setSelectedPlant}
+          onPlaceStructure={handlePlaceStructure}
+          onRemoveStructure={handleRemoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
         />
         {selectedPlant && (

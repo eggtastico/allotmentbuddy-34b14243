@@ -32,6 +32,15 @@ export interface GardenBed {
   label?: string;
 }
 
+export interface PlacedStructure {
+  id: string;
+  structureId: string;
+  x: number;
+  y: number;
+  widthCells: number;
+  heightCells: number;
+}
+
 export interface PlotSettings {
   widthM: number;
   heightM: number;
