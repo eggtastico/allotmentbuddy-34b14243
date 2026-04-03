@@ -12,7 +12,7 @@ import { RotationPanel } from '@/components/RotationPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
