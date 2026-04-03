@@ -53,8 +53,26 @@ const Index = () => {
     if (selectedPlant?.id === id) setSelectedPlant(null);
   }, [selectedPlant]);
 
+  const handlePlaceStructure = useCallback((structureId: string, x: number, y: number) => {
+    const structData = getStructureById(structureId);
+    if (!structData) return;
+    setPlacedStructures(prev => [...prev, {
+      id: `${structureId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      structureId,
+      x,
+      y,
+      widthCells: structData.widthCells,
+      heightCells: structData.heightCells,
+    }]);
+  }, []);
+
+  const handleRemoveStructure = useCallback((id: string) => {
+    setPlacedStructures(prev => prev.filter(s => s.id !== id));
+  }, []);
+
   const handleClear = useCallback(() => {
     setPlacedPlants([]);
+    setPlacedStructures([]);
     setSelectedPlant(null);
   }, []);
 
