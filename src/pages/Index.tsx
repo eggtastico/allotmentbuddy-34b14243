@@ -226,6 +226,13 @@ const Index = () => {
           onClose={() => setShowRotation(false)}
         />
       )}
+      {showWatering && (
+        <WateringGuide
+          plants={placedPlants}
+          structures={placedStructures}
+          onClose={() => setShowWatering(false)}
+        />
+      )}
     </div>
   );
 };
