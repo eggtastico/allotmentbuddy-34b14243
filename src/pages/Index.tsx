@@ -70,6 +70,10 @@ const Index = () => {
     setPlacedStructures(prev => prev.filter(s => s.id !== id));
   }, []);
 
+  const handleResizeStructure = useCallback((id: string, widthCells: number, heightCells: number) => {
+    setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, widthCells, heightCells } : s));
+  }, []);
+
   const handleClear = useCallback(() => {
     setPlacedPlants([]);
     setPlacedStructures([]);

@@ -139,6 +139,22 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               >
                 <X className="h-3 w-3" />
               </button>
+              {/* Resize handles */}
+              <div
+                className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'hsl(var(--primary) / 0.4)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'right')}
+              />
+              <div
+                className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'hsl(var(--primary) / 0.4)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'bottom')}
+              />
+              <div
+                className="absolute -bottom-1 -right-1 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"
+                style={{ background: 'hsl(var(--primary) / 0.6)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'corner')}
+              />
             </div>
           );
         })}
