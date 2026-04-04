@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
