@@ -79,6 +79,27 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [resizing, cellSize, onResizeStructure]);
 
+  const handleMoveStart = useCallback((e: React.MouseEvent, structId: string, origX: number, origY: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMoving({ id: structId, startX: e.clientX, startY: e.clientY, origX, origY });
+  }, []);
+
+  useEffect(() => {
+    if (!moving) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = Math.round((e.clientX - moving.startX) / cellSize);
+      const deltaY = Math.round((e.clientY - moving.startY) / cellSize);
+      const newX = Math.max(0, moving.origX + deltaX);
+      const newY = Math.max(0, moving.origY + deltaY);
+      onMoveStructure(moving.id, newX, newY);
+    };
+    const handleMouseUp = () => setMoving(null);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+  }, [moving, cellSize, onMoveStructure]);
+
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
       <div
