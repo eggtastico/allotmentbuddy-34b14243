@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
@@ -13,12 +13,14 @@ interface GardenGridProps {
   onSelectPlant: (plant: PlacedPlant | null) => void;
   onPlaceStructure: (structureId: string, x: number, y: number) => void;
   onRemoveStructure: (id: string) => void;
+  onResizeStructure: (id: string, widthCells: number, heightCells: number) => void;
   selectedPlantId: string | null;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, selectedPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, selectedPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
 
   const cellSize = settings.cellSizePx;
   const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
@@ -51,6 +53,29 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     e.preventDefault();
     setDragOver(true);
   }, []);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizing({ id: structId, startX: e.clientX, startY: e.clientY, startW, startH, edge });
+  }, []);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = Math.round((e.clientX - resizing.startX) / cellSize);
+      const deltaY = Math.round((e.clientY - resizing.startY) / cellSize);
+      let newW = resizing.startW;
+      let newH = resizing.startH;
+      if (resizing.edge === 'right' || resizing.edge === 'corner') newW = Math.max(1, resizing.startW + deltaX);
+      if (resizing.edge === 'bottom' || resizing.edge === 'corner') newH = Math.max(1, resizing.startH + deltaY);
+      onResizeStructure(resizing.id, newW, newH);
+    };
+    const handleMouseUp = () => setResizing(null);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+  }, [resizing, cellSize, onResizeStructure]);
 
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
@@ -114,6 +139,22 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               >
                 <X className="h-3 w-3" />
               </button>
+              {/* Resize handles */}
+              <div
+                className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'hsl(var(--primary) / 0.4)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'right')}
+              />
+              <div
+                className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'hsl(var(--primary) / 0.4)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'bottom')}
+              />
+              <div
+                className="absolute -bottom-1 -right-1 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"
+                style={{ background: 'hsl(var(--primary) / 0.6)' }}
+                onMouseDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'corner')}
+              />
             </div>
           );
         })}
