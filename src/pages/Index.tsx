@@ -11,6 +11,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { SaveLoadPanel } from '@/components/SaveLoadPanel';
 import { RotationPanel } from '@/components/RotationPanel';
 import { WeatherYieldPanel } from '@/components/WeatherYieldPanel';
+import { WateringGuide } from '@/components/WateringGuide';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
