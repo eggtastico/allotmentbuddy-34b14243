@@ -74,6 +74,10 @@ const Index = () => {
     setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, widthCells, heightCells } : s));
   }, []);
 
+  const handleMoveStructure = useCallback((id: string, x: number, y: number) => {
+    setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, x, y } : s));
+  }, []);
+
   const handleClear = useCallback(() => {
     setPlacedPlants([]);
     setPlacedStructures([]);
@@ -178,6 +182,7 @@ const Index = () => {
           onPlaceStructure={handlePlaceStructure}
           onRemoveStructure={handleRemoveStructure}
           onResizeStructure={handleResizeStructure}
+          onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
         />
         {selectedPlant && (

@@ -14,13 +14,15 @@ interface GardenGridProps {
   onPlaceStructure: (structureId: string, x: number, y: number) => void;
   onRemoveStructure: (id: string) => void;
   onResizeStructure: (id: string, widthCells: number, heightCells: number) => void;
+  onMoveStructure: (id: string, x: number, y: number) => void;
   selectedPlantId: string | null;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, selectedPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
+  const [moving, setMoving] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   const cellSize = settings.cellSizePx;
   const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
@@ -77,6 +79,27 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [resizing, cellSize, onResizeStructure]);
 
+  const handleMoveStart = useCallback((e: React.MouseEvent, structId: string, origX: number, origY: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMoving({ id: structId, startX: e.clientX, startY: e.clientY, origX, origY });
+  }, []);
+
+  useEffect(() => {
+    if (!moving) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = Math.round((e.clientX - moving.startX) / cellSize);
+      const deltaY = Math.round((e.clientY - moving.startY) / cellSize);
+      const newX = Math.max(0, moving.origX + deltaX);
+      const newY = Math.max(0, moving.origY + deltaY);
+      onMoveStructure(moving.id, newX, newY);
+    };
+    const handleMouseUp = () => setMoving(null);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+  }, [moving, cellSize, onMoveStructure]);
+
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
       <div
@@ -115,7 +138,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           return (
             <div
               key={struct.id}
-              className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group"
+              className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group cursor-move"
               style={{
                 left: struct.x * cellSize,
                 top: struct.y * cellSize,
@@ -123,9 +146,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 height: struct.heightCells * cellSize,
                 backgroundColor: data.color,
                 borderColor: data.canGrowInside ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
-                zIndex: 1,
+                zIndex: moving?.id === struct.id ? 10 : 1,
               }}
-              title={`${data.name} — ${data.description}`}
+              title={`${data.name} — drag to move`}
+              onMouseDown={e => handleMoveStart(e, struct.id, struct.x, struct.y)}
             >
               <span className="text-lg">{data.emoji}</span>
               <span className="text-[10px] font-medium text-foreground/80">{data.name}</span>
