@@ -17,9 +17,10 @@ interface GardenGridProps {
   selectedPlantId: string | null;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, selectedPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, selectedPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
 
   const cellSize = settings.cellSizePx;
   const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
