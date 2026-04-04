@@ -138,7 +138,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           return (
             <div
               key={struct.id}
-              className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group"
+              className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group cursor-move"
               style={{
                 left: struct.x * cellSize,
                 top: struct.y * cellSize,
@@ -146,9 +146,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 height: struct.heightCells * cellSize,
                 backgroundColor: data.color,
                 borderColor: data.canGrowInside ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
-                zIndex: 1,
+                zIndex: moving?.id === struct.id ? 10 : 1,
               }}
-              title={`${data.name} — ${data.description}`}
+              title={`${data.name} — drag to move`}
+              onMouseDown={e => handleMoveStart(e, struct.id, struct.x, struct.y)}
             >
               <span className="text-lg">{data.emoji}</span>
               <span className="text-[10px] font-medium text-foreground/80">{data.name}</span>
