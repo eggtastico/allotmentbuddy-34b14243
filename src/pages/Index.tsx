@@ -177,6 +177,7 @@ const Index = () => {
           onSelectPlant={setSelectedPlant}
           onPlaceStructure={handlePlaceStructure}
           onRemoveStructure={handleRemoveStructure}
+          onResizeStructure={handleResizeStructure}
           selectedPlantId={selectedPlant?.id ?? null}
         />
         {selectedPlant && (
