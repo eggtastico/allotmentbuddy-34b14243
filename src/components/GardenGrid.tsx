@@ -14,6 +14,7 @@ interface GardenGridProps {
   onPlaceStructure: (structureId: string, x: number, y: number) => void;
   onRemoveStructure: (id: string) => void;
   onResizeStructure: (id: string, widthCells: number, heightCells: number) => void;
+  onMoveStructure: (id: string, x: number, y: number) => void;
   selectedPlantId: string | null;
 }
 
