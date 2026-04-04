@@ -148,6 +148,9 @@ const Index = () => {
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowWeather(true)}>
             <CloudSun className="h-3.5 w-3.5 mr-1" /> Weather
           </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowWatering(true)}>
+            <Droplets className="h-3.5 w-3.5 mr-1" /> Watering
+          </Button>
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleExportPDF}>
             <Download className="h-3.5 w-3.5 mr-1" /> PDF
           </Button>
