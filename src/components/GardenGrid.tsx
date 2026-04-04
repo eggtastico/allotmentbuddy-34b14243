@@ -54,6 +54,29 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     setDragOver(true);
   }, []);
 
+  const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizing({ id: structId, startX: e.clientX, startY: e.clientY, startW, startH, edge });
+  }, []);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = Math.round((e.clientX - resizing.startX) / cellSize);
+      const deltaY = Math.round((e.clientY - resizing.startY) / cellSize);
+      let newW = resizing.startW;
+      let newH = resizing.startH;
+      if (resizing.edge === 'right' || resizing.edge === 'corner') newW = Math.max(1, resizing.startW + deltaX);
+      if (resizing.edge === 'bottom' || resizing.edge === 'corner') newH = Math.max(1, resizing.startH + deltaY);
+      onResizeStructure(resizing.id, newW, newH);
+    };
+    const handleMouseUp = () => setResizing(null);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+  }, [resizing, cellSize, onResizeStructure]);
+
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
       <div
