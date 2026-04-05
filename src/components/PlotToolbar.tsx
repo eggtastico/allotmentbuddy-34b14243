@@ -2,6 +2,7 @@ import { PlotSettings } from '@/types/garden';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PlotToolbarProps {
   settings: PlotSettings;
@@ -9,6 +10,13 @@ interface PlotToolbarProps {
   plantCount: number;
   onClear: () => void;
 }
+
+const gridSizeOptions = [
+  { value: '10', label: '10 cm' },
+  { value: '20', label: '20 cm' },
+  { value: '25', label: '25 cm' },
+  { value: '50', label: '50 cm' },
+];
 
 export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }: PlotToolbarProps) {
   const label = settings.unit === 'meters' ? 'm' : 'ft';
@@ -40,6 +48,27 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
         >
           {label}
         </button>
+      </div>
+
+      <div className="h-5 w-px bg-border" />
+
+      <div className="flex items-center gap-1.5">
+        <span className="text-muted-foreground text-xs">Grid:</span>
+        <Select
+          value={String(settings.cellSizeCm)}
+          onValueChange={(v) => onSettingsChange({ ...settings, cellSizeCm: Number(v) })}
+        >
+          <SelectTrigger className="w-[80px] h-7 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {gridSizeOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="h-5 w-px bg-border" />
