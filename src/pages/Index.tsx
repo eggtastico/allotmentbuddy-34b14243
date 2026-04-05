@@ -198,6 +198,13 @@ const Index = () => {
             allPlaced={placedPlants}
             onClose={() => setSelectedPlant(null)}
             onRemove={handleRemovePlant}
+            sunExposure={(() => {
+              const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+              const c = Math.round(settings.widthM * cellsPerUnit);
+              const r = Math.round(settings.heightM * cellsPerUnit);
+              const zones = calculateShadeZones(placedStructures, settings, c, r);
+              return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
+            })()}
           />
         )}
       </div>
