@@ -1,8 +1,7 @@
 import { PlotSettings } from '@/types/garden';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Minus, Plus, RotateCcw, Compass } from 'lucide-react';
 
 interface PlotToolbarProps {
   settings: PlotSettings;
@@ -12,17 +11,28 @@ interface PlotToolbarProps {
 }
 
 const gridSizeOptions = [
-  { value: '10', label: '10 cm' },
-  { value: '20', label: '20 cm' },
-  { value: '25', label: '25 cm' },
-  { value: '50', label: '50 cm' },
+  { value: 10, label: '10 cm' },
+  { value: 20, label: '20 cm' },
+  { value: 25, label: '25 cm' },
+  { value: 50, label: '50 cm' },
+];
+
+const compassOptions = [
+  { value: 0, label: '⬆ North' },
+  { value: 45, label: '↗ NE' },
+  { value: 90, label: '➡ East' },
+  { value: 135, label: '↘ SE' },
+  { value: 180, label: '⬇ South' },
+  { value: 225, label: '↙ SW' },
+  { value: 270, label: '⬅ West' },
+  { value: 315, label: '↖ NW' },
 ];
 
 export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }: PlotToolbarProps) {
   const label = settings.unit === 'meters' ? 'm' : 'ft';
 
   return (
-    <div className="h-12 border-b border-border bg-card px-4 flex items-center gap-4 text-sm">
+    <div className="h-12 border-b border-border bg-card px-4 flex items-center gap-4 text-sm flex-wrap">
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Plot:</span>
         <Input
@@ -54,21 +64,31 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
 
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Grid:</span>
-        <Select
-          value={String(settings.cellSizeCm)}
-          onValueChange={(v) => onSettingsChange({ ...settings, cellSizeCm: Number(v) })}
+        <select
+          value={settings.cellSizeCm}
+          onChange={e => onSettingsChange({ ...settings, cellSizeCm: Number(e.target.value) })}
+          className="h-7 text-xs rounded border border-input bg-background px-2 text-foreground"
         >
-          <SelectTrigger className="w-[80px] h-7 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {gridSizeOptions.map(opt => (
-              <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {gridSizeOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="h-5 w-px bg-border" />
+
+      <div className="flex items-center gap-1.5">
+        <Compass className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground text-xs">South:</span>
+        <select
+          value={settings.southDirection}
+          onChange={e => onSettingsChange({ ...settings, southDirection: Number(e.target.value) })}
+          className="h-7 text-xs rounded border border-input bg-background px-2 text-foreground"
+        >
+          {compassOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="h-5 w-px bg-border" />

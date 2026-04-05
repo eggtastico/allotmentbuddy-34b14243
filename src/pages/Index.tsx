@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
@@ -15,6 +15,7 @@ import { WateringGuide } from '@/components/WateringGuide';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
+import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -23,7 +24,7 @@ const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
 
   const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20,
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180,
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
@@ -98,7 +99,7 @@ const Index = () => {
   const handleNewPlan = useCallback(() => {
     setCurrentPlanId(null);
     setPlanName('My Garden');
-    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20 });
+    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180 });
     setPlacedPlants([]);
     setSelectedPlant(null);
   }, []);
@@ -197,6 +198,13 @@ const Index = () => {
             allPlaced={placedPlants}
             onClose={() => setSelectedPlant(null)}
             onRemove={handleRemovePlant}
+            sunExposure={(() => {
+              const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+              const c = Math.round(settings.widthM * cellsPerUnit);
+              const r = Math.round(settings.heightM * cellsPerUnit);
+              const zones = calculateShadeZones(placedStructures, settings, c, r);
+              return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
+            })()}
           />
         )}
       </div>
