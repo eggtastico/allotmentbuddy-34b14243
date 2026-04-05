@@ -1,7 +1,7 @@
 import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { Badge } from '@/components/ui/badge';
-import { X, Check, AlertTriangle, Timer, Sprout } from 'lucide-react';
+import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
