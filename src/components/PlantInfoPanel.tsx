@@ -157,6 +157,21 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         </div>
       )}
 
+      {/* Sun exposure warning */}
+      {sunExposure && plant.sunPreference && plant.sunPreference !== 'any' && sunExposure !== plant.sunPreference && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 mb-3 text-xs text-amber-700">
+          <p className="font-medium">☀️ Sun Mismatch</p>
+          <p>This plant prefers <strong>{plant.sunPreference.replace('-', ' ')}</strong> but is currently in <strong>{sunExposure.replace('-', ' ')}</strong>. Consider moving it!</p>
+        </div>
+      )}
+
+      {sunExposure && (
+        <div className="bg-muted rounded-md p-2 mb-3 text-xs">
+          <p className="text-muted-foreground">Position sun exposure</p>
+          <p className="font-medium text-foreground">{sunExposureLabels[sunExposure]}</p>
+        </div>
+      )}
+
       {plant.notes && (
         <div className="bg-accent/10 border border-accent/20 rounded-md p-2 mb-3 text-xs text-accent-foreground">
           <p className="font-medium">📝 Note</p>
