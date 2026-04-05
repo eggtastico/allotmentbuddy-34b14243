@@ -15,6 +15,7 @@ import { WateringGuide } from '@/components/WateringGuide';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
+import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
