@@ -47,7 +47,8 @@ export interface PlotSettings {
   heightM: number;
   unit: 'meters' | 'feet';
   cellSizePx: number;
-  cellSizeCm: number; // real-world size of each grid cell in cm (e.g. 10, 20, 25, 50)
+  cellSizeCm: number;
+  southDirection: number; // degrees clockwise from top (0=north at top, 90=east at top, 180=south at top)
 }
 
 export interface GardenPlan {
