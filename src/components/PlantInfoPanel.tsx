@@ -2,12 +2,14 @@ import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { Badge } from '@/components/ui/badge';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
+import { sunExposureLabels } from '@/utils/sunCalculator';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
   allPlaced: PlacedPlant[];
   onClose: () => void;
   onRemove: (id: string) => void;
+  sunExposure?: 'full-sun' | 'partial-shade' | 'full-shade';
 }
 
 export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove }: PlantInfoPanelProps) {
