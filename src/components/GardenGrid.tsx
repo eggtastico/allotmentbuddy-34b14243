@@ -25,8 +25,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const [moving, setMoving] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   const cellSize = settings.cellSizePx;
-  const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
-  const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? 4 : 1.2));
+  const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+  const cols = Math.round(settings.widthM * cellsPerUnit);
+  const rows = Math.round(settings.heightM * cellsPerUnit);
   const gridW = cols * cellSize;
   const gridH = rows * cellSize;
 

@@ -112,8 +112,9 @@ const Index = () => {
     }
   };
   const handleOptimizeRotation = useCallback(() => {
-    const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
-    const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? 4 : 1.2));
+    const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+    const cols = Math.round(settings.widthM * cellsPerUnit);
+    const rows = Math.round(settings.heightM * cellsPerUnit);
     const optimized = optimizeRotation(placedPlants, cols, rows);
     setPlacedPlants(optimized);
     setSelectedPlant(null);
