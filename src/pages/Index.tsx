@@ -98,7 +98,7 @@ const Index = () => {
   const handleNewPlan = useCallback(() => {
     setCurrentPlanId(null);
     setPlanName('My Garden');
-    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32 });
+    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20 });
     setPlacedPlants([]);
     setSelectedPlant(null);
   }, []);

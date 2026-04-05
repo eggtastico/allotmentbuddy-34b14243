@@ -47,6 +47,7 @@ export interface PlotSettings {
   heightM: number;
   unit: 'meters' | 'feet';
   cellSizePx: number;
+  cellSizeCm: number; // real-world size of each grid cell in cm (e.g. 10, 20, 25, 50)
 }
 
 export interface GardenPlan {
