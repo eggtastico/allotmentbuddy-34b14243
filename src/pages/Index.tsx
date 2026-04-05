@@ -23,7 +23,7 @@ const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
 
   const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20,
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180,
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
