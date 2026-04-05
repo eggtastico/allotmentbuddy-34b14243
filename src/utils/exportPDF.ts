@@ -22,8 +22,9 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
   // Draw grid
   const gridX = margin;
   const gridY = margin + 18;
-  const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
-  const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? 4 : 1.2));
+  const cellSizeCm = (settings as any).cellSizeCm || 25;
+  const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
+  const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
   const cellW = Math.min((pageW - 2 * margin) / cols, (pageH - gridY - margin - 40) / rows);
   const gridW = cols * cellW;
   const gridH = rows * cellW;

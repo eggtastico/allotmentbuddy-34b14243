@@ -23,7 +23,7 @@ const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
 
   const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32,
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20,
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
@@ -98,7 +98,7 @@ const Index = () => {
   const handleNewPlan = useCallback(() => {
     setCurrentPlanId(null);
     setPlanName('My Garden');
-    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32 });
+    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20 });
     setPlacedPlants([]);
     setSelectedPlant(null);
   }, []);
@@ -112,8 +112,9 @@ const Index = () => {
     }
   };
   const handleOptimizeRotation = useCallback(() => {
-    const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? 4 : 1.2));
-    const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? 4 : 1.2));
+    const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+    const cols = Math.round(settings.widthM * cellsPerUnit);
+    const rows = Math.round(settings.heightM * cellsPerUnit);
     const optimized = optimizeRotation(placedPlants, cols, rows);
     setPlacedPlants(optimized);
     setSelectedPlant(null);
