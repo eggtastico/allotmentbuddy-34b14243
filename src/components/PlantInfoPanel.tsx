@@ -12,7 +12,7 @@ interface PlantInfoPanelProps {
   sunExposure?: 'full-sun' | 'partial-shade' | 'full-shade';
 }
 
-export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove }: PlantInfoPanelProps) {
+export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure }: PlantInfoPanelProps) {
   const plant = getPlantById(placed.plantId);
   if (!plant) return null;
 
