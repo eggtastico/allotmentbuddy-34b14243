@@ -1,7 +1,7 @@
 import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { Badge } from '@/components/ui/badge';
-import { X, Check, AlertTriangle, Timer, Sprout } from 'lucide-react';
+import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
@@ -19,6 +19,14 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove }: PlantIn
   const activeCompanions = plant.companions.filter(c => placedPlantIds.includes(c));
   const activeEnemies = plant.enemies.filter(e => placedPlantIds.includes(e));
 
+  const sunLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+    'full-sun': { label: 'Full Sun', icon: <Sun className="h-3 w-3" />, color: '#f59e0b' },
+    'partial-shade': { label: 'Partial Shade', icon: <CloudSun className="h-3 w-3" />, color: '#3b82f6' },
+    'full-shade': { label: 'Full Shade', icon: <Cloud className="h-3 w-3" />, color: '#6b7280' },
+    'any': { label: 'Any Light', icon: <Layers className="h-3 w-3" />, color: '#10b981' },
+  };
+  const sunInfo = plant.sunPreference ? sunLabels[plant.sunPreference] : null;
+
   return (
     <div className="w-72 border-l border-border bg-card p-4 overflow-y-auto animate-fade-in">
       <div className="flex items-start justify-between mb-3">
@@ -34,8 +42,8 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove }: PlantIn
         </button>
       </div>
 
-      {/* Rotation group */}
-      <div className="mb-3">
+      {/* Rotation group & Sun preference */}
+      <div className="mb-3 flex flex-wrap gap-1.5">
         <Badge
           className="text-xs"
           style={{ backgroundColor: rotationGroupColors[plant.rotationGroup] + '22', color: rotationGroupColors[plant.rotationGroup], borderColor: rotationGroupColors[plant.rotationGroup] + '44' }}
@@ -43,6 +51,15 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove }: PlantIn
         >
           {rotationGroupLabels[plant.rotationGroup]}
         </Badge>
+        {sunInfo && (
+          <Badge
+            className="text-xs flex items-center gap-1"
+            style={{ backgroundColor: sunInfo.color + '22', color: sunInfo.color, borderColor: sunInfo.color + '44' }}
+            variant="outline"
+          >
+            {sunInfo.icon} {sunInfo.label}
+          </Badge>
+        )}
       </div>
 
       {/* Key info */}

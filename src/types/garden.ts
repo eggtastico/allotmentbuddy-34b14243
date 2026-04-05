@@ -13,6 +13,7 @@ export interface Plant {
   daysToHarvest?: number;
   yieldPerPlant?: string;
   notes?: string;
+  sunPreference?: 'full-sun' | 'partial-shade' | 'full-shade' | 'any';
 }
 
 export interface PlacedPlant {

@@ -19,6 +19,11 @@ export const structures: Structure[] = [
   { id: 'water-butt', name: 'Water Butt', emoji: '🪣', widthCells: 1, heightCells: 1, canGrowInside: false, color: 'hsl(210 50% 60% / 0.3)', description: 'Rainwater collection.' },
   { id: 'path', name: 'Path', emoji: '🧱', widthCells: 1, heightCells: 4, canGrowInside: false, color: 'hsl(30 10% 65% / 0.4)', description: 'Walking path between beds.' },
   { id: 'fence', name: 'Fence', emoji: '🪵', widthCells: 8, heightCells: 1, canGrowInside: false, color: 'hsl(30 30% 40% / 0.3)', description: 'Garden boundary or windbreak.' },
+  { id: 'growing-bed', name: 'Growing Bed', emoji: '🌱', widthCells: 6, heightCells: 3, canGrowInside: true, color: 'hsl(30 40% 40% / 0.25)', description: 'Outdoor growing bed for vegetables and crops.' },
+  { id: 'flower-bed', name: 'Flower Bed', emoji: '🌸', widthCells: 4, heightCells: 2, canGrowInside: true, color: 'hsl(330 50% 70% / 0.25)', description: 'Decorative flower bed for companion flowers.' },
+  { id: 'herb-bed', name: 'Herb Bed', emoji: '🌿', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(120 35% 55% / 0.25)', description: 'Dedicated herb growing area.' },
+  { id: 'fruit-cage', name: 'Fruit Cage', emoji: '🫐', widthCells: 4, heightCells: 4, canGrowInside: true, color: 'hsl(280 40% 65% / 0.25)', description: 'Netted cage to protect soft fruit from birds.' },
+  { id: 'border', name: 'Border', emoji: '🌺', widthCells: 8, heightCells: 1, canGrowInside: true, color: 'hsl(45 50% 60% / 0.25)', description: 'Garden border for mixed planting.' },
 ];
 
 export function getStructureById(id: string): Structure | undefined {
