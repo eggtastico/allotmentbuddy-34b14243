@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { X, Plus, Trash2, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { SignedImage } from '@/components/SignedImage';
 
 interface JournalEntry {
   id: string;
@@ -28,7 +29,6 @@ export function GardenJournal({ onClose }: Props) {
   const [uploading, setUploading] = useState(false);
   const [pendingPhotoPaths, setPendingPhotoPaths] = useState<string[]>([]);
   const [pendingPhotoUrls, setPendingPhotoUrls] = useState<string[]>([]);
-  const [signedUrlCache, setSignedUrlCache] = useState<Record<string, string>>({});
 
   const fetchEntries = useCallback(async () => {
     if (!user) return;
