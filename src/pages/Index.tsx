@@ -151,6 +151,7 @@ const Index = () => {
   }, [placedPlants, defaultStage, pushUndo]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
+    pushUndo(placedPlants);
     setPlacedPlants(prev => {
       const occupied = new Set(prev.map(p => `${p.x},${p.y}`));
       const newPlants: PlacedPlant[] = [];
@@ -170,7 +171,20 @@ const Index = () => {
       }
       return [...prev, ...newPlants];
     });
-  }, []);
+  }, [placedPlants, pushUndo]);
+
+  const handleRemovePlant = useCallback((id: string) => {
+    pushUndo(placedPlants);
+    setPlacedPlants(prev => prev.filter(p => p.id !== id));
+    if (selectedPlant?.id === id) setSelectedPlant(null);
+  }, [selectedPlant, pushUndo, placedPlants]);
+
+  const handleClear = useCallback(() => {
+    pushUndo(placedPlants);
+    setPlacedPlants([]);
+    setPlacedStructures([]);
+    setSelectedPlant(null);
+  }, [placedPlants, pushUndo]);
 
   const handleRemovePlant = useCallback((id: string) => {
     setPlacedPlants(prev => prev.filter(p => p.id !== id));
