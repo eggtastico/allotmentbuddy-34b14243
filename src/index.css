@@ -100,6 +100,57 @@
   .dark .absolute[style*="--plant-tile-bg"] {
     --plant-tile-bg: hsl(25 20% 15%);
   }
+
+  /* Earthy theme — Forest Green, Sand, Terracotta */
+  .theme-earthy {
+    --background: 35 30% 92%;
+    --foreground: 30 15% 15%;
+
+    --card: 35 25% 96%;
+    --card-foreground: 30 15% 15%;
+
+    --popover: 35 25% 96%;
+    --popover-foreground: 30 15% 15%;
+
+    --primary: 152 45% 28%;
+    --primary-foreground: 40 30% 95%;
+
+    --secondary: 35 35% 88%;
+    --secondary-foreground: 30 20% 25%;
+
+    --muted: 35 20% 88%;
+    --muted-foreground: 30 10% 45%;
+
+    --accent: 15 65% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 20% 80%;
+    --input: 35 20% 80%;
+    --ring: 152 45% 28%;
+
+    --sidebar-background: 152 20% 92%;
+    --sidebar-foreground: 30 15% 20%;
+    --sidebar-primary: 152 45% 28%;
+    --sidebar-primary-foreground: 40 30% 95%;
+    --sidebar-accent: 35 25% 85%;
+    --sidebar-accent-foreground: 30 15% 20%;
+    --sidebar-border: 35 20% 82%;
+    --sidebar-ring: 152 45% 28%;
+
+    --garden-soil: 20 40% 28%;
+    --garden-path: 35 25% 72%;
+    --garden-water: 195 55% 50%;
+    --garden-grid: 35 20% 78%;
+    --garden-bed: 20 35% 35%;
+    --garden-highlight: 50 70% 55%;
+  }
+
+  .theme-earthy .absolute[style*="--plant-tile-bg"] {
+    --plant-tile-bg: hsl(35 25% 90%);
+  }
 }
 
 @layer base {
