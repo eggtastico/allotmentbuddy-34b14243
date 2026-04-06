@@ -3,8 +3,7 @@ import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
-import { X, Paintbrush } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 
 interface GardenGridProps {
   settings: PlotSettings;
@@ -18,9 +17,10 @@ interface GardenGridProps {
   onResizeStructure: (id: string, widthCells: number, heightCells: number) => void;
   onMoveStructure: (id: string, x: number, y: number) => void;
   selectedPlantId: string | null;
+  onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
@@ -28,10 +28,17 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const [showSunOverlay, setShowSunOverlay] = useState(true);
   const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
 
-  // Paint brush state: after dropping a plant, user can click-drag to fill rows/patches
-  const [brushPlantId, setBrushPlantId] = useState<string | null>(null);
-  const [isPainting, setIsPainting] = useState(false);
-  const paintedCellsRef = useRef<Set<string>>(new Set());
+  // Plant resize state — drag to expand a plant into a rectangular patch
+  const [plantResize, setPlantResize] = useState<{
+    plantId: string; // the plant type
+    originX: number; // anchor cell
+    originY: number;
+    currentW: number;
+    currentH: number;
+    startMouseX: number;
+    startMouseY: number;
+    edge: 'right' | 'bottom' | 'corner';
+  } | null>(null);
 
   const cellSize = settings.cellSizePx;
   const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
@@ -67,7 +74,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return map;
   }, [plants]);
 
-  // Set of occupied cells for quick lookup
   const occupiedCells = useMemo(() => {
     const set = new Set<string>();
     for (const p of plants) set.add(`${p.x},${p.y}`);
@@ -96,8 +102,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       onPlaceStructure(structureId, x, y);
     } else if (plantId) {
       onPlacePlant(plantId, x, y);
-      // Activate brush mode for this plant type
-      setBrushPlantId(plantId);
     }
   }, [snapToGrid, onPlacePlant, onPlaceStructure]);
 
@@ -115,42 +119,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     setDragOver(true);
   }, []);
 
-  // Paint mode: mouse down on empty cell starts painting
-  const handleGridMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!brushPlantId || e.button !== 0) return;
-    // Don't start painting if clicking on a plant or structure
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-plant-tile]') || target.closest('[data-structure-tile]')) return;
-
-    const { x, y } = snapToGrid(e.clientX, e.clientY);
-    const key = `${x},${y}`;
-    if (!occupiedCells.has(key)) {
-      paintedCellsRef.current = new Set([key]);
-      onPlacePlant(brushPlantId, x, y);
-      setIsPainting(true);
-    }
-  }, [brushPlantId, snapToGrid, occupiedCells, onPlacePlant]);
-
-  const handleGridMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isPainting || !brushPlantId) return;
-    const { x, y } = snapToGrid(e.clientX, e.clientY);
-    const key = `${x},${y}`;
-    if (!occupiedCells.has(key) && !paintedCellsRef.current.has(key)) {
-      paintedCellsRef.current.add(key);
-      onPlacePlant(brushPlantId, x, y);
-    }
-  }, [isPainting, brushPlantId, snapToGrid, occupiedCells, onPlacePlant]);
-
-  useEffect(() => {
-    if (!isPainting) return;
-    const handleUp = () => {
-      setIsPainting(false);
-      paintedCellsRef.current.clear();
-    };
-    window.addEventListener('mouseup', handleUp);
-    return () => window.removeEventListener('mouseup', handleUp);
-  }, [isPainting]);
-
+  // Structure resize
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
     e.preventDefault();
     e.stopPropagation();
@@ -173,6 +142,48 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     window.addEventListener('mouseup', handleMouseUp);
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [resizing, cellSize, onResizeStructure]);
+
+  // Plant resize — drag handles to expand into a patch
+  const handlePlantResizeStart = useCallback((e: React.MouseEvent, placed: PlacedPlant, edge: 'right' | 'bottom' | 'corner') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPlantResize({
+      plantId: placed.plantId,
+      originX: placed.x,
+      originY: placed.y,
+      currentW: 1,
+      currentH: 1,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      edge,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!plantResize) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = Math.round((e.clientX - plantResize.startMouseX) / cellSize);
+      const deltaY = Math.round((e.clientY - plantResize.startMouseY) / cellSize);
+      let newW = 1;
+      let newH = 1;
+      if (plantResize.edge === 'right' || plantResize.edge === 'corner') newW = Math.max(1, 1 + deltaX);
+      if (plantResize.edge === 'bottom' || plantResize.edge === 'corner') newH = Math.max(1, 1 + deltaY);
+      // Clamp to grid
+      newW = Math.min(newW, cols - plantResize.originX);
+      newH = Math.min(newH, rows - plantResize.originY);
+      setPlantResize(prev => prev ? { ...prev, currentW: newW, currentH: newH } : null);
+    };
+    const handleMouseUp = () => {
+      // Fill the area with plants
+      if (plantResize && onFillPlantArea && (plantResize.currentW > 1 || plantResize.currentH > 1)) {
+        onFillPlantArea(plantResize.plantId, plantResize.originX, plantResize.originY, plantResize.currentW, plantResize.currentH);
+      }
+      setPlantResize(null);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+  }, [plantResize, cellSize, cols, rows, onFillPlantArea]);
 
   const handleMoveStart = useCallback((e: React.MouseEvent, structId: string, origX: number, origY: number) => {
     e.preventDefault();
@@ -198,27 +209,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const compassRotation = settings.southDirection;
   const showLabels = cellSize >= 28;
 
-  const brushPlantData = brushPlantId ? getPlantById(brushPlantId) : null;
-
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
-      {/* Brush mode indicator */}
-      {brushPlantId && brushPlantData && (
-        <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg w-fit mx-auto animate-fade-in">
-          <Paintbrush className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs text-foreground font-medium">
-            Paint mode: {brushPlantData.emoji} {brushPlantData.name}
-          </span>
-          <span className="text-[10px] text-muted-foreground">— click & drag on empty cells to fill</span>
-          <button
-            onClick={() => setBrushPlantId(null)}
-            className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
-          >
-            ✕ Clear
-          </button>
-        </div>
-      )}
-
       <div className="relative mx-auto" style={{ width: gridW + 40, minHeight: gridH + 40 }}>
         {/* Compass rose */}
         <div
@@ -261,7 +253,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         {/* Grid */}
         <div
           ref={gridRef}
-          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'} ${brushPlantId ? 'cursor-crosshair' : ''}`}
+          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
           style={{
             width: gridW,
             height: gridH,
@@ -270,12 +262,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => setDragOver(false)}
-          onMouseDown={handleGridMouseDown}
-          onMouseMove={handleGridMouseMove}
-          onClick={(e) => {
-            // Only deselect if not painting
-            if (!brushPlantId) onSelectPlant(null);
-          }}
+          onClick={() => onSelectPlant(null)}
         >
           {/* Grid labels */}
           {Array.from({ length: cols }).map((_, i) => (
@@ -311,6 +298,53 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               />
             );
           })}
+
+          {/* Plant resize preview overlay */}
+          {plantResize && (plantResize.currentW > 1 || plantResize.currentH > 1) && (
+            <div
+              className="absolute border-2 border-dashed border-primary rounded-md pointer-events-none z-20"
+              style={{
+                left: plantResize.originX * cellSize,
+                top: plantResize.originY * cellSize,
+                width: plantResize.currentW * cellSize,
+                height: plantResize.currentH * cellSize,
+                backgroundColor: 'hsl(var(--primary) / 0.1)',
+              }}
+            >
+              {/* Show grid of emoji inside preview */}
+              {(() => {
+                const plantData = getPlantById(plantResize.plantId);
+                if (!plantData) return null;
+                const cells: React.ReactNode[] = [];
+                for (let dy = 0; dy < plantResize.currentH; dy++) {
+                  for (let dx = 0; dx < plantResize.currentW; dx++) {
+                    if (dx === 0 && dy === 0) continue; // skip origin (already placed)
+                    const key = `${plantResize.originX + dx},${plantResize.originY + dy}`;
+                    const isOccupied = occupiedCells.has(key);
+                    cells.push(
+                      <div
+                        key={`preview-${dx}-${dy}`}
+                        className="absolute flex items-center justify-center"
+                        style={{
+                          left: dx * cellSize,
+                          top: dy * cellSize,
+                          width: cellSize,
+                          height: cellSize,
+                          opacity: isOccupied ? 0.3 : 0.6,
+                        }}
+                      >
+                        <span style={{ fontSize: Math.max(cellSize * 0.4, 12) }}>{plantData.emoji}</span>
+                      </div>
+                    );
+                  }
+                }
+                return cells;
+              })()}
+              <span className="absolute -top-5 left-0 text-[10px] font-medium text-primary bg-card px-1 rounded">
+                {plantResize.currentW}×{plantResize.currentH}
+              </span>
+            </div>
+          )}
 
           {/* Placed structures */}
           {structures.map(struct => {
@@ -402,15 +436,13 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 }}
                 onClick={e => {
                   e.stopPropagation();
-                  // If clicking a plant, also set it as the brush
-                  setBrushPlantId(placed.plantId);
                   onSelectPlant(isSelected ? null : placed);
                 }}
                 onContextMenu={e => {
                   e.preventDefault();
                   onRemovePlant(placed.id);
                 }}
-                title={`${plantData.name}${sunMismatch ? ` ⚠️ Prefers ${plantData.sunPreference}` : ''}${relations?.hasCompanion ? ' 🟢 Companion nearby' : ''}${relations?.hasEnemy ? ' 🔴 Enemy nearby' : ''} (right-click to remove)`}
+                title={`${plantData.name} — drag edges to fill area (right-click to remove)`}
               >
                 <span className="select-none leading-none" style={{ fontSize: Math.max(cellSize * 0.5, 14) }}>
                   {plantData.emoji}
@@ -431,6 +463,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 {relations?.hasCompanion && !relations?.hasEnemy && (
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-card" title="Companion plant nearby" />
                 )}
+                {/* Remove button */}
                 <button
                   onClick={e => { e.stopPropagation(); onRemovePlant(placed.id); }}
                   className="absolute -top-1.5 -left-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
@@ -438,6 +471,27 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 >
                   <X className="h-2.5 w-2.5" />
                 </button>
+                {/* Resize handles — right edge */}
+                <div
+                  className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-r"
+                  style={{ background: 'hsl(var(--primary) / 0.5)' }}
+                  onMouseDown={e => handlePlantResizeStart(e, placed, 'right')}
+                  title="Drag to fill row"
+                />
+                {/* Bottom edge */}
+                <div
+                  className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-b"
+                  style={{ background: 'hsl(var(--primary) / 0.5)' }}
+                  onMouseDown={e => handlePlantResizeStart(e, placed, 'bottom')}
+                  title="Drag to fill column"
+                />
+                {/* Corner */}
+                <div
+                  className="absolute -bottom-1 -right-1 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"
+                  style={{ background: 'hsl(var(--primary) / 0.7)' }}
+                  onMouseDown={e => handlePlantResizeStart(e, placed, 'corner')}
+                  title="Drag to fill area"
+                />
               </div>
             );
           })}
@@ -448,7 +502,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               <div className="text-center bg-card/80 backdrop-blur-sm px-6 py-4 rounded-xl shadow-sm">
                 <span className="text-3xl block mb-2">🌱</span>
                 <p className="text-muted-foreground text-sm font-medium">Drag plants from the sidebar to start!</p>
-                <p className="text-muted-foreground text-xs mt-1">Right-click a plant to remove it</p>
+                <p className="text-muted-foreground text-xs mt-1">Drag edges to fill rows · Right-click to remove</p>
               </div>
             </div>
           )}
