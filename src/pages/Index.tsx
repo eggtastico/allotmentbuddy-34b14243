@@ -231,7 +231,7 @@ const Index = () => {
         </div>
 
         <LocationPicker location={location} onLocationChange={setLocation} />
-
+        <RainWidget location={location} />
         {/* Desktop nav */}
         <div className="hidden lg:flex items-center gap-1 ml-auto">
           {navButtons}
