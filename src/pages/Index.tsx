@@ -26,6 +26,7 @@ import { PlantingSuggestions } from '@/components/PlantingSuggestions';
 import { GardenTasks } from '@/components/GardenTasks';
 import { MonthlyPlanner } from '@/components/MonthlyPlanner';
 import { GrowGuide } from '@/components/GrowGuide';
+import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
