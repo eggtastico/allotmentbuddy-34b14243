@@ -32,7 +32,7 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
   const label = settings.unit === 'meters' ? 'm' : 'ft';
 
   return (
-    <div className="h-12 border-b border-border bg-card px-4 flex items-center gap-4 text-sm flex-wrap">
+    <div className="h-12 bg-card px-4 flex items-center gap-4 text-sm flex-wrap">
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Plot:</span>
         <Input
