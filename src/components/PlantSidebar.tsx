@@ -112,7 +112,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
     return acc;
   }, {} as Record<string, typeof plants>);
 
-  const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter].filter(Boolean).length;
+  const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
     <div className="w-64 border-r border-border bg-card flex flex-col h-full">
