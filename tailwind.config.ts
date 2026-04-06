@@ -65,6 +65,9 @@ export default {
           bed: "hsl(var(--garden-bed))",
           highlight: "hsl(var(--garden-highlight))",
         },
+        info: "hsl(var(--info))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
       },
       borderRadius: {
         lg: "var(--radius)",
