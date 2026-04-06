@@ -28,6 +28,7 @@ import { GardenTasks } from '@/components/GardenTasks';
 import { MonthlyPlanner } from '@/components/MonthlyPlanner';
 import { GrowGuide } from '@/components/GrowGuide';
 import { ActionRequired } from '@/components/ActionRequired';
+import { SocialShare } from '@/components/SocialShare';
 import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
