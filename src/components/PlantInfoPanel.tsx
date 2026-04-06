@@ -4,6 +4,7 @@ import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
 import { sunExposureLabels } from '@/utils/sunCalculator';
+import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
@@ -234,6 +235,26 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         <div className="bg-accent/10 border border-accent/20 rounded-md p-2 mb-3 text-xs text-accent-foreground">
           <p className="font-medium">📝 Note</p>
           <p>{plant.notes}</p>
+        </div>
+      )}
+
+      {/* Succession planting suggestions */}
+      {plant.harvest && (
+        <div className="bg-accent/10 border border-accent/20 rounded-md p-2 mb-3 text-xs">
+          <p className="font-medium text-foreground mb-1.5">🔄 Follow-on crops</p>
+          <p className="text-muted-foreground text-[10px] mb-1">What to plant after {plant.name} finishes:</p>
+          <div className="space-y-1">
+            {getSuccessionSuggestions(plant.id).map(s => (
+              <div key={s.plant.id} className="flex items-center gap-1.5">
+                <span>{s.plant.emoji}</span>
+                <span className="font-medium text-foreground">{s.plant.name}</span>
+                <span className="text-muted-foreground text-[9px]">— {s.reason}</span>
+              </div>
+            ))}
+            {getSuccessionSuggestions(plant.id).length === 0 && (
+              <p className="text-muted-foreground italic">No follow-on crops found for this season</p>
+            )}
+          </div>
         </div>
       )}
 

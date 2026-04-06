@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { X, Send, Bot, Loader2 } from 'lucide-react';
 import { PlacedPlant, PlotSettings } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
+import { analyzeRotation } from '@/utils/rotationOptimizer';
+import { getCompanionReason } from '@/data/companionReasons';
+import ReactMarkdown from 'react-markdown';
 
 interface LocationData {
   name: string;
@@ -33,13 +36,47 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const plantSummary = [...new Set(plants.map(p => p.plantId))]
+  const uniquePlants = [...new Set(plants.map(p => p.plantId))];
+  const plantSummary = uniquePlants
     .map(id => { const plant = getPlantById(id); return plant ? `${plant.emoji} ${plant.name} (x${plants.filter(pp => pp.plantId === id).length})` : ''; })
     .filter(Boolean).join(', ');
 
   const locationStr = location ? `Location: ${location.name} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${location.region}` : ''}.` : '';
 
-  const systemContext = `User has a ${settings.widthM}x${settings.heightM} ${settings.unit} garden plot. ${locationStr} Plants: ${plantSummary || 'none yet'}.`;
+  // Build rich context about the current layout
+  const rotationAnalysis = analyzeRotation(plants);
+  const conflictSummary = rotationAnalysis.conflicts.length > 0
+    ? `Rotation conflicts: ${rotationAnalysis.conflicts.map(c => c.reason).join('; ')}.`
+    : 'No rotation conflicts.';
+
+  // Companion/enemy summary
+  const relationSummary = uniquePlants.map(id => {
+    const p = getPlantById(id);
+    if (!p) return '';
+    const enemies = p.enemies.filter(e => uniquePlants.includes(e)).map(e => getPlantById(e)?.name).filter(Boolean);
+    const companions = p.companions.filter(c => uniquePlants.includes(c)).map(c => getPlantById(c)?.name).filter(Boolean);
+    const parts: string[] = [];
+    if (enemies.length) parts.push(`enemies nearby: ${enemies.join(', ')}`);
+    if (companions.length) parts.push(`companions: ${companions.join(', ')}`);
+    return parts.length ? `${p.name}: ${parts.join('; ')}` : '';
+  }).filter(Boolean).join('. ');
+
+  const systemContext = `User has a ${settings.widthM}×${settings.heightM} ${settings.unit} garden plot (grid ${Math.round(settings.widthM * 100 / settings.cellSizeCm)}×${Math.round(settings.heightM * 100 / settings.cellSizeCm)} cells, ${settings.cellSizeCm}cm each). ${locationStr} Plants: ${plantSummary || 'none yet'}. ${conflictSummary} ${relationSummary} Rotation score: ${rotationAnalysis.score}/100.`;
+
+  // Context-aware quick prompts
+  const quickPrompts: string[] = [];
+  if (plants.length > 0) {
+    quickPrompts.push('Analyze my layout and suggest improvements');
+    if (rotationAnalysis.conflicts.length > 0) quickPrompts.push('Fix my spacing & companion issues');
+    quickPrompts.push('Create a 3-year rotation plan for my plot');
+    quickPrompts.push('Maximize yield with my current layout');
+    quickPrompts.push('Suggest pest-resistant companion planting');
+  } else {
+    quickPrompts.push('Suggest a beginner-friendly layout');
+    quickPrompts.push('What should I plant this month?');
+    quickPrompts.push('Design a low-maintenance herb garden');
+  }
+  if (location) quickPrompts.push(`Best crops for ${location.name} climate`);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -80,13 +117,18 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
           {messages.length === 0 && (
             <div className="text-center py-8">
               <Bot className="h-10 w-10 text-primary mx-auto mb-3 opacity-50" />
-              <p className="text-sm text-muted-foreground">Ask me anything about your garden!</p>
+              <p className="text-sm text-muted-foreground">I know your plot layout — ask me anything!</p>
+              {plants.length > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  📊 {plants.length} plants · Rotation score: {rotationAnalysis.score}/100 · {rotationAnalysis.conflicts.length} issues
+                </p>
+              )}
               {location && (
                 <p className="text-[10px] text-muted-foreground mt-1">📍 Using your location: {location.name}</p>
               )}
               <div className="flex flex-wrap gap-2 justify-center mt-3">
-                {['Suggest best layout for my plot', 'What should I plant this month?', 'Which plants grow well together?'].map(q => (
-                  <button key={q} onClick={() => { setInput(q); }} className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground">
+                {quickPrompts.slice(0, 5).map(q => (
+                  <button key={q} onClick={() => { setInput(q); }} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors">
                     {q}
                   </button>
                 ))}
@@ -95,8 +137,12 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
           )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
-                {msg.content}
+              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : msg.content}
               </div>
             </div>
           ))}
