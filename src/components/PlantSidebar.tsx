@@ -8,6 +8,8 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { Plant } from '@/types/garden';
+import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
+import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 
 const categoryOrder = ['vegetable', 'fruit', 'herb', 'flower'] as const;
 const categoryLabels = { vegetable: '🥦 Vegetables', fruit: '🍓 Fruits', herb: '🌿 Herbs', flower: '🌼 Flowers' };
