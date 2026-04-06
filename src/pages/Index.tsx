@@ -44,6 +44,7 @@ interface LocationData {
 
 const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { plans, save, isSaving } = useGardenPlans();
 
   const [settings, setSettings] = useState<PlotSettings>({
     widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180,
