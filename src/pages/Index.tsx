@@ -184,6 +184,7 @@ const Index = () => {
   }, [selectedPlant, pushUndo, placedPlants]);
 
   const handleClear = useCallback(() => {
+    if (!window.confirm('This will delete your entire plan. Are you sure?')) return;
     pushUndo(placedPlants);
     setPlacedPlants([]);
     setPlacedStructures([]);
@@ -566,6 +567,7 @@ const Index = () => {
           onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
           onFillPlantArea={handleFillPlantArea}
+          onSettingsChange={setSettings}
         />
         {selectedPlant && (
           <PlantInfoPanel
