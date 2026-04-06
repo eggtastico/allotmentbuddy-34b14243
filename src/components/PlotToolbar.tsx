@@ -1,7 +1,7 @@
 import { PlotSettings } from '@/types/garden';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, RotateCcw, Compass } from 'lucide-react';
+import { Minus, Plus, RotateCcw, Compass, Grid3X3 } from 'lucide-react';
 
 interface PlotToolbarProps {
   settings: PlotSettings;
@@ -107,6 +107,21 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
       <div className="h-5 w-px bg-border" />
 
       <span className="text-xs text-muted-foreground">🌱 {plantCount} planted</span>
+
+      <div className="h-5 w-px bg-border" />
+
+      <button
+        onClick={() => onSettingsChange({ ...settings, snapToGrid: !settings.snapToGrid })}
+        className={`flex items-center gap-1 text-xs px-2 py-1 rounded font-medium transition-colors ${
+          settings.snapToGrid
+            ? 'bg-primary/20 text-primary'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+        }`}
+        title={settings.snapToGrid ? 'Snap to grid ON — plants align to cells' : 'Snap to grid OFF — free placement'}
+      >
+        <Grid3X3 className="h-3 w-3" />
+        Snap
+      </button>
 
       <div className="ml-auto">
         <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onClear}>
