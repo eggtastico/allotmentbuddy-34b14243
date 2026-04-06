@@ -363,9 +363,21 @@ const Index = () => {
           plants={placedPlants}
           structures={placedStructures}
           location={location}
-          onClose={() => setShowWatering(false)}
+         onClose={() => setShowWatering(false)}
         />
       )}
+      {showPlotMap && <PlotMapPanel onClose={() => setShowPlotMap(false)} />}
+      {showJournal && <GardenJournal onClose={() => setShowJournal(false)} />}
+
+      {/* Mobile bottom nav */}
+      <MobileBottomNav
+        onToggleSidebar={() => setMobileSidebarOpen(prev => !prev)}
+        onShowCalendar={() => setShowCalendar(true)}
+        onShowAI={() => setShowAI(true)}
+        onShowJournal={() => setShowJournal(true)}
+        onShowPlotMap={() => setShowPlotMap(true)}
+        onShowWeather={() => setShowWeather(true)}
+      />
     </div>
   );
 };
