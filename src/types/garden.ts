@@ -14,6 +14,11 @@ export interface Plant {
   yieldPerPlant?: string;
   notes?: string;
   sunPreference?: 'full-sun' | 'partial-shade' | 'full-shade' | 'any';
+  family?: string;
+  frostHardiness?: 'hardy' | 'half-hardy' | 'tender';
+  difficulty?: 'easy' | 'moderate' | 'challenging';
+  sowingSeason?: string[];
+  tips?: string;
 }
 
 export interface PlacedPlant {
