@@ -141,13 +141,14 @@ const Index = () => {
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
     if (occupied) return;
+    pushUndo(placedPlants);
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       plantId, x, y,
       plantedAt: new Date().toISOString(),
       stage: defaultStage,
     }]);
-  }, [placedPlants, defaultStage]);
+  }, [placedPlants, defaultStage, pushUndo]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
     setPlacedPlants(prev => {
