@@ -36,6 +36,7 @@ import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
@@ -56,7 +57,7 @@ const Index = () => {
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
   const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
-  const [, setDragging] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -141,10 +142,14 @@ const Index = () => {
   const [showTasks, setShowTasks] = useState(false);
   const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
   const [showGrowGuide, setShowGrowGuide] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
-    if (occupied) return;
+    if (occupied) {
+      setDragging(null);
+      return;
+    }
     pushUndo(placedPlants);
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -152,6 +157,7 @@ const Index = () => {
       plantedAt: new Date().toISOString(),
       stage: defaultStage,
     }]);
+    setDragging(null);
   }, [placedPlants, defaultStage, pushUndo]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
@@ -183,12 +189,32 @@ const Index = () => {
     if (selectedPlant?.id === id) setSelectedPlant(null);
   }, [selectedPlant, pushUndo, placedPlants]);
 
+  const handleMovePlantStart = useCallback(() => {
+    pushUndo(placedPlants);
+  }, [placedPlants, pushUndo]);
+
+  const handleMovePlant = useCallback((id: string, x: number, y: number) => {
+    const plantToMove = placedPlants.find(p => p.id === id);
+    if (!plantToMove) return;
+
+    const positionUnchanged = plantToMove.x === x && plantToMove.y === y;
+    const occupied = placedPlants.some(p => p.id !== id && p.x === x && p.y === y);
+    if (positionUnchanged || occupied) return;
+
+    setPlacedPlants(prev => prev.map(p => p.id === id ? { ...p, x, y } : p));
+    setSelectedPlant(prev => prev?.id === id ? { ...prev, x, y } : prev);
+  }, [placedPlants]);
+
   const handleClear = useCallback(() => {
-    if (!window.confirm('This will delete your entire plan. Are you sure?')) return;
+    setShowClearConfirm(true);
+  }, []);
+
+  const confirmClear = useCallback(() => {
     pushUndo(placedPlants);
     setPlacedPlants([]);
     setPlacedStructures([]);
     setSelectedPlant(null);
+    setShowClearConfirm(false);
   }, [placedPlants, pushUndo]);
 
   const handlePlaceStructure = useCallback((structureId: string, x: number, y: number) => {
@@ -201,6 +227,7 @@ const Index = () => {
       widthCells: structData.widthCells,
       heightCells: structData.heightCells,
     }]);
+    setDragging(null);
   }, []);
 
   const handleRemoveStructure = useCallback((id: string) => {
@@ -560,6 +587,8 @@ const Index = () => {
           structures={placedStructures}
           onPlacePlant={handlePlacePlant}
           onRemovePlant={handleRemovePlant}
+          onMovePlant={handleMovePlant}
+          onMovePlantStart={handleMovePlantStart}
           onSelectPlant={setSelectedPlant}
           onPlaceStructure={handlePlaceStructure}
           onRemoveStructure={handleRemoveStructure}
@@ -568,6 +597,7 @@ const Index = () => {
           selectedPlantId={selectedPlant?.id ?? null}
           onFillPlantArea={handleFillPlantArea}
           onSettingsChange={setSettings}
+          draggingPlantId={dragging}
         />
         {selectedPlant && (
           <PlantInfoPanel
@@ -628,6 +658,22 @@ const Index = () => {
       {showTasks && <GardenTasks onClose={() => setShowTasks(false)} />}
       {showMonthlyPlanner && <MonthlyPlanner onClose={() => setShowMonthlyPlanner(false)} />}
       {showGrowGuide && <GrowGuide onClose={() => setShowGrowGuide(false)} />}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear this garden plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all placed plants and structures from your current layout.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmClear}>
+              Delete plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Mobile bottom nav */}
       <MobileBottomNav

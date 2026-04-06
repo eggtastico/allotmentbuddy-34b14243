@@ -12,6 +12,8 @@ interface GardenGridProps {
   structures: PlacedStructure[];
   onPlacePlant: (plantId: string, x: number, y: number) => void;
   onRemovePlant: (id: string) => void;
+  onMovePlantStart?: (id: string) => void;
+  onMovePlant: (id: string, x: number, y: number) => void;
   onSelectPlant: (plant: PlacedPlant | null) => void;
   onPlaceStructure: (structureId: string, x: number, y: number) => void;
   onRemoveStructure: (id: string) => void;
@@ -20,6 +22,7 @@ interface GardenGridProps {
   selectedPlantId: string | null;
   onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
   onSettingsChange?: (s: PlotSettings) => void;
+  draggingPlantId?: string | null;
 }
 
 interface DragTooltip {
@@ -30,12 +33,14 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSettingsChange }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSettingsChange, draggingPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
   const [moving, setMoving] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const [movingPlant, setMovingPlant] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const plantMoveCommittedRef = useRef<string | null>(null);
   const [showSunOverlay, setShowSunOverlay] = useState(true);
   const [showColorCoding, setShowColorCoding] = useState(true);
   const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
@@ -171,13 +176,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
-    // Show spacing tooltip while dragging
-    const plantId = e.dataTransfer.types.includes('plantid') ? '' : '';
     const { x, y } = snapToGrid(e.clientX, e.clientY);
-    // We get the plantId from the types — but dataTransfer.getData is not available during dragOver
-    // So we show generic info based on position
-    setDragTooltip({ x: e.clientX, y: e.clientY, plantId: '', gridX: x, gridY: y });
-  }, [snapToGrid]);
+    const plantId = draggingPlantId || e.dataTransfer.getData('plantId') || '';
+    setDragTooltip(plantId ? { x: e.clientX, y: e.clientY, plantId, gridX: x, gridY: y } : null);
+  }, [draggingPlantId, snapToGrid]);
 
   // Structure resize
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
@@ -264,6 +266,47 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [moving, cellSize, onMoveStructure]);
 
+  const handlePlantMoveStart = useCallback((e: React.MouseEvent, plantId: string, origX: number, origY: number) => {
+    if (panMode) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-no-plant-move="true"]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    plantMoveCommittedRef.current = null;
+    setMovingPlant({ id: plantId, startX: e.clientX, startY: e.clientY, origX, origY });
+  }, [panMode]);
+
+  useEffect(() => {
+    if (!movingPlant) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const { x, y } = snapToGrid(e.clientX, e.clientY);
+      const positionChanged = x !== movingPlant.origX || y !== movingPlant.origY;
+
+      if (!positionChanged) return;
+
+      if (!plantMoveCommittedRef.current) {
+        onMovePlantStart?.(movingPlant.id);
+        plantMoveCommittedRef.current = movingPlant.id;
+      }
+
+      onMovePlant(movingPlant.id, x, y);
+    };
+
+    const handleMouseUp = () => {
+      plantMoveCommittedRef.current = null;
+      setMovingPlant(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [movingPlant, onMovePlant, onMovePlantStart, snapToGrid]);
+
   // Panning with middle mouse or pan mode
   const handlePanStart = useCallback((e: React.MouseEvent) => {
     if (e.button === 1 || panMode) {
@@ -311,6 +354,51 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     const spacingCells = Math.ceil(pData.spacingCm / settings.cellSizeCm);
     return [{ x: selected.x, y: selected.y, radius: spacingCells }];
   }, [selectedPlantId, plants, settings.cellSizeCm]);
+
+  const dragPreview = useMemo(() => {
+    if (!dragTooltip?.plantId) return null;
+
+    const plantData = getPlantById(dragTooltip.plantId);
+    if (!plantData) return null;
+
+    const spacingCells = Math.max(1, Math.ceil(plantData.spacingCm / settings.cellSizeCm));
+    const nearby = plants.filter(p => {
+      const dx = p.x - dragTooltip.gridX;
+      const dy = p.y - dragTooltip.gridY;
+      return Math.sqrt(dx * dx + dy * dy) <= Math.max(spacingCells, 3);
+    });
+
+    const nearestSamePlant = nearby
+      .filter(p => p.plantId === plantData.id)
+      .map(p => ({
+        distance: Math.sqrt(Math.pow(p.x - dragTooltip.gridX, 2) + Math.pow(p.y - dragTooltip.gridY, 2)),
+      }))
+      .sort((a, b) => a.distance - b.distance)[0];
+
+    const companionPlant = nearby.find(p => {
+      const other = getPlantById(p.plantId);
+      return other && (plantData.companions.includes(other.id) || other.companions.includes(plantData.id));
+    });
+
+    const enemyPlant = nearby.find(p => {
+      const other = getPlantById(p.plantId);
+      return other && (plantData.enemies.includes(other.id) || other.enemies.includes(plantData.id));
+    });
+
+    const companionData = companionPlant ? getPlantById(companionPlant.plantId) : undefined;
+    const enemyData = enemyPlant ? getPlantById(enemyPlant.plantId) : undefined;
+
+    return {
+      plantData,
+      spacingCells,
+      tooClose: Boolean(nearestSamePlant && nearestSamePlant.distance > 0 && nearestSamePlant.distance < spacingCells),
+      actualSpacingCm: nearestSamePlant ? Math.round(nearestSamePlant.distance * settings.cellSizeCm) : null,
+      companionData,
+      companionReason: companionData ? getCompanionReason(plantData.id, companionData.id) : undefined,
+      enemyData,
+      enemyReason: enemyData ? getCompanionReason(plantData.id, enemyData.id) : undefined,
+    };
+  }, [dragTooltip, plants, settings.cellSizeCm]);
 
   return (
     <div
@@ -465,6 +553,20 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             />
           ))}
 
+          {dragOver && dragTooltip && dragPreview && (
+            <div
+              className="absolute pointer-events-none rounded-full border-2 border-dashed z-[1]"
+              style={{
+                left: (dragTooltip.gridX - dragPreview.spacingCells + 0.5) * cellSize,
+                top: (dragTooltip.gridY - dragPreview.spacingCells + 0.5) * cellSize,
+                width: dragPreview.spacingCells * 2 * cellSize,
+                height: dragPreview.spacingCells * 2 * cellSize,
+                borderColor: dragPreview.tooClose ? 'hsl(var(--destructive) / 0.45)' : 'hsl(var(--primary) / 0.45)',
+                backgroundColor: dragPreview.tooClose ? 'hsl(var(--destructive) / 0.08)' : 'hsl(var(--primary) / 0.06)',
+              }}
+            />
+          )}
+
           {/* Plant resize preview overlay */}
           {plantResize && (plantResize.currentW > 1 || plantResize.currentH > 1) && (
             <div
@@ -615,7 +717,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 key={placed.id}
                 data-plant-tile
                 className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all group
-                  ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-105 z-10' : 'z-[2] hover:scale-105 hover:z-[3]'}
+                  ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-105 z-10' : movingPlant?.id === placed.id ? 'z-20 scale-105' : 'z-[2] hover:scale-105 hover:z-[3]'}
                   ${isNew ? 'animate-plant-pop' : ''}
                   ${spacingIssues ? 'animate-pulse' : ''}`}
                 style={{
@@ -637,6 +739,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   e.stopPropagation();
                   onSelectPlant(isSelected ? null : placed);
                 }}
+                onMouseDown={e => handlePlantMoveStart(e, placed.id, placed.x, placed.y)}
                 onContextMenu={e => {
                   e.preventDefault();
                   onRemovePlant(placed.id);
@@ -675,6 +778,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 {/* Remove button */}
                 <button
                   onClick={e => { e.stopPropagation(); onRemovePlant(placed.id); }}
+                  data-no-plant-move="true"
                   className="absolute -top-1.5 -left-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                   title="Remove"
                 >
@@ -682,18 +786,21 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 </button>
                 {/* Resize handles */}
                 <div
+                  data-no-plant-move="true"
                   className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-r"
                   style={{ background: 'hsl(var(--primary) / 0.5)' }}
                   onMouseDown={e => handlePlantResizeStart(e, placed, 'right')}
                   title="Drag to fill row"
                 />
                 <div
+                  data-no-plant-move="true"
                   className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-b"
                   style={{ background: 'hsl(var(--primary) / 0.5)' }}
                   onMouseDown={e => handlePlantResizeStart(e, placed, 'bottom')}
                   title="Drag to fill column"
                 />
                 <div
+                  data-no-plant-move="true"
                   className="absolute -bottom-1 -right-1 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-sm"
                   style={{ background: 'hsl(var(--primary) / 0.7)' }}
                   onMouseDown={e => handlePlantResizeStart(e, placed, 'corner')}
@@ -712,21 +819,28 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 top: dragTooltip.gridY * cellSize,
               }}
             >
-              {/* Check nearby plants for spacing info */}
-              {(() => {
-                const nearby = plants.filter(p =>
-                  Math.abs(p.x - dragTooltip.gridX) + Math.abs(p.y - dragTooltip.gridY) <= 3
-                );
-                if (nearby.length === 0) return <span className="text-muted-foreground">Drop plant here</span>;
-                return nearby.slice(0, 3).map(n => {
-                  const nd = getPlantById(n.plantId);
-                  return nd ? (
-                    <div key={n.id} className="text-[9px]">
-                      {nd.emoji} {nd.name} — {nd.spacingCm}cm spacing
-                    </div>
-                  ) : null;
-                });
-              })()}
+              {dragPreview ? (
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">
+                    {dragPreview.plantData.emoji} {dragPreview.plantData.name} needs {dragPreview.plantData.spacingCm}cm spacing
+                  </p>
+                  <p className={dragPreview.tooClose ? 'text-destructive' : 'text-primary'}>
+                    {dragPreview.tooClose
+                      ? `Too close here (${dragPreview.actualSpacingCm}cm)`
+                      : 'Spacing looks good here'}
+                  </p>
+                  {dragPreview.companionData && (
+                    <p className="text-primary">
+                      ✅ Near {dragPreview.companionData.name}: {dragPreview.companionReason || 'helpful companion'}
+                    </p>
+                  )}
+                  {dragPreview.enemyData && (
+                    <p className="text-destructive">
+                      ❌ Avoid {dragPreview.enemyData.name}: {dragPreview.enemyReason || 'poor neighbour'}
+                    </p>
+                  )}
+                </div>
+              ) : <span className="text-muted-foreground">Drop item here</span>}
             </div>
           )}
 

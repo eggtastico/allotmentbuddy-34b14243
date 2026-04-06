@@ -1,5 +1,6 @@
 import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
+import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
 import { sunExposureLabels } from '@/utils/sunCalculator';
@@ -20,6 +21,30 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
   const placedPlantIds = [...new Set(allPlaced.filter(p => p.id !== placed.id).map(p => p.plantId))];
   const activeCompanions = plant.companions.filter(c => placedPlantIds.includes(c));
   const activeEnemies = plant.enemies.filter(e => placedPlantIds.includes(e));
+  const activeCompanionDetails = activeCompanions
+    .map(id => {
+      const related = getPlantById(id);
+      if (!related) return null;
+      return {
+        id,
+        name: related.name,
+        emoji: related.emoji,
+        reason: getCompanionReason(plant.id, id),
+      };
+    })
+    .filter(Boolean) as Array<{ id: string; name: string; emoji: string; reason?: string }>;
+  const activeEnemyDetails = activeEnemies
+    .map(id => {
+      const related = getPlantById(id);
+      if (!related) return null;
+      return {
+        id,
+        name: related.name,
+        emoji: related.emoji,
+        reason: getCompanionReason(plant.id, id),
+      };
+    })
+    .filter(Boolean) as Array<{ id: string; name: string; emoji: string; reason?: string }>;
 
   const sunLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
     'full-sun': { label: 'Full Sun', icon: <Sun className="h-3 w-3" />, color: '#f59e0b' },
@@ -164,17 +189,29 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
       </div>
 
       {/* Active warnings */}
-      {activeEnemies.length > 0 && (
+      {activeEnemyDetails.length > 0 && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-md p-2 mb-3 text-xs text-destructive">
           <p className="font-medium">⚠️ Rotation Warning</p>
-          <p>This plant has {activeEnemies.length} enemy plant{activeEnemies.length > 1 ? 's' : ''} nearby in your garden!</p>
+          <div className="space-y-1 mt-1.5">
+            {activeEnemyDetails.map(enemy => (
+              <p key={enemy.id}>
+                {enemy.emoji} <strong>{enemy.name}:</strong> {enemy.reason || 'Poor neighbour nearby.'}
+              </p>
+            ))}
+          </div>
         </div>
       )}
 
-      {activeCompanions.length > 0 && (
+      {activeCompanionDetails.length > 0 && (
         <div className="bg-primary/10 border border-primary/20 rounded-md p-2 mb-3 text-xs text-primary">
           <p className="font-medium">🌟 Great pairing!</p>
-          <p>{activeCompanions.length} companion plant{activeCompanions.length > 1 ? 's' : ''} nearby.</p>
+          <div className="space-y-1 mt-1.5">
+            {activeCompanionDetails.map(companion => (
+              <p key={companion.id}>
+                {companion.emoji} <strong>{companion.name}:</strong> {companion.reason || 'Helpful companion nearby.'}
+              </p>
+            ))}
+          </div>
         </div>
       )}
 
