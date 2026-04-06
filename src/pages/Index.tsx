@@ -359,11 +359,57 @@ const Index = () => {
       <SeasonalTasks />
 
       {/* Toolbar */}
-      <div className="flex items-center border-b border-border bg-card">
+      <div className="flex items-center border-b border-border bg-card flex-wrap">
         <div className="flex-1">
           <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
         </div>
         <div className="flex items-center gap-1 px-3 py-1 shrink-0">
+          {/* Undo/Redo */}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleUndo} disabled={undoStack.length === 0} title="Undo">
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleRedo} disabled={redoStack.length === 0} title="Redo">
+            <Redo2 className="h-3.5 w-3.5" />
+          </Button>
+          <div className="h-5 w-px bg-border mx-1" />
+
+          {/* Rollback dropdown */}
+          {user && plans.length > 0 && (
+            <>
+              <div className="relative">
+                <select
+                  className="h-7 text-xs border rounded px-2 bg-background text-foreground appearance-none pr-6 cursor-pointer"
+                  value={currentPlanId || ''}
+                  onChange={(e) => {
+                    const plan = plans.find((p: any) => p.id === e.target.value);
+                    if (plan) {
+                      setCurrentPlanId(plan.id);
+                      setPlanName(plan.name);
+                      setSettings(plan.plot_settings as PlotSettings);
+                      setPlacedPlants(((plan.plants as any[]) || []).map((p: any) => ({
+                        ...p,
+                        plantedAt: p.plantedAt || new Date().toISOString(),
+                        stage: p.stage || 'seed',
+                      })));
+                      setSelectedPlant(null);
+                      setUndoStack([]);
+                      setRedoStack([]);
+                      toast.success(`Loaded "${plan.name}" 🌿`);
+                    }
+                  }}
+                >
+                  {plans.map((plan: any) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} — {new Date(plan.updated_at).toLocaleDateString('en-GB')}
+                    </option>
+                  ))}
+                </select>
+                <History className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              </div>
+              <div className="h-5 w-px bg-border mx-1" />
+            </>
+          )}
+
           <span className="text-xs text-muted-foreground mr-1">Planting as:</span>
           <Button
             variant={defaultStage === 'seed' ? 'default' : 'outline'}
@@ -381,6 +427,7 @@ const Index = () => {
           >
             🌱 Seedling
           </Button>
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
         </div>
       </div>
 
