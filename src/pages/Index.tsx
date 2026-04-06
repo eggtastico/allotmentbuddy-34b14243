@@ -20,11 +20,14 @@ import { PlotMapPanel } from '@/components/PlotMapPanel';
 import { GardenJournal } from '@/components/GardenJournal';
 import { RainWidget } from '@/components/RainWidget';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { DocsGuide } from '@/components/DocsGuide';
+import { SeedInventory } from '@/components/SeedInventory';
+import { PlantingSuggestions } from '@/components/PlantingSuggestions';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
