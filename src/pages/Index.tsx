@@ -60,6 +60,67 @@ const Index = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
 
+  // Undo/Redo history
+  const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
+  const [redoStack, setRedoStack] = useState<PlacedPlant[][]>([]);
+  const skipHistoryRef = useRef(false);
+
+  const pushUndo = useCallback((prev: PlacedPlant[]) => {
+    setUndoStack(s => [...s.slice(-49), prev]);
+    setRedoStack([]);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    setRedoStack(s => [...s, placedPlants]);
+    skipHistoryRef.current = true;
+    setPlacedPlants(prev);
+    setSelectedPlant(null);
+  }, [undoStack, placedPlants]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack(s => s.slice(0, -1));
+    setUndoStack(s => [...s, placedPlants]);
+    skipHistoryRef.current = true;
+    setPlacedPlants(next);
+    setSelectedPlant(null);
+  }, [redoStack, placedPlants]);
+
+  // Auto-load most recent plan on mount
+  const autoLoaded = useRef(false);
+  useEffect(() => {
+    if (autoLoaded.current || !user || plans.length === 0) return;
+    autoLoaded.current = true;
+    const latest = plans[0]; // already sorted by updated_at desc
+    setCurrentPlanId(latest.id);
+    setPlanName(latest.name);
+    setSettings(latest.plot_settings as PlotSettings);
+    setPlacedPlants(((latest.plants as any[]) || []).map((p: any) => ({
+      ...p,
+      plantedAt: p.plantedAt || new Date().toISOString(),
+      stage: p.stage || 'seed',
+    })));
+  }, [user, plans]);
+
+  // Auto-save with debounce (3s after last change)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!user || placedPlants.length === 0) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: [] })
+        .then((result: any) => {
+          if (!currentPlanId && result?.id) setCurrentPlanId(result.id);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [placedPlants, settings, user]);
+
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAI, setShowAI] = useState(false);
