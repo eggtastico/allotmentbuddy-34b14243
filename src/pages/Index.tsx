@@ -464,7 +464,7 @@ const Index = () => {
             <Sprout className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="font-bold text-secondary-foreground text-sm leading-none">🌱 Allotment Buddy</h1>
+            <h1 className="font-bold text-primary text-xl leading-none">🌱 Allotment Buddy</h1>
             <p className="text-[10px] text-muted-foreground font-medium">Plan · Grow · Harvest</p>
           </div>
         </div>
