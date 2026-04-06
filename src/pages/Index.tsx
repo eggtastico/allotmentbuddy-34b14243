@@ -567,6 +567,7 @@ const Index = () => {
           onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
           onFillPlantArea={handleFillPlantArea}
+          onSettingsChange={setSettings}
         />
         {selectedPlant && (
           <PlantInfoPanel
