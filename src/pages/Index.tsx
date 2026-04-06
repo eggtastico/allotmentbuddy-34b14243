@@ -293,6 +293,7 @@ const Index = () => {
         <WateringGuide
           plants={placedPlants}
           structures={placedStructures}
+          location={location}
           onClose={() => setShowWatering(false)}
         />
       )}
