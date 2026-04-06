@@ -401,6 +401,9 @@ const Index = () => {
       {showDocs && <DocsGuide onClose={() => setShowDocs(false)} />}
       {showSeedInventory && <SeedInventory onClose={() => setShowSeedInventory(false)} />}
       {showPlantingSuggestions && <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />}
+      {showTasks && <GardenTasks onClose={() => setShowTasks(false)} />}
+      {showMonthlyPlanner && <MonthlyPlanner onClose={() => setShowMonthlyPlanner(false)} />}
+      {showGrowGuide && <GrowGuide onClose={() => setShowGrowGuide(false)} />}
 
       {/* Mobile bottom nav */}
       <MobileBottomNav
