@@ -6,105 +6,105 @@
 
 @layer base {
   :root {
-    --background: 150 28% 94%;
-    --foreground: 150 18% 10%;
+    --background: 0 0% 99%;
+    --foreground: 210 15% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 150 18% 10%;
+    --card-foreground: 210 15% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 150 18% 10%;
+    --popover-foreground: 210 15% 14%;
 
-    --primary: 152 52% 50%;
+    --primary: 142 55% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 98% 50%;
-    --secondary-foreground: 35 40% 16%;
+    --secondary: 200 80% 52%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 150 14% 89%;
-    --muted-foreground: 150 8% 40%;
+    --muted: 210 10% 94%;
+    --muted-foreground: 210 8% 46%;
 
-    --accent: 12 72% 56%;
+    --accent: 8 72% 54%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 14% 82%;
-    --input: 150 14% 82%;
-    --ring: 152 52% 50%;
+    --border: 210 12% 88%;
+    --input: 210 12% 88%;
+    --ring: 142 55% 40%;
 
     --radius: 1rem;
 
-    --sidebar-background: 150 22% 96%;
-    --sidebar-foreground: 150 12% 18%;
-    --sidebar-primary: 152 52% 50%;
+    --sidebar-background: 142 18% 97%;
+    --sidebar-foreground: 210 12% 18%;
+    --sidebar-primary: 142 55% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 18% 88%;
-    --sidebar-accent-foreground: 150 12% 18%;
-    --sidebar-border: 150 14% 85%;
-    --sidebar-ring: 152 52% 50%;
+    --sidebar-accent: 142 14% 92%;
+    --sidebar-accent-foreground: 210 12% 18%;
+    --sidebar-border: 210 12% 90%;
+    --sidebar-ring: 142 55% 40%;
 
     --garden-soil: 28 40% 28%;
     --garden-path: 38 28% 72%;
-    --garden-water: 198 72% 52%;
-    --garden-grid: 150 15% 78%;
+    --garden-water: 200 80% 52%;
+    --garden-grid: 210 10% 84%;
     --garden-bed: 28 42% 38%;
-    --garden-highlight: 48 98% 50%;
+    --garden-highlight: 48 92% 54%;
 
-    --success: 152 52% 42%;
-    --warning: 48 92% 50%;
-    --info: 198 72% 52%;
+    --success: 142 55% 40%;
+    --warning: 42 92% 52%;
+    --info: 200 80% 52%;
   }
 
   .dark {
-    --background: 150 18% 6%;
-    --foreground: 60 20% 92%;
+    --background: 220 16% 8%;
+    --foreground: 210 12% 92%;
 
-    --card: 150 15% 10%;
-    --card-foreground: 60 20% 92%;
+    --card: 220 14% 11%;
+    --card-foreground: 210 12% 92%;
 
-    --popover: 150 15% 10%;
-    --popover-foreground: 60 20% 92%;
+    --popover: 220 14% 11%;
+    --popover-foreground: 210 12% 92%;
 
-    --primary: 152 48% 40%;
+    --primary: 142 50% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 80% 42%;
-    --secondary-foreground: 35 30% 10%;
+    --secondary: 200 65% 45%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 150 10% 16%;
-    --muted-foreground: 60 8% 52%;
+    --muted: 220 10% 16%;
+    --muted-foreground: 210 8% 52%;
 
-    --accent: 12 68% 48%;
+    --accent: 8 68% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 38%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 18%;
-    --input: 150 10% 18%;
-    --ring: 152 48% 40%;
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 142 50% 45%;
 
-    --sidebar-background: 150 18% 8%;
-    --sidebar-foreground: 60 18% 86%;
-    --sidebar-primary: 152 48% 40%;
+    --sidebar-background: 220 16% 9%;
+    --sidebar-foreground: 210 12% 86%;
+    --sidebar-primary: 142 50% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 12% 14%;
-    --sidebar-accent-foreground: 60 18% 86%;
-    --sidebar-border: 150 10% 16%;
-    --sidebar-ring: 152 48% 40%;
+    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent-foreground: 210 12% 86%;
+    --sidebar-border: 220 10% 16%;
+    --sidebar-ring: 142 50% 45%;
 
     --garden-soil: 28 28% 18%;
     --garden-path: 38 15% 32%;
-    --garden-water: 198 58% 38%;
-    --garden-grid: 150 10% 20%;
+    --garden-water: 200 58% 38%;
+    --garden-grid: 220 10% 20%;
     --garden-bed: 28 32% 28%;
     --garden-highlight: 48 68% 42%;
 
-    --success: 152 50% 38%;
-    --warning: 48 80% 45%;
-    --info: 198 58% 42%;
+    --success: 142 50% 42%;
+    --warning: 42 80% 48%;
+    --info: 200 58% 42%;
   }
 
   .dark .absolute[style*="--plant-tile-bg"] {
@@ -112,57 +112,57 @@
   }
 
   .theme-earthy {
-    --background: 38 28% 90%;
+    --background: 38 28% 94%;
     --foreground: 30 18% 14%;
 
-    --card: 38 22% 95%;
+    --card: 38 22% 97%;
     --card-foreground: 30 18% 14%;
 
-    --popover: 38 22% 95%;
+    --popover: 38 22% 97%;
     --popover-foreground: 30 18% 14%;
 
-    --primary: 152 48% 32%;
-    --primary-foreground: 42 32% 94%;
+    --primary: 142 48% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 88% 48%;
-    --secondary-foreground: 30 22% 16%;
+    --secondary: 200 55% 46%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 38 18% 85%;
+    --muted: 38 18% 88%;
     --muted-foreground: 30 10% 42%;
 
-    --accent: 12 68% 48%;
+    --accent: 8 62% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 58% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 38 18% 78%;
-    --input: 38 18% 78%;
-    --ring: 152 48% 32%;
+    --border: 38 18% 82%;
+    --input: 38 18% 82%;
+    --ring: 142 48% 36%;
 
-    --sidebar-background: 152 18% 90%;
+    --sidebar-background: 38 20% 94%;
     --sidebar-foreground: 30 18% 18%;
-    --sidebar-primary: 152 48% 32%;
-    --sidebar-primary-foreground: 42 32% 94%;
-    --sidebar-accent: 38 22% 82%;
+    --sidebar-primary: 142 48% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 38 22% 88%;
     --sidebar-accent-foreground: 30 18% 18%;
-    --sidebar-border: 38 18% 80%;
-    --sidebar-ring: 152 48% 32%;
+    --sidebar-border: 38 18% 84%;
+    --sidebar-ring: 142 48% 36%;
 
     --garden-soil: 22 42% 26%;
     --garden-path: 38 22% 70%;
     --garden-water: 192 52% 48%;
-    --garden-grid: 38 18% 76%;
+    --garden-grid: 38 18% 80%;
     --garden-bed: 22 38% 32%;
     --garden-highlight: 48 72% 52%;
 
-    --success: 152 48% 32%;
+    --success: 142 48% 36%;
     --warning: 38 80% 48%;
     --info: 192 52% 48%;
   }
 
   .theme-earthy .absolute[style*="--plant-tile-bg"] {
-    --plant-tile-bg: hsl(38 22% 88%);
+    --plant-tile-bg: hsl(38 22% 90%);
   }
 }
 

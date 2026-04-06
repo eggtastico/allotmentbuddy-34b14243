@@ -1,18 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { plants } from '@/data/plants';
 import { structures } from '@/data/structures';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Leaf, Building2, Filter } from 'lucide-react';
+import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { Plant } from '@/types/garden';
 
 const categoryOrder = ['vegetable', 'fruit', 'herb', 'flower'] as const;
 const categoryLabels = { vegetable: '🥦 Vegetables', fruit: '🍓 Fruits', herb: '🌿 Herbs', flower: '🌼 Flowers' };
 
-const difficultyColors = { easy: 'bg-green-500/15 text-green-700', moderate: 'bg-amber-500/15 text-amber-700', challenging: 'bg-red-500/15 text-red-700' };
+const difficultyColors = { easy: 'bg-primary/15 text-primary', moderate: 'bg-warning/15 text-warning', challenging: 'bg-accent/15 text-accent' };
 const hardinessLabels = { hardy: '❄️ Hardy', 'half-hardy': '🌤️ Half-hardy', tender: '☀️ Tender' };
 const sunLabels = { 'full-sun': '☀️ Full sun', 'partial-shade': '⛅ Partial shade', 'full-shade': '🌑 Full shade', any: '🌤️ Any' };
+
+type GroupMode = 'category' | 'family';
+
+const familyEmojis: Record<string, string> = {
+  Solanaceae: '🍅', Apiaceae: '🥕', Fabaceae: '🫘', Cucurbitaceae: '🥒',
+  Brassicaceae: '🥦', Amaryllidaceae: '🧅', Asteraceae: '🌻', Lamiaceae: '🌿',
+  Rosaceae: '🍓', Amaranthaceae: '🍃', Grossulariaceae: '🫐', Ericaceae: '🫐',
+  Poaceae: '🌽', Asparagaceae: '🌿', Polygonaceae: '🍃', Boraginaceae: '💙',
+  Tropaeolaceae: '🌸', Convolvulaceae: '🍠', Limnanthaceae: '🌼', Plantaginaceae: '🌺',
+  Moraceae: '🫐', Vitaceae: '🍇', Lauraceae: '🌿',
+};
 
 interface PlantSidebarProps {
   onDragStart: (plantId: string) => void;
@@ -58,13 +71,13 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
 
       {plant.companions.length > 0 && (
         <div>
-          <span className="font-medium text-green-600">✅ Good with:</span>{' '}
+          <span className="font-medium text-primary">✅ Good with:</span>{' '}
           <span className="text-muted-foreground">{plant.companions.join(', ')}</span>
         </div>
       )}
       {plant.enemies.length > 0 && (
         <div>
-          <span className="font-medium text-red-500">❌ Avoid:</span>{' '}
+          <span className="font-medium text-accent">❌ Avoid:</span>{' '}
           <span className="text-muted-foreground">{plant.enemies.join(', ')}</span>
         </div>
       )}
@@ -73,6 +86,30 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
         <p className="text-muted-foreground border-t border-border pt-1.5 mt-1">💡 {plant.tips}</p>
       )}
     </div>
+  );
+}
+
+function PlantItem({ plant, onDragStart }: { plant: Plant; onDragStart: (id: string) => void }) {
+  return (
+    <HoverCard openDelay={300} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <div
+          draggable
+          onDragStart={e => {
+            e.dataTransfer.setData('plantId', plant.id);
+            onDragStart(plant.id);
+          }}
+          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+          title={plant.name}
+        >
+          <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
+          <span className="truncate text-foreground font-medium">{plant.name}</span>
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent side="right" align="start" className="w-72 p-3 rounded-2xl">
+        <PlantHoverInfo plant={plant} />
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -85,8 +122,9 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null);
   const [sunFilter, setSunFilter] = useState<string | null>(null);
   const [varietyFilter, setVarietyFilter] = useState<string | null>(null);
+  const [groupMode, setGroupMode] = useState<GroupMode>('category');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  // Get unique varieties for current category
   const availableVarieties = [...new Set(
     plants.filter(p => p.variety && (!activeCategory || p.category === activeCategory))
       .map(p => p.variety!)
@@ -106,77 +144,129 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
     s.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const grouped = categoryOrder.reduce((acc, cat) => {
-    const items = filtered.filter(p => p.category === cat);
-    if (items.length > 0) acc[cat] = items;
-    return acc;
-  }, {} as Record<string, typeof plants>);
+  const grouped = useMemo(() => {
+    if (groupMode === 'category') {
+      return categoryOrder.reduce((acc, cat) => {
+        const items = filtered.filter(p => p.category === cat);
+        if (items.length > 0) acc.push({ key: cat, label: categoryLabels[cat], items });
+        return acc;
+      }, [] as { key: string; label: string; items: Plant[] }[]);
+    } else {
+      const familyMap = new Map<string, Plant[]>();
+      for (const p of filtered) {
+        const fam = p.family || 'Other';
+        if (!familyMap.has(fam)) familyMap.set(fam, []);
+        familyMap.get(fam)!.push(p);
+      }
+      return Array.from(familyMap.entries())
+        .sort((a, b) => b[1].length - a[1].length)
+        .map(([fam, items]) => ({
+          key: fam,
+          label: `${familyEmojis[fam] || '🌱'} ${fam}`,
+          items,
+        }));
+    }
+  }, [filtered, groupMode]);
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
     <div className="w-64 border-r border-border bg-card flex flex-col h-full">
-      <div className="p-3 border-b border-border">
-        <h2 className="font-semibold text-sm mb-2 text-foreground">🌱 Plant Library <span className="text-muted-foreground font-normal">({plants.length})</span></h2>
+      <div className="p-3 border-b border-border space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-sm text-foreground">🌱 Plant Library <span className="text-muted-foreground font-normal text-xs">({plants.length})</span></h2>
+        </div>
+
         {/* Tabs */}
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-1">
           <button
             onClick={() => setTab('plants')}
-            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors ${tab === 'plants' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${tab === 'plants' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
-            <Leaf className="h-3 w-3" /> Plants
+            <Leaf className="h-3.5 w-3.5" /> Plants
           </button>
           <button
             onClick={() => setTab('structures')}
-            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors ${tab === 'structures' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${tab === 'structures' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
-            <Building2 className="h-3 w-3" /> Structures
+            <Building2 className="h-3.5 w-3.5" /> Structures
           </button>
           {tab === 'plants' && (
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`ml-auto flex items-center gap-1 text-xs px-2 py-1.5 rounded-md font-medium transition-colors ${showFilters || activeFilterCount > 0 ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`ml-auto flex items-center gap-1 text-xs px-2 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${showFilters || activeFilterCount > 0 ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
               title="Filters"
             >
-              <Filter className="h-3 w-3" />
-              {activeFilterCount > 0 && <span className="text-[9px]">{activeFilterCount}</span>}
+              <Filter className="h-3.5 w-3.5" />
+              {activeFilterCount > 0 && <span className="text-[10px]">{activeFilterCount}</span>}
             </button>
           )}
         </div>
+
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={tab === 'plants' ? 'Search plants...' : 'Search structures...'}
-            className="pl-7 h-8 text-sm"
+            className="pl-8 h-9 text-sm rounded-xl"
           />
         </div>
+
         {tab === 'plants' && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {categoryOrder.map(cat => (
-              <Badge
-                key={cat}
-                variant={activeCategory === cat ? "default" : "outline"}
-                className="cursor-pointer text-xs px-2 py-0.5"
-                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-              >
-                {categoryLabels[cat].split(' ')[0]}
-              </Badge>
-            ))}
-          </div>
+          <>
+            {/* Group by dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">Group by:</span>
+              <Select value={groupMode} onValueChange={(v) => setGroupMode(v as GroupMode)}>
+                <SelectTrigger className="h-8 text-xs rounded-xl flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="category" className="rounded-lg">Category (Veg/Fruit/Herb)</SelectItem>
+                  <SelectItem value="family" className="rounded-lg">Plant Family</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category filter chips — only in category mode */}
+            {groupMode === 'category' && (
+              <div className="flex flex-wrap gap-1">
+                {categoryOrder.map(cat => (
+                  <Badge
+                    key={cat}
+                    variant={activeCategory === cat ? "default" : "outline"}
+                    className="cursor-pointer text-xs px-2 py-1 rounded-xl min-h-[28px]"
+                    onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  >
+                    {categoryLabels[cat].split(' ')[0]} {categoryLabels[cat].split(' ').slice(1).join(' ')}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </>
         )}
+
         {/* Advanced filters */}
         {tab === 'plants' && showFilters && (
-          <div className="mt-2 space-y-1.5 p-2 bg-muted/50 rounded-md">
+          <div className="space-y-1.5 p-2.5 bg-muted/50 rounded-xl">
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Difficulty</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Difficulty</p>
               <div className="flex gap-1">
                 {(['easy', 'moderate', 'challenging'] as const).map(d => (
                   <button
                     key={d}
                     onClick={() => setDifficultyFilter(difficultyFilter === d ? null : d)}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${difficultyFilter === d ? difficultyColors[d] + ' ring-1 ring-current' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    className={`text-[10px] px-2 py-1 rounded-lg font-semibold transition-colors min-h-[28px] ${difficultyFilter === d ? difficultyColors[d] + ' ring-1 ring-current' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                   >
                     {d}
                   </button>
@@ -184,13 +274,13 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Sowing season</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Sowing season</p>
               <div className="flex gap-1">
                 {['spring', 'summer', 'autumn', 'winter'].map(s => (
                   <button
                     key={s}
                     onClick={() => setSeasonFilter(seasonFilter === s ? null : s)}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${seasonFilter === s ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    className={`text-[10px] px-2 py-1 rounded-lg font-semibold transition-colors min-h-[28px] ${seasonFilter === s ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                   >
                     {s}
                   </button>
@@ -198,13 +288,13 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Sun</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Sun</p>
               <div className="flex gap-1 flex-wrap">
                 {(['full-sun', 'partial-shade', 'any'] as const).map(s => (
                   <button
                     key={s}
                     onClick={() => setSunFilter(sunFilter === s ? null : s)}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${sunFilter === s ? 'bg-amber-500/15 text-amber-700 ring-1 ring-amber-400/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    className={`text-[10px] px-2 py-1 rounded-lg font-semibold transition-colors min-h-[28px] ${sunFilter === s ? 'bg-secondary/15 text-secondary ring-1 ring-secondary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                   >
                     {sunLabels[s]}
                   </button>
@@ -213,13 +303,13 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
             </div>
             {availableVarieties.length > 0 && (
               <div>
-                <p className="text-[10px] font-medium text-muted-foreground mb-1">Variety</p>
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Variety</p>
                 <div className="flex gap-1 flex-wrap">
                   {availableVarieties.map(v => (
                     <button
                       key={v}
                       onClick={() => setVarietyFilter(varietyFilter === v ? null : v)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${varietyFilter === v ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                      className={`text-[10px] px-2 py-1 rounded-lg font-semibold transition-colors min-h-[28px] ${varietyFilter === v ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                     >
                       {v}
                     </button>
@@ -230,7 +320,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
             {activeFilterCount > 0 && (
               <button
                 onClick={() => { setDifficultyFilter(null); setSeasonFilter(null); setSunFilter(null); setVarietyFilter(null); }}
-                className="text-[10px] text-muted-foreground hover:text-foreground"
+                className="text-[10px] text-muted-foreground hover:text-foreground font-semibold"
               >
                 Clear filters
               </button>
@@ -238,41 +328,31 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-3">
+
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
         {tab === 'plants' ? (
           <>
             {filtered.length > 0 && filtered.length !== plants.length && (
-              <p className="text-[10px] text-muted-foreground px-1">{filtered.length} plants</p>
+              <p className="text-[10px] text-muted-foreground px-1 font-semibold">{filtered.length} plants</p>
             )}
-            {Object.entries(grouped).map(([cat, items]) => (
-              <div key={cat}>
-                <p className="text-xs font-medium text-muted-foreground px-1 mb-1">
-                  {categoryLabels[cat as keyof typeof categoryLabels]} ({items.length})
-                </p>
-                <div className="grid grid-cols-2 gap-1">
-                  {items.map(plant => (
-                    <HoverCard key={plant.id} openDelay={300} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <div
-                          draggable
-                          onDragStart={e => {
-                            e.dataTransfer.setData('plantId', plant.id);
-                            onDragStart(plant.id);
-                          }}
-                          className="flex items-center gap-1.5 p-1.5 rounded-md bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group"
-                          title={plant.name}
-                        >
-                          <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
-                          <span className="truncate text-foreground">{plant.name}</span>
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent side="right" align="start" className="w-72 p-3">
-                        <PlantHoverInfo plant={plant} />
-                      </HoverCardContent>
-                    </HoverCard>
-                  ))}
-                </div>
-              </div>
+            {grouped.map(({ key, label, items }) => (
+              <Collapsible key={key} open={!collapsedGroups.has(key)} onOpenChange={() => toggleGroup(key)}>
+                <CollapsibleTrigger className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors group/trigger">
+                  {collapsedGroups.has(key)
+                    ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  }
+                  <span className="text-xs font-bold text-foreground">{label}</span>
+                  <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{items.length}</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="grid grid-cols-2 gap-1 mt-0.5 mb-1.5">
+                    {items.map(plant => (
+                      <PlantItem key={plant.id} plant={plant} onDragStart={onDragStart} />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             ))}
             {filtered.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-8">No plants found</p>
@@ -280,7 +360,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
           </>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground px-1">Drag structures onto your plot. Green-tagged ones allow plants inside.</p>
+            <p className="text-xs text-muted-foreground px-1">Drag structures onto your plot.</p>
             <div className="space-y-1">
               {filteredStructures.map(structure => (
                 <div
@@ -289,15 +369,15 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                   onDragStart={e => {
                     e.dataTransfer.setData('structureId', structure.id);
                   }}
-                  className="flex items-center gap-2 p-2 rounded-md bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group"
+                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
                   title={structure.description}
                 >
                   <span className="text-lg">{structure.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-foreground">{structure.name}</span>
+                      <span className="font-semibold text-foreground">{structure.name}</span>
                       {structure.canGrowInside && (
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium">Grow</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-lg bg-primary/15 text-primary font-semibold">Grow</span>
                       )}
                     </div>
                     <span className="text-[10px] text-muted-foreground">{structure.widthCells}×{structure.heightCells} cells</span>
