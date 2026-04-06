@@ -211,9 +211,25 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                 ))}
               </div>
             </div>
+            {availableVarieties.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground mb-1">Variety</p>
+                <div className="flex gap-1 flex-wrap">
+                  {availableVarieties.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setVarietyFilter(varietyFilter === v ? null : v)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${varietyFilter === v ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {activeFilterCount > 0 && (
               <button
-                onClick={() => { setDifficultyFilter(null); setSeasonFilter(null); setSunFilter(null); }}
+                onClick={() => { setDifficultyFilter(null); setSeasonFilter(null); setSunFilter(null); setVarietyFilter(null); }}
                 className="text-[10px] text-muted-foreground hover:text-foreground"
               >
                 Clear filters
