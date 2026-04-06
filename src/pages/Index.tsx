@@ -45,6 +45,7 @@ const Index = () => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
 
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
