@@ -1,5 +1,6 @@
 import { PlacedPlant, PlotSettings } from '@/types/garden';
-import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
+import { getPlantById, rotationGroupLabels } from '@/data/plants';
+import { getCompanionReason } from '@/data/companionReasons';
 
 export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlant[], planName: string) {
   const { jsPDF } = await import('jspdf');
@@ -132,7 +133,7 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
     doc.setFillColor(cc[0], cc[1], cc[2]);
     doc.circle(x + 1, y - 0.8, 0.8, 'F');
     doc.setTextColor(50, 50, 50);
-    doc.text(`${plant.emoji} ${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
+    doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
   });
 
   // ── Page 2: Shopping List & Spacing Notes ──
@@ -185,7 +186,7 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
     }
 
     doc.setTextColor(50, 50, 50);
-    doc.text(`${plant.emoji} ${plant.name}${plant.variety ? ` (${plant.variety})` : ''}`, margin + 2, py);
+    doc.text(`${plant.name}${plant.variety ? ` (${plant.variety})` : ''}`, margin + 2, py);
     doc.text(`${count}`, margin + 65, py);
     doc.text(`${plant.spacingCm}cm`, margin + 80, py);
     doc.text(plant.sowIndoors || plant.sowOutdoors || '—', margin + 100, py);
@@ -240,25 +241,44 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
       if (!plant || py > pageH - 10) continue;
       if (plant.companions.length === 0 && plant.enemies.length === 0) continue;
 
+      const relationLines: Array<{ color: [number, number, number]; text: string }> = [];
+      if (plant.companions.length > 0) {
+        relationLines.push({
+          color: [34, 139, 34],
+          text: `Good with: ${plant.companions.map(c => {
+            const related = getPlantById(c);
+            const reason = getCompanionReason(plant.id, c);
+            return `${related?.name || c}${reason ? ` — ${reason}` : ''}`;
+          }).join('; ')}`,
+        });
+      }
+      if (plant.enemies.length > 0) {
+        relationLines.push({
+          color: [200, 50, 50],
+          text: `Avoid: ${plant.enemies.map(e => {
+            const related = getPlantById(e);
+            const reason = getCompanionReason(plant.id, e);
+            return `${related?.name || e}${reason ? ` — ${reason}` : ''}`;
+          }).join('; ')}`,
+        });
+      }
+
       doc.setTextColor(50, 50, 50);
       doc.setFont('helvetica', 'bold');
       doc.text(`${plant.name}:`, margin + 4, py);
+      py += 3.5;
       doc.setFont('helvetica', 'normal');
 
-      let nx = margin + 4 + doc.getTextWidth(`${plant.name}: `) + 1;
-      if (plant.companions.length > 0) {
-        doc.setTextColor(34, 139, 34);
-        const goodText = `Good with: ${plant.companions.map(c => getPlantById(c)?.name || c).join(', ')}`;
-        doc.text(goodText, nx, py);
-        py += 3.5;
-        nx = margin + 4;
-      }
-      if (plant.enemies.length > 0) {
-        doc.setTextColor(200, 50, 50);
-        const badText = `Avoid: ${plant.enemies.map(e => getPlantById(e)?.name || e).join(', ')}`;
-        doc.text(badText, nx, py);
-        py += 3.5;
-      }
+      relationLines.forEach(line => {
+        doc.setTextColor(line.color[0], line.color[1], line.color[2]);
+        const wrapped = doc.splitTextToSize(line.text, pageW - 2 * margin - 12);
+        wrapped.forEach((segment: string) => {
+          if (py > pageH - 10) return;
+          doc.text(segment, margin + 8, py);
+          py += 3.5;
+        });
+      });
+
       py += 1.5;
     }
   }
