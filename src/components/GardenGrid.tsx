@@ -424,40 +424,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       onMouseDown={handlePanStart}
       style={{ cursor: panMode ? 'grab' : 'default' }}
     >
-      {/* Zoom & Pan controls */}
-      <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 bg-card/90 backdrop-blur-sm rounded-xl border border-border p-1 shadow-md">
-        <button
-          onClick={() => onSettingsChange?.({ ...settings, cellSizePx: Math.min(64, cellSize + 4) })}
-          className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-foreground"
-          title="Zoom in (or Ctrl+Scroll)"
-        >
-          <ZoomIn className="h-4 w-4" />
-        </button>
-        <span className="text-[10px] text-center text-muted-foreground font-semibold">{cellSize}px</span>
-        <button
-          onClick={() => onSettingsChange?.({ ...settings, cellSizePx: Math.max(16, cellSize - 4) })}
-          className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-foreground"
-          title="Zoom out"
-        >
-          <ZoomOut className="h-4 w-4" />
-        </button>
-        <div className="h-px bg-border" />
-        <button
-          onClick={() => { setPanMode(m => !m); }}
-          className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${panMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-foreground'}`}
-          title="Pan mode (middle-click also works)"
-        >
-          <Move className="h-4 w-4" />
-        </button>
-        <div className="h-px bg-border" />
-        <button
-          onClick={() => setShowColorCoding(c => !c)}
-          className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors text-[10px] font-bold ${showColorCoding ? 'bg-primary/15 text-primary' : 'hover:bg-muted text-muted-foreground'}`}
-          title="Color-code plants by category"
-        >
-          🎨
-        </button>
-      </div>
 
       <div
         className="relative mx-auto transition-transform"
