@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { X, Plus, Trash2, Camera, Loader2 } from 'lucide-react';
@@ -26,7 +26,9 @@ export function GardenJournal({ onClose }: Props) {
   const [newTitle, setNewTitle] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
+  const [pendingPhotoPaths, setPendingPhotoPaths] = useState<string[]>([]);
+  const [pendingPhotoUrls, setPendingPhotoUrls] = useState<string[]>([]);
+  const [signedUrlCache, setSignedUrlCache] = useState<Record<string, string>>({});
 
   const fetchEntries = useCallback(async () => {
     if (!user) return;
@@ -52,8 +54,12 @@ export function GardenJournal({ onClose }: Props) {
       setUploading(false);
       return;
     }
-    // Store the path, not the URL — we'll generate signed URLs for display
-    setPendingPhotos(prev => [...prev, path]);
+    // Store path for DB, generate signed URL for preview
+    setPendingPhotoPaths(prev => [...prev, path]);
+    const { data: signedData } = await supabase.storage.from('journal-photos').createSignedUrl(path, 3600);
+    if (signedData?.signedUrl) {
+      setPendingPhotoUrls(prev => [...prev, signedData.signedUrl]);
+    }
     setUploading(false);
     toast.success('Photo uploaded! 📸');
   };
@@ -65,7 +71,7 @@ export function GardenJournal({ onClose }: Props) {
       user_id: user.id,
       title: newTitle.trim(),
       notes: newNotes.trim(),
-      photos: pendingPhotos,
+      photos: pendingPhotoPaths,
     });
     if (error) {
       toast.error('Failed to save entry');
@@ -73,7 +79,8 @@ export function GardenJournal({ onClose }: Props) {
       toast.success('Journal entry saved! 📝');
       setNewTitle('');
       setNewNotes('');
-      setPendingPhotos([]);
+    setPendingPhotoPaths([]);
+    setPendingPhotoUrls([]);
       fetchEntries();
     }
     setCreating(false);
@@ -120,9 +127,9 @@ export function GardenJournal({ onClose }: Props) {
             className="w-full bg-background rounded-md border border-input px-3 py-2 text-sm min-h-[60px] resize-none"
           />
           {/* Photo previews */}
-          {pendingPhotos.length > 0 && (
+          {pendingPhotoUrls.length > 0 && (
             <div className="flex gap-2 mt-2 flex-wrap">
-              {pendingPhotos.map((url, i) => (
+              {pendingPhotoUrls.map((url, i) => (
                 <img key={i} src={url} alt="Upload" className="w-16 h-16 rounded-md object-cover border border-border" />
               ))}
             </div>
@@ -169,8 +176,8 @@ export function GardenJournal({ onClose }: Props) {
                 {entry.notes && <p className="text-xs text-foreground/80 mt-1">{entry.notes}</p>}
                 {entry.photos && entry.photos.length > 0 && (
                   <div className="flex gap-2 mt-2 flex-wrap">
-                    {entry.photos.map((url, i) => (
-                      <img key={i} src={url} alt="Garden photo" className="w-20 h-20 rounded-md object-cover border border-border" />
+                    {entry.photos.map((photoPath, i) => (
+                      <SignedImage key={i} bucket="journal-photos" path={photoPath} alt="Garden photo" className="w-20 h-20 rounded-md object-cover border border-border" />
                     ))}
                   </div>
                 )}
