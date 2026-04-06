@@ -412,7 +412,7 @@ const Index = () => {
       {/* Header */}
       <header className="h-14 border-b border-border bg-gradient-to-r from-primary/10 via-card to-accent/5 px-4 flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2">
-          <img src={logoImg} alt="Allotment Buddy" className="h-9 w-9 rounded-lg shadow-md object-contain" />
+          <img src={logoImg} alt="Allotment Buddy" className="h-12 w-12 object-contain" />
           <div className="hidden sm:block">
             <h1 className="font-bold text-foreground text-sm leading-none">Allotment Buddy</h1>
             <p className="text-[10px] text-muted-foreground">Plan · Grow · Harvest</p>
