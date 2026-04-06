@@ -87,6 +87,32 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
       {plant.tips && (
         <p className="text-muted-foreground border-t border-border pt-1.5 mt-1">💡 {plant.tips}</p>
       )}
+
+      {/* Bed size suggestions */}
+      <div className="border-t border-border pt-1.5 mt-1">
+        <p className="font-medium text-foreground text-[10px] mb-1">📐 Suggested bed sizes:</p>
+        <div className="flex flex-wrap gap-1">
+          {suggestBedSizeForPlant(plant).slice(0, 3).map(s => (
+            <span key={s.label} className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+              {s.label}: {s.description}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Succession suggestions */}
+      {plant.harvest && getSuccessionSuggestions(plant.id).length > 0 && (
+        <div className="border-t border-border pt-1.5 mt-1">
+          <p className="font-medium text-foreground text-[10px] mb-1">🔄 Follow with:</p>
+          <div className="flex flex-wrap gap-1">
+            {getSuccessionSuggestions(plant.id).slice(0, 3).map(s => (
+              <span key={s.plant.id} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                {s.plant.emoji} {s.plant.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
