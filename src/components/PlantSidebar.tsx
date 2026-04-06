@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { plants } from '@/data/plants';
 import { structures } from '@/data/structures';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight, Star, GripVertical } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { Plant } from '@/types/garden';
 import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
+import { useFavouritePlants } from '@/hooks/useFavouritePlants';
+import { getPlantById } from '@/data/plants';
 
 const categoryOrder = ['vegetable', 'fruit', 'herb', 'flower'] as const;
 const categoryLabels = { vegetable: '🥦 Vegetables', fruit: '🍓 Fruits', herb: '🌿 Herbs', flower: '🌼 Flowers' };
@@ -88,7 +90,6 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
         <p className="text-muted-foreground border-t border-border pt-1.5 mt-1">💡 {plant.tips}</p>
       )}
 
-      {/* Bed size suggestions */}
       <div className="border-t border-border pt-1.5 mt-1">
         <p className="font-medium text-foreground text-[10px] mb-1">📐 Suggested bed sizes:</p>
         <div className="flex flex-wrap gap-1">
@@ -100,7 +101,6 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
         </div>
       </div>
 
-      {/* Succession suggestions */}
       {plant.harvest && getSuccessionSuggestions(plant.id).length > 0 && (
         <div className="border-t border-border pt-1.5 mt-1">
           <p className="font-medium text-foreground text-[10px] mb-1">🔄 Follow with:</p>
@@ -117,7 +117,7 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
   );
 }
 
-function PlantItem({ plant, onDragStart }: { plant: Plant; onDragStart: (id: string) => void }) {
+function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { plant: Plant; onDragStart: (id: string) => void; isFavourite: boolean; onToggleFavourite: (id: string) => void }) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
@@ -131,7 +131,17 @@ function PlantItem({ plant, onDragStart }: { plant: Plant; onDragStart: (id: str
           title={plant.name}
         >
           <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
-          <span className="truncate text-foreground font-medium">{plant.name}</span>
+          <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
+          <button
+            onClick={e => { e.stopPropagation(); e.preventDefault(); onToggleFavourite(plant.id); }}
+            onMouseDown={e => e.stopPropagation()}
+            className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center transition-colors ${
+              isFavourite ? 'text-amber-500' : 'text-muted-foreground/30 opacity-0 group-hover:opacity-100'
+            }`}
+            title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            <Star className={`h-3 w-3 ${isFavourite ? 'fill-amber-500' : ''}`} />
+          </button>
         </div>
       </HoverCardTrigger>
       <HoverCardContent side="right" align="start" className="w-72 p-3 rounded-2xl">
@@ -141,10 +151,88 @@ function PlantItem({ plant, onDragStart }: { plant: Plant; onDragStart: (id: str
   );
 }
 
+function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite }: {
+  onDragStart: (id: string) => void;
+  favouriteIds: string[];
+  reorder: (from: number, to: number) => void;
+  toggleFavourite: (id: string) => void;
+}) {
+  const dragItemRef = useRef<number | null>(null);
+  const dragOverItemRef = useRef<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    dragItemRef.current = index;
+  };
+
+  const handleDragEnter = (index: number) => {
+    dragOverItemRef.current = index;
+  };
+
+  const handleDragEnd = () => {
+    if (dragItemRef.current !== null && dragOverItemRef.current !== null && dragItemRef.current !== dragOverItemRef.current) {
+      reorder(dragItemRef.current, dragOverItemRef.current);
+    }
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
+  if (favouriteIds.length === 0) {
+    return (
+      <div className="text-center py-8 px-4">
+        <Star className="h-8 w-8 text-amber-500/30 mx-auto mb-2" />
+        <p className="text-xs text-muted-foreground font-medium">No favourites yet</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Click the ⭐ star on any plant to add it here. Drag to reorder your priority list.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      <p className="text-[10px] text-muted-foreground px-1 font-semibold mb-1">
+        Drag to reorder priority · Top = planted first
+      </p>
+      {favouriteIds.map((plantId, index) => {
+        const plant = getPlantById(plantId);
+        if (!plant) return null;
+        return (
+          <div
+            key={plantId}
+            draggable
+            onDragStart={e => {
+              handleDragStart(index);
+              e.dataTransfer.setData('plantId', plant.id);
+              e.dataTransfer.effectAllowed = 'move';
+              onDragStart(plant.id);
+            }}
+            onDragEnter={() => handleDragEnter(index)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+            <span className="text-[10px] font-bold text-muted-foreground w-4 text-center shrink-0">{index + 1}</span>
+            <span className="text-base">{plant.emoji}</span>
+            <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
+            <span className="text-[9px] text-muted-foreground shrink-0">{plant.spacingCm}cm</span>
+            <button
+              onClick={e => { e.stopPropagation(); e.preventDefault(); toggleFavourite(plantId); }}
+              onMouseDown={e => e.stopPropagation()}
+              className="shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-amber-500"
+              title="Remove from favourites"
+            >
+              <Star className="h-3 w-3 fill-amber-500" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [tab, setTab] = useState<'plants' | 'structures'>('plants');
+  const [tab, setTab] = useState<'plants' | 'favourites' | 'structures'>('plants');
   const [showFilters, setShowFilters] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null);
@@ -152,6 +240,9 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [varietyFilter, setVarietyFilter] = useState<string | null>(null);
   const [groupMode, setGroupMode] = useState<GroupMode>('category');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const { isFavourite, toggleFavourite, reorder, getFavouriteIds } = useFavouritePlants();
+  const favouriteIds = getFavouriteIds();
 
   const availableVarieties = [...new Set(
     plants.filter(p => p.variety && (!activeCategory || p.category === activeCategory))
@@ -223,6 +314,15 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
             <Leaf className="h-3.5 w-3.5" /> Plants
           </button>
           <button
+            onClick={() => setTab('favourites')}
+            className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] relative ${tab === 'favourites' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+          >
+            <Star className={`h-3.5 w-3.5 ${tab === 'favourites' ? 'fill-white' : ''}`} />
+            {favouriteIds.length > 0 && (
+              <span className={`text-[10px] ${tab === 'favourites' ? 'text-white/80' : 'text-amber-500'}`}>{favouriteIds.length}</span>
+            )}
+          </button>
+          <button
             onClick={() => setTab('structures')}
             className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${tab === 'structures' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
@@ -240,19 +340,20 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
           )}
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={tab === 'plants' ? 'Search plants...' : 'Search structures...'}
-            className="pl-8 h-9 text-sm rounded-xl"
-          />
-        </div>
+        {tab !== 'favourites' && (
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={tab === 'plants' ? 'Search plants...' : 'Search structures...'}
+              className="pl-8 h-9 text-sm rounded-xl"
+            />
+          </div>
+        )}
 
         {tab === 'plants' && (
           <>
-            {/* Group by dropdown */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">Group by:</span>
               <Select value={groupMode} onValueChange={(v) => setGroupMode(v as GroupMode)}>
@@ -266,7 +367,6 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
               </Select>
             </div>
 
-            {/* Category filter chips — only in category mode */}
             {groupMode === 'category' && (
               <div className="flex flex-wrap gap-1">
                 {categoryOrder.map(cat => (
@@ -284,7 +384,6 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
           </>
         )}
 
-        {/* Advanced filters */}
         {tab === 'plants' && showFilters && (
           <div className="space-y-1.5 p-2.5 bg-muted/50 rounded-xl">
             <div>
@@ -358,7 +457,14 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
-        {tab === 'plants' ? (
+        {tab === 'favourites' ? (
+          <FavouritesTab
+            onDragStart={onDragStart}
+            favouriteIds={favouriteIds}
+            reorder={reorder}
+            toggleFavourite={toggleFavourite}
+          />
+        ) : tab === 'plants' ? (
           <>
             {filtered.length > 0 && filtered.length !== plants.length && (
               <p className="text-[10px] text-muted-foreground px-1 font-semibold">{filtered.length} plants</p>
@@ -376,7 +482,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                 <CollapsibleContent>
                   <div className="grid grid-cols-2 gap-1 mt-0.5 mb-1.5">
                     {items.map(plant => (
-                      <PlantItem key={plant.id} plant={plant} onDragStart={onDragStart} />
+                      <PlantItem key={plant.id} plant={plant} onDragStart={onDragStart} isFavourite={isFavourite(plant.id)} onToggleFavourite={toggleFavourite} />
                     ))}
                   </div>
                 </CollapsibleContent>
