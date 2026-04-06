@@ -53,7 +53,7 @@ export function GrowGuide({ onClose }: GrowGuideProps) {
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-amber-500" /> I Want to Grow...
@@ -105,13 +105,13 @@ export function GrowGuide({ onClose }: GrowGuideProps) {
             </Button>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col gap-3 overflow-hidden">
-            <ScrollArea className="flex-1">
-              <div className="prose prose-sm dark:prose-invert max-w-none pr-2">
+          <div className="flex-1 flex flex-col gap-3 min-h-0">
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
             </ScrollArea>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <Button variant="outline" size="sm" onClick={() => { setResult(null); setSelected([]); }}>Start Over</Button>
               <Button variant="outline" size="sm" onClick={() => setResult(null)}>Change Selection</Button>
             </div>

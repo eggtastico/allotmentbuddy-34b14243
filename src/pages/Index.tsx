@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
@@ -26,11 +26,12 @@ import { PlantingSuggestions } from '@/components/PlantingSuggestions';
 import { GardenTasks } from '@/components/GardenTasks';
 import { MonthlyPlanner } from '@/components/MonthlyPlanner';
 import { GrowGuide } from '@/components/GrowGuide';
+import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -43,6 +44,7 @@ interface LocationData {
 
 const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { plans, save, isSaving } = useGardenPlans();
 
   const [settings, setSettings] = useState<PlotSettings>({
     widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180,
@@ -57,6 +59,67 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
+
+  // Undo/Redo history
+  const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
+  const [redoStack, setRedoStack] = useState<PlacedPlant[][]>([]);
+  const skipHistoryRef = useRef(false);
+
+  const pushUndo = useCallback((prev: PlacedPlant[]) => {
+    setUndoStack(s => [...s.slice(-49), prev]);
+    setRedoStack([]);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    setRedoStack(s => [...s, placedPlants]);
+    skipHistoryRef.current = true;
+    setPlacedPlants(prev);
+    setSelectedPlant(null);
+  }, [undoStack, placedPlants]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack(s => s.slice(0, -1));
+    setUndoStack(s => [...s, placedPlants]);
+    skipHistoryRef.current = true;
+    setPlacedPlants(next);
+    setSelectedPlant(null);
+  }, [redoStack, placedPlants]);
+
+  // Auto-load most recent plan on mount
+  const autoLoaded = useRef(false);
+  useEffect(() => {
+    if (autoLoaded.current || !user || plans.length === 0) return;
+    autoLoaded.current = true;
+    const latest = plans[0]; // already sorted by updated_at desc
+    setCurrentPlanId(latest.id);
+    setPlanName(latest.name);
+    setSettings(latest.plot_settings as PlotSettings);
+    setPlacedPlants(((latest.plants as any[]) || []).map((p: any) => ({
+      ...p,
+      plantedAt: p.plantedAt || new Date().toISOString(),
+      stage: p.stage || 'seed',
+    })));
+  }, [user, plans]);
+
+  // Auto-save with debounce (3s after last change)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!user || placedPlants.length === 0) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: [] })
+        .then((result: any) => {
+          if (!currentPlanId && result?.id) setCurrentPlanId(result.id);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [placedPlants, settings, user]);
 
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
@@ -78,15 +141,17 @@ const Index = () => {
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
     if (occupied) return;
+    pushUndo(placedPlants);
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       plantId, x, y,
       plantedAt: new Date().toISOString(),
       stage: defaultStage,
     }]);
-  }, [placedPlants, defaultStage]);
+  }, [placedPlants, defaultStage, pushUndo]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
+    pushUndo(placedPlants);
     setPlacedPlants(prev => {
       const occupied = new Set(prev.map(p => `${p.x},${p.y}`));
       const newPlants: PlacedPlant[] = [];
@@ -106,12 +171,20 @@ const Index = () => {
       }
       return [...prev, ...newPlants];
     });
-  }, []);
+  }, [placedPlants, pushUndo]);
 
   const handleRemovePlant = useCallback((id: string) => {
+    pushUndo(placedPlants);
     setPlacedPlants(prev => prev.filter(p => p.id !== id));
     if (selectedPlant?.id === id) setSelectedPlant(null);
-  }, [selectedPlant]);
+  }, [selectedPlant, pushUndo, placedPlants]);
+
+  const handleClear = useCallback(() => {
+    pushUndo(placedPlants);
+    setPlacedPlants([]);
+    setPlacedStructures([]);
+    setSelectedPlant(null);
+  }, [placedPlants, pushUndo]);
 
   const handlePlaceStructure = useCallback((structureId: string, x: number, y: number) => {
     const structData = getStructureById(structureId);
@@ -135,12 +208,6 @@ const Index = () => {
 
   const handleMoveStructure = useCallback((id: string, x: number, y: number) => {
     setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, x, y } : s));
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setPlacedPlants([]);
-    setPlacedStructures([]);
-    setSelectedPlant(null);
   }, []);
 
   const handleLoadPlan = useCallback((plan: any) => {
@@ -292,11 +359,57 @@ const Index = () => {
       <SeasonalTasks />
 
       {/* Toolbar */}
-      <div className="flex items-center border-b border-border bg-card">
+      <div className="flex items-center border-b border-border bg-card flex-wrap">
         <div className="flex-1">
           <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
         </div>
         <div className="flex items-center gap-1 px-3 py-1 shrink-0">
+          {/* Undo/Redo */}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleUndo} disabled={undoStack.length === 0} title="Undo">
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleRedo} disabled={redoStack.length === 0} title="Redo">
+            <Redo2 className="h-3.5 w-3.5" />
+          </Button>
+          <div className="h-5 w-px bg-border mx-1" />
+
+          {/* Rollback dropdown */}
+          {user && plans.length > 0 && (
+            <>
+              <div className="relative">
+                <select
+                  className="h-7 text-xs border rounded px-2 bg-background text-foreground appearance-none pr-6 cursor-pointer"
+                  value={currentPlanId || ''}
+                  onChange={(e) => {
+                    const plan = plans.find((p: any) => p.id === e.target.value);
+                    if (plan) {
+                      setCurrentPlanId(plan.id);
+                      setPlanName(plan.name);
+                      setSettings(plan.plot_settings as PlotSettings);
+                      setPlacedPlants(((plan.plants as any[]) || []).map((p: any) => ({
+                        ...p,
+                        plantedAt: p.plantedAt || new Date().toISOString(),
+                        stage: p.stage || 'seed',
+                      })));
+                      setSelectedPlant(null);
+                      setUndoStack([]);
+                      setRedoStack([]);
+                      toast.success(`Loaded "${plan.name}" 🌿`);
+                    }
+                  }}
+                >
+                  {plans.map((plan: any) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} — {new Date(plan.updated_at).toLocaleDateString('en-GB')}
+                    </option>
+                  ))}
+                </select>
+                <History className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              </div>
+              <div className="h-5 w-px bg-border mx-1" />
+            </>
+          )}
+
           <span className="text-xs text-muted-foreground mr-1">Planting as:</span>
           <Button
             variant={defaultStage === 'seed' ? 'default' : 'outline'}
@@ -314,6 +427,7 @@ const Index = () => {
           >
             🌱 Seedling
           </Button>
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
         </div>
       </div>
 

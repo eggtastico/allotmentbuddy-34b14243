@@ -38,9 +38,11 @@ export function useGardenPlans() {
       if (id) {
         const { error } = await supabase.from('garden_plans').update(payload).eq('id', id);
         if (error) throw error;
+        return { id };
       } else {
-        const { error } = await supabase.from('garden_plans').insert(payload);
+        const { data, error } = await supabase.from('garden_plans').insert(payload).select('id').single();
         if (error) throw error;
+        return data;
       }
     },
     onSuccess: () => {
