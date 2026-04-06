@@ -26,6 +26,7 @@ import { PlantingSuggestions } from '@/components/PlantingSuggestions';
 import { GardenTasks } from '@/components/GardenTasks';
 import { MonthlyPlanner } from '@/components/MonthlyPlanner';
 import { GrowGuide } from '@/components/GrowGuide';
+import { ActionRequired } from '@/components/ActionRequired';
 import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
@@ -316,14 +317,14 @@ const Index = () => {
       <WelcomeModal />
 
       {/* Header */}
-      <header className="h-14 border-b border-border bg-card px-4 flex items-center gap-3 shrink-0">
+      <header className="h-14 border-b border-border bg-gradient-to-r from-primary/10 via-card to-accent/5 px-4 flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
             <Sprout className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="font-bold text-foreground text-sm leading-none">Allotment Buddy</h1>
-            <p className="text-[10px] text-muted-foreground">Plan your perfect garden</p>
+            <h1 className="font-bold text-foreground text-sm leading-none">🌱 Allotment Buddy</h1>
+            <p className="text-[10px] text-muted-foreground">Plan · Grow · Harvest</p>
           </div>
         </div>
 
@@ -357,6 +358,7 @@ const Index = () => {
 
       {/* Seasonal tasks widget */}
       <SeasonalTasks />
+      <ActionRequired placedPlants={placedPlants} />
 
       {/* Toolbar */}
       <div className="flex items-center border-b border-border bg-card flex-wrap">
