@@ -710,27 +710,46 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                       <div>
                         <p className="text-[10px] font-semibold text-foreground flex items-center gap-1 mb-1">
                           <Lightbulb className="h-3 w-3 text-primary" /> Suggested plants
+                          {favouriteIds.length > 0 && <span className="text-[8px] text-amber-500 ml-1">★ favourites first</span>}
                         </p>
                         <p className="text-[9px] text-muted-foreground mb-1.5">
                           {struct.widthCells}×{struct.heightCells} cells ({struct.widthCells * settings.cellSizeCm}×{struct.heightCells * settings.cellSizeCm}cm)
                         </p>
                         <div className="space-y-0.5 max-h-[120px] overflow-y-auto">
-                          {suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer).map(s => (
+                          {suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer, favouriteIds).map(s => (
                             <div
                               key={s.plant.id}
-                              className="flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded hover:bg-muted cursor-grab"
+                              className={`flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded hover:bg-muted cursor-grab ${favouriteIds.includes(s.plant.id) ? 'bg-amber-500/5' : ''}`}
                               draggable
                               onDragStart={e => {
                                 e.dataTransfer.setData('plantId', s.plant.id);
                                 setEditingStructure(null);
                               }}
                             >
+                              {favouriteIds.includes(s.plant.id) && <span className="text-amber-500 text-[8px]">★</span>}
                               <span>{s.plant.emoji}</span>
                               <span className="font-medium text-foreground">{s.plant.name}</span>
                               <span className="text-muted-foreground ml-auto">{s.reason}</span>
                             </div>
                           ))}
                         </div>
+                        {/* Auto-fill button */}
+                        {onFillPlantArea && favouriteIds.length > 0 && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              // Auto-fill with best favourite that fits
+                              const best = suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer, favouriteIds);
+                              if (best.length > 0) {
+                                onFillPlantArea(best[0].plant.id, struct.x, struct.y, struct.widthCells, struct.heightCells);
+                                setEditingStructure(null);
+                              }
+                            }}
+                            className="mt-2 w-full flex items-center justify-center gap-1.5 text-[10px] font-semibold px-2 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            <Wand2 className="h-3 w-3" /> Auto-fill with best favourite
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
