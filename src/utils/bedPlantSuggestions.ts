@@ -19,6 +19,7 @@ export function suggestPlantsForBed(
   heightCells: number,
   cellSizeCm: number,
   isContainer?: boolean,
+  favouriteIds?: string[],
 ): BedPlantSuggestion[] {
   const bedWidthCm = widthCells * cellSizeCm;
   const bedHeightCm = heightCells * cellSizeCm;
