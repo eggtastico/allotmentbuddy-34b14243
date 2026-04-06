@@ -252,65 +252,156 @@ const Index = () => {
     toast.success('Garden rotation optimized! 🔄');
   }, [placedPlants, settings]);
 
-  const navButtons = (
+  const closeMenu = () => setMobileMenuOpen(false);
+
+  const NavDropdown = ({ label, icon: Icon, children }: { label: string; icon: any; children: React.ReactNode }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1">
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+          <ChevronDown className="h-3 w-3 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[160px]">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const desktopNav = (
     <>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowDocs(true); setMobileMenuOpen(false); }}>
-        <HelpCircle className="h-3.5 w-3.5 mr-1" /> Guide
+      <NavDropdown label="Plan" icon={Calendar}>
+        <DropdownMenuItem onClick={() => setShowCalendar(true)}>
+          <Calendar className="h-4 w-4 mr-2" /> Planting Calendar
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowMonthlyPlanner(true)}>
+          <CalendarRange className="h-4 w-4 mr-2" /> Monthly Planner
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowRotation(true)}>
+          <Shuffle className="h-4 w-4 mr-2" /> Crop Rotation
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowPlotMap(true)}>
+          <Map className="h-4 w-4 mr-2" /> Plot Map
+        </DropdownMenuItem>
+      </NavDropdown>
+
+      <NavDropdown label="Grow" icon={Sparkles}>
+        <DropdownMenuItem onClick={() => setShowGrowGuide(true)}>
+          <Sparkles className="h-4 w-4 mr-2" /> Grow Guide
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowAI(true)}>
+          <Bot className="h-4 w-4 mr-2" /> AI Assistant
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowPlantingSuggestions(true)}>
+          <Lightbulb className="h-4 w-4 mr-2" /> Suggestions
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setShowWeather(true)}>
+          <CloudSun className="h-4 w-4 mr-2" /> Weather & Yield
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowWatering(true)}>
+          <Droplets className="h-4 w-4 mr-2" /> Watering Guide
+        </DropdownMenuItem>
+      </NavDropdown>
+
+      <NavDropdown label="Track" icon={ListTodo}>
+        <DropdownMenuItem onClick={() => setShowTasks(true)}>
+          <ListTodo className="h-4 w-4 mr-2" /> Tasks
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowSeedInventory(true)}>
+          <Package className="h-4 w-4 mr-2" /> Seed Inventory
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowJournal(true)}>
+          <BookOpen className="h-4 w-4 mr-2" /> Journal
+        </DropdownMenuItem>
+      </NavDropdown>
+
+      <NavDropdown label="More" icon={HelpCircle}>
+        <DropdownMenuItem onClick={() => setShowDocs(true)}>
+          <HelpCircle className="h-4 w-4 mr-2" /> Guide & Docs
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleExportPDF()}>
+          <Download className="h-4 w-4 mr-2" /> Export PDF
+        </DropdownMenuItem>
+        {user && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setShowSaveLoad(true)}>
+              <FolderOpen className="h-4 w-4 mr-2" /> My Gardens
+            </DropdownMenuItem>
+          </>
+        )}
+      </NavDropdown>
+    </>
+  );
+
+  const mobileNavItems = (
+    <div className="grid grid-cols-2 gap-1 p-2">
+      <DropdownMenuLabel className="col-span-2 text-[10px] text-muted-foreground uppercase tracking-wider">Plan</DropdownMenuLabel>
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowCalendar(true); closeMenu(); }}>
+        <Calendar className="h-3.5 w-3.5 mr-1.5" /> Calendar
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowCalendar(true); setMobileMenuOpen(false); }}>
-        <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowMonthlyPlanner(true); closeMenu(); }}>
+        <CalendarRange className="h-3.5 w-3.5 mr-1.5" /> Planner
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowAI(true); setMobileMenuOpen(false); }}>
-        <Bot className="h-3.5 w-3.5 mr-1" /> AI Help
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowRotation(true); closeMenu(); }}>
+        <Shuffle className="h-3.5 w-3.5 mr-1.5" /> Rotation
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowSeedInventory(true); setMobileMenuOpen(false); }}>
-        <Package className="h-3.5 w-3.5 mr-1" /> Seeds
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowPlotMap(true); closeMenu(); }}>
+        <Map className="h-3.5 w-3.5 mr-1.5" /> Plot Map
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlantingSuggestions(true); setMobileMenuOpen(false); }}>
-        <Lightbulb className="h-3.5 w-3.5 mr-1" /> Suggestions
+
+      <DropdownMenuLabel className="col-span-2 text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Grow</DropdownMenuLabel>
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowGrowGuide(true); closeMenu(); }}>
+        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Grow Guide
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowTasks(true); setMobileMenuOpen(false); }}>
-        <ListTodo className="h-3.5 w-3.5 mr-1" /> Tasks
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowAI(true); closeMenu(); }}>
+        <Bot className="h-3.5 w-3.5 mr-1.5" /> AI Help
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowMonthlyPlanner(true); setMobileMenuOpen(false); }}>
-        <CalendarRange className="h-3.5 w-3.5 mr-1" /> Planner
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowPlantingSuggestions(true); closeMenu(); }}>
+        <Lightbulb className="h-3.5 w-3.5 mr-1.5" /> Suggestions
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowGrowGuide(true); setMobileMenuOpen(false); }}>
-        <Sparkles className="h-3.5 w-3.5 mr-1" /> Grow Guide
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowWeather(true); closeMenu(); }}>
+        <CloudSun className="h-3.5 w-3.5 mr-1.5" /> Weather
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowRotation(true); setMobileMenuOpen(false); }}>
-        <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowWatering(true); closeMenu(); }}>
+        <Droplets className="h-3.5 w-3.5 mr-1.5" /> Watering
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowWeather(true); setMobileMenuOpen(false); }}>
-        <CloudSun className="h-3.5 w-3.5 mr-1" /> Weather
+
+      <DropdownMenuLabel className="col-span-2 text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Track</DropdownMenuLabel>
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowTasks(true); closeMenu(); }}>
+        <ListTodo className="h-3.5 w-3.5 mr-1.5" /> Tasks
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowWatering(true); setMobileMenuOpen(false); }}>
-        <Droplets className="h-3.5 w-3.5 mr-1" /> Watering
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowSeedInventory(true); closeMenu(); }}>
+        <Package className="h-3.5 w-3.5 mr-1.5" /> Seeds
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlotMap(true); setMobileMenuOpen(false); }}>
-        <Map className="h-3.5 w-3.5 mr-1" /> Plot Map
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowJournal(true); closeMenu(); }}>
+        <BookOpen className="h-3.5 w-3.5 mr-1.5" /> Journal
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowJournal(true); setMobileMenuOpen(false); }}>
-        <BookOpen className="h-3.5 w-3.5 mr-1" /> Journal
+
+      <DropdownMenuLabel className="col-span-2 text-[10px] text-muted-foreground uppercase tracking-wider mt-1">More</DropdownMenuLabel>
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowDocs(true); closeMenu(); }}>
+        <HelpCircle className="h-3.5 w-3.5 mr-1.5" /> Guide
       </Button>
-      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { handleExportPDF(); setMobileMenuOpen(false); }}>
-        <Download className="h-3.5 w-3.5 mr-1" /> PDF
+      <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { handleExportPDF(); closeMenu(); }}>
+        <Download className="h-3.5 w-3.5 mr-1.5" /> PDF
       </Button>
       {user ? (
         <>
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowSaveLoad(true); setMobileMenuOpen(false); }}>
-            <FolderOpen className="h-3.5 w-3.5 mr-1" /> My Gardens
+          <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowSaveLoad(true); closeMenu(); }}>
+            <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> My Gardens
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => signOut()}>
-            <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+          <Button variant="ghost" size="sm" className="h-8 text-xs justify-start" onClick={() => { signOut(); closeMenu(); }}>
+            <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign Out
           </Button>
         </>
       ) : (
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setShowAuth(true); setMobileMenuOpen(false); }}>
-          <User className="h-3.5 w-3.5 mr-1" /> Sign In
+        <Button variant="outline" size="sm" className="h-8 text-xs justify-start" onClick={() => { setShowAuth(true); closeMenu(); }}>
+          <User className="h-3.5 w-3.5 mr-1.5" /> Sign In
         </Button>
       )}
-    </>
+    </div>
   );
 
   return (
@@ -331,10 +422,20 @@ const Index = () => {
 
         <LocationPicker location={location} onLocationChange={setLocation} />
         <RainWidget location={location} />
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-1 ml-auto">
-          {navButtons}
+
+        {/* Desktop nav — grouped dropdowns */}
+        <div className="hidden lg:flex items-center gap-0.5 ml-auto">
+          {desktopNav}
           <div className="h-5 w-px bg-border mx-1" />
+          {user ? (
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => signOut()}>
+              <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowAuth(true)}>
+              <User className="h-3.5 w-3.5 mr-1" /> Sign In
+            </Button>
+          )}
           <DarkModeToggle />
         </div>
 
@@ -352,8 +453,8 @@ const Index = () => {
 
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-border bg-card px-4 py-2 flex flex-wrap gap-1 animate-fade-in">
-          {navButtons}
+        <div className="lg:hidden border-b border-border bg-card animate-fade-in">
+          {mobileNavItems}
         </div>
       )}
 
