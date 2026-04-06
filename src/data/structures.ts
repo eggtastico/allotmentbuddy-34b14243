@@ -7,6 +7,8 @@ export interface Structure {
   canGrowInside: boolean;
   color: string; // tailwind bg class token
   description: string;
+  shape?: 'rectangle' | 'circle';
+  isContainer?: boolean; // pots, baskets etc — user can edit size
 }
 
 export const structures: Structure[] = [
@@ -24,6 +26,11 @@ export const structures: Structure[] = [
   { id: 'herb-bed', name: 'Herb Bed', emoji: '🌿', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(120 35% 55% / 0.25)', description: 'Dedicated herb growing area.' },
   { id: 'fruit-cage', name: 'Fruit Cage', emoji: '🫐', widthCells: 4, heightCells: 4, canGrowInside: true, color: 'hsl(280 40% 65% / 0.25)', description: 'Netted cage to protect soft fruit from birds.' },
   { id: 'border', name: 'Border', emoji: '🌺', widthCells: 8, heightCells: 1, canGrowInside: true, color: 'hsl(45 50% 60% / 0.25)', description: 'Garden border for mixed planting.' },
+  { id: 'pot-round', name: 'Round Pot', emoji: '🪴', widthCells: 2, heightCells: 2, canGrowInside: true, color: 'hsl(15 50% 55% / 0.35)', description: 'Round container pot for herbs & small plants.', shape: 'circle', isContainer: true },
+  { id: 'pot-rect', name: 'Rectangular Pot', emoji: '🪴', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(15 45% 50% / 0.35)', description: 'Rectangular planter for patios and balconies.', shape: 'rectangle', isContainer: true },
+  { id: 'basket-round', name: 'Hanging Basket', emoji: '🧺', widthCells: 2, heightCells: 2, canGrowInside: true, color: 'hsl(40 45% 55% / 0.35)', description: 'Round hanging basket for trailing plants & strawberries.', shape: 'circle', isContainer: true },
+  { id: 'basket-rect', name: 'Window Box', emoji: '🌻', widthCells: 4, heightCells: 1, canGrowInside: true, color: 'hsl(40 40% 50% / 0.35)', description: 'Rectangular window box for herbs and flowers.', shape: 'rectangle', isContainer: true },
+  { id: 'grow-bag', name: 'Grow Bag', emoji: '🛍️', widthCells: 3, heightCells: 1, canGrowInside: true, color: 'hsl(0 0% 30% / 0.3)', description: 'Grow bag for tomatoes, potatoes and courgettes.', shape: 'rectangle', isContainer: true },
 ];
 
 export function getStructureById(id: string): Structure | undefined {
