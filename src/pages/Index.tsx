@@ -78,6 +78,8 @@ const Index = () => {
             newPlants.push({
               id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${dx}-${dy}`,
               plantId, x: originX + dx, y: originY + dy,
+              plantedAt: new Date().toISOString(),
+              stage: defaultStage,
             });
             occupied.add(key);
           }
