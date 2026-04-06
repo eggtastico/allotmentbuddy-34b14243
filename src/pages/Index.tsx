@@ -200,6 +200,15 @@ const Index = () => {
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlantingSuggestions(true); setMobileMenuOpen(false); }}>
         <Lightbulb className="h-3.5 w-3.5 mr-1" /> Suggestions
       </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowTasks(true); setMobileMenuOpen(false); }}>
+        <ListTodo className="h-3.5 w-3.5 mr-1" /> Tasks
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowMonthlyPlanner(true); setMobileMenuOpen(false); }}>
+        <CalendarRange className="h-3.5 w-3.5 mr-1" /> Planner
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowGrowGuide(true); setMobileMenuOpen(false); }}>
+        <Sparkles className="h-3.5 w-3.5 mr-1" /> Grow Guide
+      </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowRotation(true); setMobileMenuOpen(false); }}>
         <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
       </Button>
