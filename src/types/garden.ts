@@ -60,6 +60,7 @@ export interface PlotSettings {
   cellSizePx: number;
   cellSizeCm: number;
   southDirection: number; // degrees clockwise from top (0=north at top, 90=east at top, 180=south at top)
+  snapToGrid?: boolean; // if true, plants snap to grid cells; if false, free placement
 }
 
 export interface GardenPlan {
