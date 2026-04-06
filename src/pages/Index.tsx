@@ -246,8 +246,10 @@ const Index = () => {
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 border-b border-border">
-        <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+      <div className="flex items-center border-b border-border bg-card">
+        <div className="flex-1">
+          <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+        </div>
         <div className="flex items-center gap-1 px-3 py-1 shrink-0">
           <span className="text-xs text-muted-foreground mr-1">Planting as:</span>
           <Button
