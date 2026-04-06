@@ -1,11 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { PlacedPlant, Plant } from '@/types/garden';
 import { plants as allPlants, getPlantById } from '@/data/plants';
-import { X, CloudSun, Droplets, Wind, Sprout, TrendingUp, MapPin, Loader2, Search, Leaf } from 'lucide-react';
+import { X, CloudSun, Droplets, Wind, Sprout, TrendingUp, MapPin, Loader2, Leaf } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+
+interface LocationData {
+  name: string;
+  lat: number;
+  lon: number;
+  region?: string;
+}
 
 interface WeatherData {
   temperature: number;
@@ -149,7 +155,6 @@ function getPlantingRecommendations(weather: WeatherData): PlantRecommendation[]
     }
   }
 
-  // Sort: now first, then soon, then upcoming; limit to top picks
   const order = { now: 0, soon: 1, upcoming: 2 };
   recs.sort((a, b) => order[a.urgency] - order[b.urgency]);
   return recs.slice(0, 12);
@@ -157,70 +162,30 @@ function getPlantingRecommendations(weather: WeatherData): PlantRecommendation[]
 
 interface Props {
   plants: PlacedPlant[];
+  location: LocationData | null;
   onClose: () => void;
 }
 
-export function WeatherYieldPanel({ plants, onClose }: Props) {
+export function WeatherYieldPanel({ plants, location: loc, onClose }: Props) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [postcode, setPostcode] = useState('');
-  const [postcodeInput, setPostcodeInput] = useState('');
   const [tab, setTab] = useState<'weather' | 'recommendations'>('weather');
 
-  // Initial geolocation
+  // Fetch weather using shared location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-        () => setCoords({ lat: 51.5, lon: -0.12 })
-      );
-    } else {
-      setCoords({ lat: 51.5, lon: -0.12 });
-    }
-  }, []);
-
-  // Postcode geocoding
-  const handlePostcodeSearch = useCallback(async () => {
-    const trimmed = postcodeInput.trim();
-    if (!trimmed || trimmed.length < 2 || trimmed.length > 10) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=1&language=en`
-      );
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        const r = data.results[0];
-        setCoords({ lat: r.latitude, lon: r.longitude });
-        setPostcode(r.name + (r.admin1 ? `, ${r.admin1}` : '') + (r.country ? `, ${r.country}` : ''));
-      } else {
-        setError('Location not found. Try a city name or postcode.');
-        setLoading(false);
-      }
-    } catch {
-      setError('Failed to look up location');
-      setLoading(false);
-    }
-  }, [postcodeInput]);
-
-  // Fetch weather when coords change
-  useEffect(() => {
-    if (!coords) return;
+    if (!loc) return;
     const fetchWeather = async () => {
       setLoading(true);
       setError(null);
       try {
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=7`
+          `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=7`
         );
         if (!res.ok) throw new Error('Weather API failed');
         const data = await res.json();
 
-        let locationName = postcode || data.timezone?.split('/').pop()?.replace(/_/g, ' ') || `${coords.lat.toFixed(1)}°, ${coords.lon.toFixed(1)}°`;
-
+        const locationName = loc.name || `${loc.lat.toFixed(1)}°, ${loc.lon.toFixed(1)}°`;
         const dailyMins = data.daily.temperature_2m_min as number[];
         const lastFrost = dailyMins.findIndex((t: number) => t <= 0);
         const firstFrost = [...dailyMins].reverse().findIndex((t: number) => t <= 0);
@@ -247,13 +212,12 @@ export function WeatherYieldPanel({ plants, onClose }: Props) {
       }
     };
     fetchWeather();
-  }, [coords, postcode]);
+  }, [loc]);
 
   const weatherInfo = weather ? WEATHER_CODES[weather.weatherCode] || { label: 'Unknown', icon: '🌡️' } : null;
   const multiplier = weather ? calcWeatherMultiplier(weather) : 1;
   const recommendations = weather ? getPlantingRecommendations(weather) : [];
 
-  // Yield estimates
   const uniquePlants = [...new Set(plants.map(p => p.plantId))];
   const yields: YieldEstimate[] = uniquePlants.map(pid => {
     const plant = getPlantById(pid);
@@ -301,20 +265,12 @@ export function WeatherYieldPanel({ plants, onClose }: Props) {
             <button onClick={onClose} className="p-1 rounded hover:bg-muted"><X className="h-4 w-4" /></button>
           </div>
 
-          {/* Postcode search */}
-          <div className="flex gap-2">
-            <Input
-              value={postcodeInput}
-              onChange={e => setPostcodeInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handlePostcodeSearch()}
-              placeholder="Enter postcode or city name…"
-              className="h-9 text-sm"
-              maxLength={50}
-            />
-            <Button size="sm" className="h-9 px-3" onClick={handlePostcodeSearch} disabled={loading}>
-              <Search className="h-3.5 w-3.5 mr-1" /> Search
-            </Button>
-          </div>
+          {loc && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" /> Using location: <span className="font-medium text-foreground">{loc.name}</span>
+              <span className="text-[10px]">— change in header</span>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-1">
@@ -336,7 +292,12 @@ export function WeatherYieldPanel({ plants, onClose }: Props) {
         </div>
 
         <div className="p-4 space-y-5">
-          {loading ? (
+          {!loc ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Set your location in the header to see weather data</p>
+            </div>
+          ) : loading ? (
             <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" /> Fetching weather data…
             </div>
@@ -367,6 +328,16 @@ export function WeatherYieldPanel({ plants, onClose }: Props) {
                   </div>
                 </div>
               </div>
+
+              {/* Frost alert */}
+              {weather.daily.tempMin.some(t => t <= 2) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm">
+                  <span className="font-semibold text-destructive">⚠️ Frost Risk!</span>
+                  <span className="text-foreground/80 ml-1">
+                    Min temp of {Math.min(...weather.daily.tempMin).toFixed(0)}°C forecast this week. Protect tender plants!
+                  </span>
+                </div>
+              )}
 
               {/* 7-day forecast */}
               <div>
@@ -422,71 +393,43 @@ export function WeatherYieldPanel({ plants, onClose }: Props) {
                             <span className="font-medium text-foreground">{y.name}</span>
                             <Badge variant="outline" className="text-[10px] px-1 py-0">×{y.count}</Badge>
                           </div>
-                          <div className="text-right">
-                            <span className="font-semibold text-foreground">{y.adjustedYieldKg.toFixed(1)} kg</span>
-                            {y.weatherMultiplier !== 1 && (
-                              <span className="text-[10px] text-muted-foreground ml-1 line-through">{y.totalYieldKg.toFixed(1)}</span>
-                            )}
-                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            ~{y.adjustedYieldKg.toFixed(1)}kg
+                          </span>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-sm">
-                      <span className="font-semibold text-foreground">Total estimated harvest</span>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-primary">{totalAdjustedKg.toFixed(1)} kg</span>
-                        {totalBaseKg !== totalAdjustedKg && (
-                          <span className="text-xs text-muted-foreground ml-1">(base: {totalBaseKg.toFixed(1)} kg)</span>
-                        )}
+                    {totalBaseKg > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border flex justify-between text-sm">
+                        <span className="text-muted-foreground">Total estimated yield:</span>
+                        <span className="font-bold text-foreground">{totalAdjustedKg.toFixed(1)} kg</span>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
             </>
           ) : weather && tab === 'recommendations' ? (
-            <>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5" /> {weather.locationName} · {weather.temperature}°C · {weatherInfo?.icon} {weatherInfo?.label}
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                  <Leaf className="h-4 w-4 text-primary" /> Recommended to Plant This Week
-                </h3>
-
-                {recommendations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    No planting recommendations for the current conditions. Check back next month!
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {recommendations.map((rec, i) => (
-                      <div key={`${rec.plant.id}-${i}`} className={`rounded-lg border p-3 ${urgencyColors[rec.urgency]}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{rec.plant.emoji}</span>
-                            <span className="font-semibold text-sm text-foreground">{rec.plant.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-muted-foreground">{actionLabels[rec.action]}</span>
-                            <Badge variant={urgencyLabels[rec.urgency].variant} className="text-[10px] px-1.5 py-0">
-                              {urgencyLabels[rec.urgency].text}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{rec.reason}</p>
-                        {rec.plant.daysToHarvest && (
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            ~{rec.plant.daysToHarvest} days to harvest · Yield: {rec.plant.yieldPerPlant || 'varies'}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Based on current weather at {weather.locationName}</p>
+              {recommendations.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No specific recommendations right now.</p>
+              ) : (
+                recommendations.map((rec, i) => (
+                  <div key={i} className={`border rounded-lg p-3 ${urgencyColors[rec.urgency]}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">{rec.plant.emoji}</span>
+                      <span className="font-medium text-foreground text-sm">{rec.plant.name}</span>
+                      <Badge variant={urgencyLabels[rec.urgency].variant} className="text-[10px]">
+                        {urgencyLabels[rec.urgency].text}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{actionLabels[rec.action]}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{rec.reason}</p>
                   </div>
-                )}
-              </div>
-            </>
+                ))
+              )}
+            </div>
           ) : null}
         </div>
       </div>

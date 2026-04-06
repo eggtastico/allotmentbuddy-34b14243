@@ -265,7 +265,7 @@ const Index = () => {
 
       {/* Modals */}
       {showCalendar && <PlantingCalendar placedPlants={placedPlants} onClose={() => setShowCalendar(false)} />}
-      {showAI && <AIChat settings={settings} plants={placedPlants} onClose={() => setShowAI(false)} />}
+      {showAI && <AIChat settings={settings} plants={placedPlants} location={location} onClose={() => setShowAI(false)} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showSaveLoad && user && (
         <SaveLoadPanel

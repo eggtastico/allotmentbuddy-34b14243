@@ -31,11 +31,6 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
     navigator.geolocation?.getCurrentPosition(
       async (pos) => {
         const loc: LocationData = { name: 'My Location', lat: pos.coords.latitude, lon: pos.coords.longitude };
-        // Reverse geocode for name
-        try {
-          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${pos.coords.latitude.toFixed(1)},${pos.coords.longitude.toFixed(1)}&count=1`);
-          // fallback name
-        } catch {}
         onLocationChange(loc);
         localStorage.setItem('ab-location', JSON.stringify(loc));
       },
@@ -63,7 +58,7 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
             name: `${r.postcode}`,
             lat: r.latitude,
             lon: r.longitude,
-            region: r.region,
+            region: r.region || r.admin_district,
           };
           onLocationChange(loc);
           localStorage.setItem('ab-location', JSON.stringify(loc));
@@ -100,10 +95,10 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
           <span className="max-w-[120px] truncate">{location?.name || 'Set location'}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="end">
+      <PopoverContent className="w-72 p-3" align="end">
         <p className="text-xs font-medium text-foreground mb-2">Set your location</p>
         <p className="text-[10px] text-muted-foreground mb-2">Enter a UK postcode (e.g. SW1A 1AA) or city name</p>
-        <form onSubmit={e => { e.preventDefault(); search(); }} className="flex gap-1.5">
+        <form onSubmit={e => { e.preventDefault(); search(); }} className="flex gap-1.5 mb-3">
           <Input
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -114,6 +109,23 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
             {searching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
           </Button>
         </form>
+
+        {/* Mini map */}
+        {location && (
+          <div className="rounded-md overflow-hidden border border-border">
+            <iframe
+              title="Location map"
+              width="100%"
+              height="140"
+              style={{ border: 0 }}
+              loading="lazy"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${location.lon - 0.05},${location.lat - 0.03},${location.lon + 0.05},${location.lat + 0.03}&layer=mapnik&marker=${location.lat},${location.lon}`}
+            />
+            <p className="text-[10px] text-muted-foreground px-2 py-1 bg-muted/50">
+              📍 {location.name} ({location.lat.toFixed(4)}, {location.lon.toFixed(4)})
+            </p>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
