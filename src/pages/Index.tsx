@@ -411,14 +411,14 @@ const Index = () => {
       <WelcomeModal />
 
       {/* Header */}
-      <header className="h-14 border-b border-border bg-gradient-to-r from-primary/10 via-card to-accent/5 px-4 flex items-center gap-3 shrink-0">
+      <header className="h-16 border-b border-border bg-gradient-to-r from-primary/10 via-card to-secondary/10 px-4 flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
-            <Sprout className="h-5 w-5 text-primary-foreground" />
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+            <Sprout className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="font-bold text-foreground text-sm leading-none">🌱 Allotment Buddy</h1>
-            <p className="text-[10px] text-muted-foreground">Plan · Grow · Harvest</p>
+            <h1 className="font-bold text-secondary-foreground text-sm leading-none">🌱 Allotment Buddy</h1>
+            <p className="text-[10px] text-muted-foreground font-medium">Plan · Grow · Harvest</p>
           </div>
         </div>
 
@@ -426,29 +426,31 @@ const Index = () => {
         <RainWidget location={location} />
 
         {/* Desktop nav — grouped dropdowns */}
-        <div className="hidden lg:flex items-center gap-0.5 ml-auto">
+        <div className="hidden lg:flex items-center gap-1 ml-auto">
           {desktopNav}
           <div className="h-5 w-px bg-border mx-1" />
+          <SocialShare />
           {user ? (
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => signOut()}>
-              <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+            <Button variant="ghost" size="sm" className="h-10 min-h-[40px] text-xs rounded-2xl" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4 mr-1" /> Sign Out
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowAuth(true)}>
-              <User className="h-3.5 w-3.5 mr-1" /> Sign In
+            <Button variant="outline" size="sm" className="h-10 min-h-[40px] text-xs rounded-2xl" onClick={() => setShowAuth(true)}>
+              <User className="h-4 w-4 mr-1" /> Sign In
             </Button>
           )}
           <DarkModeToggle />
         </div>
 
         {/* Mobile nav */}
-        <div className="lg:hidden flex items-center gap-1 ml-auto">
+        <div className="lg:hidden flex items-center gap-1.5 ml-auto">
+          <SocialShare />
           <DarkModeToggle />
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:hidden" onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}>
-            <Sprout className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-10 w-10 min-h-[40px] rounded-2xl sm:hidden" onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}>
+            <Sprout className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" className="h-10 w-10 min-h-[40px] rounded-2xl" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </header>
