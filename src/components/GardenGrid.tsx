@@ -25,6 +25,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startW: number; startH: number; edge: 'right' | 'bottom' | 'corner' } | null>(null);
   const [moving, setMoving] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const [showSunOverlay, setShowSunOverlay] = useState(true);
+  const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
 
   const cellSize = settings.cellSizePx;
   const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
@@ -62,7 +63,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return map;
   }, [plants]);
 
-  // Grid labels: show every N cells to match 1m or 1ft marks
+  // Grid labels
   const labelInterval = settings.unit === 'meters'
     ? Math.round(100 / settings.cellSizeCm)
     : Math.round(30.48 / settings.cellSizeCm);
@@ -87,6 +88,16 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       onPlacePlant(plantId, x, y);
     }
   }, [snapToGrid, onPlacePlant, onPlaceStructure]);
+
+  // Track newly placed plants for pop-in animation
+  useEffect(() => {
+    if (plants.length > 0) {
+      const newest = plants[plants.length - 1];
+      setNewlyPlacedId(newest.id);
+      const timer = setTimeout(() => setNewlyPlacedId(null), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [plants.length]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -139,6 +150,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
   // Compass rose direction
   const compassRotation = settings.southDirection;
+  
+  // Determine if cells are big enough to show labels
+  const showLabels = cellSize >= 28;
 
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
@@ -153,19 +167,13 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             style={{ transform: `rotate(${compassRotation}deg)` }}
           >
             <svg viewBox="0 0 48 48" className="w-full h-full drop-shadow-md">
-              {/* Compass circle */}
               <circle cx="24" cy="24" r="22" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="1.5" />
-              {/* North arrow (red) */}
               <polygon points="24,4 20,22 24,19 28,22" fill="hsl(0 70% 50%)" />
-              {/* South arrow (muted) */}
               <polygon points="24,44 20,26 24,29 28,26" fill="hsl(var(--muted-foreground) / 0.4)" />
-              {/* East/West lines */}
               <line x1="4" y1="24" x2="18" y2="24" stroke="hsl(var(--muted-foreground) / 0.3)" strokeWidth="1" />
               <line x1="30" y1="24" x2="44" y2="24" stroke="hsl(var(--muted-foreground) / 0.3)" strokeWidth="1" />
-              {/* Center dot */}
               <circle cx="24" cy="24" r="2.5" fill="hsl(var(--foreground))" />
             </svg>
-            {/* N label (stays at top of the arrow) */}
             <span
               className="absolute text-[8px] font-bold"
               style={{
@@ -178,7 +186,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               N
             </span>
           </div>
-          {/* Sun toggle */}
           <button
             onClick={() => setShowSunOverlay(prev => !prev)}
             className={`mt-1 text-[9px] px-1.5 py-0.5 rounded font-medium transition-colors ${showSunOverlay ? 'bg-amber-500/20 text-amber-600' : 'bg-muted text-muted-foreground'}`}
@@ -269,7 +276,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 >
                   <X className="h-3 w-3" />
                 </button>
-                {/* Resize handles */}
                 <div
                   className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ background: 'hsl(var(--primary) / 0.4)' }}
@@ -289,30 +295,46 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             );
           })}
 
-          {/* Placed plants */}
+          {/* Placed plants — larger, nicer tiles */}
           {plants.map(placed => {
             const plantData = getPlantById(placed.plantId);
             if (!plantData) return null;
             const isSelected = selectedPlantId === placed.id;
-            // Sun warning
             const exposure = getSunExposure(placed.x, placed.y, shadeZones);
             const sunMismatch = plantData.sunPreference && plantData.sunPreference !== 'any' && plantData.sunPreference !== exposure;
             const relations = companionMap.get(placed.id);
+            const isNew = newlyPlacedId === placed.id;
+            
+            // Earthy background for each plant tile
+            const bgColor = relations?.hasEnemy
+              ? 'hsl(0 60% 95%)'
+              : relations?.hasCompanion
+              ? 'hsl(142 40% 93%)'
+              : 'hsl(25 30% 94%)';
+            const darkBgColor = relations?.hasEnemy
+              ? 'hsl(0 30% 18%)'
+              : relations?.hasCompanion
+              ? 'hsl(142 25% 16%)'
+              : 'hsl(25 20% 15%)';
+
             return (
               <div
                 key={placed.id}
-                className={`absolute flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-110 z-10' : 'z-[2]'}`}
+                className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all group
+                  ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-105 z-10' : 'z-[2] hover:scale-105 hover:z-[3]'}
+                  ${isNew ? 'animate-plant-pop' : ''}`}
                 style={{
                   left: placed.x * cellSize,
                   top: placed.y * cellSize,
                   width: cellSize,
                   height: cellSize,
+                  borderRadius: '6px',
                   boxShadow: relations?.hasEnemy
-                    ? '0 0 6px 2px rgba(239,68,68,0.45)'
+                    ? '0 0 8px 2px rgba(239,68,68,0.35)'
                     : relations?.hasCompanion
-                    ? '0 0 6px 2px rgba(34,197,94,0.4)'
-                    : undefined,
-                  borderRadius: '4px',
+                    ? '0 0 8px 2px rgba(34,197,94,0.3)'
+                    : '0 1px 3px rgba(0,0,0,0.12)',
+                  background: `var(--plant-tile-bg, ${bgColor})`,
                 }}
                 onClick={e => {
                   e.stopPropagation();
@@ -324,18 +346,33 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 }}
                 title={`${plantData.name}${sunMismatch ? ` ⚠️ Prefers ${plantData.sunPreference}` : ''}${relations?.hasCompanion ? ' 🟢 Companion nearby' : ''}${relations?.hasEnemy ? ' 🔴 Enemy nearby' : ''} (right-click to remove)`}
               >
-                <span className="text-lg select-none">{plantData.emoji}</span>
+                <span className="select-none leading-none" style={{ fontSize: Math.max(cellSize * 0.5, 14) }}>
+                  {plantData.emoji}
+                </span>
+                {showLabels && (
+                  <span className="text-[7px] font-medium text-foreground/70 leading-tight truncate max-w-full px-0.5 mt-0.5">
+                    {plantData.name.length > 6 ? plantData.name.slice(0, 5) + '…' : plantData.name}
+                  </span>
+                )}
                 {sunMismatch && (
-                  <span className="absolute -top-1 -right-1 text-[8px] bg-amber-500/80 text-white rounded-full w-3 h-3 flex items-center justify-center" title={`Prefers ${plantData.sunPreference}`}>
+                  <span className="absolute -top-1 -right-1 text-[7px] bg-amber-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold shadow-sm" title={`Prefers ${plantData.sunPreference}`}>
                     !
                   </span>
                 )}
                 {relations?.hasEnemy && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" title="Enemy plant nearby" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive border border-card" title="Enemy plant nearby" />
                 )}
                 {relations?.hasCompanion && !relations?.hasEnemy && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-white" title="Companion plant nearby" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-card" title="Companion plant nearby" />
                 )}
+                {/* Remove button on hover */}
+                <button
+                  onClick={e => { e.stopPropagation(); onRemovePlant(placed.id); }}
+                  className="absolute -top-1.5 -left-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                  title="Remove"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
               </div>
             );
           })}
@@ -343,9 +380,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           {/* Empty state */}
           {plants.length === 0 && structures.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className="text-muted-foreground text-sm bg-card/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-                Drag plants or structures from the sidebar to start planning 🌱
-              </p>
+              <div className="text-center bg-card/80 backdrop-blur-sm px-6 py-4 rounded-xl shadow-sm">
+                <span className="text-3xl block mb-2">🌱</span>
+                <p className="text-muted-foreground text-sm font-medium">Drag plants from the sidebar to start!</p>
+                <p className="text-muted-foreground text-xs mt-1">Right-click a plant to remove it</p>
+              </div>
             </div>
           )}
         </div>
