@@ -1,107 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 80 25% 96%;
-    --foreground: 120 15% 12%;
+    --background: 150 28% 94%;
+    --foreground: 150 18% 10%;
 
-    --card: 60 20% 98%;
-    --card-foreground: 120 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 18% 10%;
 
-    --popover: 60 20% 98%;
-    --popover-foreground: 120 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 18% 10%;
 
-    --primary: 145 58% 32%;
-    --primary-foreground: 80 40% 97%;
+    --primary: 152 52% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 45 45% 91%;
-    --secondary-foreground: 35 35% 22%;
+    --secondary: 48 98% 50%;
+    --secondary-foreground: 35 40% 16%;
 
-    --muted: 80 15% 91%;
-    --muted-foreground: 120 5% 42%;
+    --muted: 150 14% 89%;
+    --muted-foreground: 150 8% 40%;
 
-    --accent: 22 85% 52%;
+    --accent: 12 72% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 120 12% 82%;
-    --input: 120 12% 82%;
-    --ring: 145 58% 32%;
+    --border: 150 14% 82%;
+    --input: 150 14% 82%;
+    --ring: 152 52% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 120 18% 95%;
-    --sidebar-foreground: 120 12% 18%;
-    --sidebar-primary: 145 58% 32%;
-    --sidebar-primary-foreground: 80 40% 97%;
-    --sidebar-accent: 80 20% 88%;
-    --sidebar-accent-foreground: 120 12% 18%;
-    --sidebar-border: 120 12% 85%;
-    --sidebar-ring: 145 58% 32%;
+    --sidebar-background: 150 22% 96%;
+    --sidebar-foreground: 150 12% 18%;
+    --sidebar-primary: 152 52% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 18% 88%;
+    --sidebar-accent-foreground: 150 12% 18%;
+    --sidebar-border: 150 14% 85%;
+    --sidebar-ring: 152 52% 50%;
 
     --garden-soil: 28 40% 28%;
     --garden-path: 38 28% 72%;
     --garden-water: 198 72% 52%;
-    --garden-grid: 120 15% 78%;
+    --garden-grid: 150 15% 78%;
     --garden-bed: 28 42% 38%;
-    --garden-highlight: 55 85% 52%;
+    --garden-highlight: 48 98% 50%;
 
-    --success: 145 60% 38%;
-    --warning: 38 92% 50%;
+    --success: 152 52% 42%;
+    --warning: 48 92% 50%;
     --info: 198 72% 52%;
   }
 
   .dark {
-    --background: 140 18% 7%;
+    --background: 150 18% 6%;
     --foreground: 60 20% 92%;
 
-    --card: 140 15% 11%;
+    --card: 150 15% 10%;
     --card-foreground: 60 20% 92%;
 
-    --popover: 140 15% 11%;
+    --popover: 150 15% 10%;
     --popover-foreground: 60 20% 92%;
 
-    --primary: 145 55% 42%;
-    --primary-foreground: 140 18% 5%;
+    --primary: 152 48% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 140 12% 16%;
-    --secondary-foreground: 60 18% 82%;
+    --secondary: 48 80% 42%;
+    --secondary-foreground: 35 30% 10%;
 
-    --muted: 140 10% 16%;
+    --muted: 150 10% 16%;
     --muted-foreground: 60 8% 52%;
 
-    --accent: 22 82% 48%;
+    --accent: 12 68% 48%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 38%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 140 10% 18%;
-    --input: 140 10% 18%;
-    --ring: 145 55% 42%;
+    --border: 150 10% 18%;
+    --input: 150 10% 18%;
+    --ring: 152 48% 40%;
 
-    --sidebar-background: 140 18% 9%;
+    --sidebar-background: 150 18% 8%;
     --sidebar-foreground: 60 18% 86%;
-    --sidebar-primary: 145 55% 42%;
-    --sidebar-primary-foreground: 140 18% 5%;
-    --sidebar-accent: 140 12% 14%;
+    --sidebar-primary: 152 48% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 12% 14%;
     --sidebar-accent-foreground: 60 18% 86%;
-    --sidebar-border: 140 10% 16%;
-    --sidebar-ring: 145 55% 42%;
+    --sidebar-border: 150 10% 16%;
+    --sidebar-ring: 152 48% 40%;
 
     --garden-soil: 28 28% 18%;
     --garden-path: 38 15% 32%;
     --garden-water: 198 58% 38%;
-    --garden-grid: 140 10% 20%;
+    --garden-grid: 150 10% 20%;
     --garden-bed: 28 32% 28%;
-    --garden-highlight: 55 68% 42%;
+    --garden-highlight: 48 68% 42%;
 
-    --success: 145 50% 38%;
-    --warning: 38 80% 45%;
+    --success: 152 50% 38%;
+    --warning: 48 80% 45%;
     --info: 198 58% 42%;
   }
 
@@ -109,7 +111,6 @@
     --plant-tile-bg: hsl(28 18% 14%);
   }
 
-  /* Earthy theme — Forest Green, Sand, Terracotta */
   .theme-earthy {
     --background: 38 28% 90%;
     --foreground: 30 18% 14%;
@@ -120,11 +121,11 @@
     --popover: 38 22% 95%;
     --popover-foreground: 30 18% 14%;
 
-    --primary: 155 48% 26%;
+    --primary: 152 48% 32%;
     --primary-foreground: 42 32% 94%;
 
-    --secondary: 38 32% 85%;
-    --secondary-foreground: 30 22% 22%;
+    --secondary: 48 88% 48%;
+    --secondary-foreground: 30 22% 16%;
 
     --muted: 38 18% 85%;
     --muted-foreground: 30 10% 42%;
@@ -137,16 +138,16 @@
 
     --border: 38 18% 78%;
     --input: 38 18% 78%;
-    --ring: 155 48% 26%;
+    --ring: 152 48% 32%;
 
-    --sidebar-background: 155 18% 90%;
+    --sidebar-background: 152 18% 90%;
     --sidebar-foreground: 30 18% 18%;
-    --sidebar-primary: 155 48% 26%;
+    --sidebar-primary: 152 48% 32%;
     --sidebar-primary-foreground: 42 32% 94%;
     --sidebar-accent: 38 22% 82%;
     --sidebar-accent-foreground: 30 18% 18%;
     --sidebar-border: 38 18% 80%;
-    --sidebar-ring: 155 48% 26%;
+    --sidebar-ring: 152 48% 32%;
 
     --garden-soil: 22 42% 26%;
     --garden-path: 38 22% 70%;
@@ -155,7 +156,7 @@
     --garden-bed: 22 38% 32%;
     --garden-highlight: 48 72% 52%;
 
-    --success: 155 48% 32%;
+    --success: 152 48% 32%;
     --warning: 38 80% 48%;
     --info: 192 52% 48%;
   }
@@ -171,7 +172,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -193,5 +194,11 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--border));
     border-radius: 3px;
+  }
+  .glass-card {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.4);
   }
 }
