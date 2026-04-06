@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
@@ -45,6 +45,7 @@ const Index = () => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
 
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
@@ -61,8 +62,10 @@ const Index = () => {
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       plantId, x, y,
+      plantedAt: new Date().toISOString(),
+      stage: defaultStage,
     }]);
-  }, [placedPlants]);
+  }, [placedPlants, defaultStage]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
     setPlacedPlants(prev => {
@@ -75,6 +78,8 @@ const Index = () => {
             newPlants.push({
               id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${dx}-${dy}`,
               plantId, x: originX + dx, y: originY + dy,
+              plantedAt: new Date().toISOString(),
+              stage: defaultStage,
             });
             occupied.add(key);
           }
@@ -123,7 +128,11 @@ const Index = () => {
     setCurrentPlanId(plan.id);
     setPlanName(plan.name);
     setSettings(plan.plot_settings as PlotSettings);
-    setPlacedPlants((plan.plants as PlacedPlant[]) || []);
+    setPlacedPlants(((plan.plants as any[]) || []).map(p => ({
+      ...p,
+      plantedAt: p.plantedAt || new Date().toISOString(),
+      stage: p.stage || 'seed',
+    })));
     setSelectedPlant(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
@@ -237,7 +246,30 @@ const Index = () => {
       )}
 
       {/* Toolbar */}
-      <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+      <div className="flex items-center border-b border-border bg-card">
+        <div className="flex-1">
+          <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+        </div>
+        <div className="flex items-center gap-1 px-3 py-1 shrink-0">
+          <span className="text-xs text-muted-foreground mr-1">Planting as:</span>
+          <Button
+            variant={defaultStage === 'seed' ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setDefaultStage('seed')}
+          >
+            🌰 Seed
+          </Button>
+          <Button
+            variant={defaultStage === 'seedling' ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setDefaultStage('seedling')}
+          >
+            🌱 Seedling
+          </Button>
+        </div>
+      </div>
 
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden relative">

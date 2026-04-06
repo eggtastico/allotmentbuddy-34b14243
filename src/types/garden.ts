@@ -21,11 +21,15 @@ export interface Plant {
   tips?: string;
 }
 
+export type PlantStage = 'seed' | 'seedling';
+
 export interface PlacedPlant {
   id: string;
   plantId: string;
   x: number;
   y: number;
+  plantedAt: string; // ISO date string
+  stage: PlantStage;
 }
 
 export interface GardenBed {
