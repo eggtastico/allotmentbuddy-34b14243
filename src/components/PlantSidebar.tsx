@@ -84,6 +84,13 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null);
   const [sunFilter, setSunFilter] = useState<string | null>(null);
+  const [varietyFilter, setVarietyFilter] = useState<string | null>(null);
+
+  // Get unique varieties for current category
+  const availableVarieties = [...new Set(
+    plants.filter(p => p.variety && (!activeCategory || p.category === activeCategory))
+      .map(p => p.variety!)
+  )].sort();
 
   const filtered = plants.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -91,7 +98,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
     const matchesDifficulty = !difficultyFilter || p.difficulty === difficultyFilter;
     const matchesSeason = !seasonFilter || (p.sowingSeason && p.sowingSeason.includes(seasonFilter));
     const matchesSun = !sunFilter || p.sunPreference === sunFilter;
-    return matchesSearch && matchesCategory && matchesDifficulty && matchesSeason && matchesSun;
+    const matchesVariety = !varietyFilter || p.variety === varietyFilter;
+    return matchesSearch && matchesCategory && matchesDifficulty && matchesSeason && matchesSun && matchesVariety;
   });
 
   const filteredStructures = structures.filter(s =>
