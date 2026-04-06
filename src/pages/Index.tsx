@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
