@@ -16,7 +16,7 @@ interface PlantInfoPanelProps {
   onAddSuccessionTask?: (title: string, description: string) => void;
 }
 
-export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure }: PlantInfoPanelProps) {
+export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask }: PlantInfoPanelProps) {
   const plant = getPlantById(placed.plantId);
   if (!plant) return null;
 
