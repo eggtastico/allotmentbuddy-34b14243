@@ -51,6 +51,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
   const [editingStructure, setEditingStructure] = useState<string | null>(null);
 
+  const { getFavouriteIds } = useFavouritePlants();
+  const favouriteIds = getFavouriteIds();
+
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
