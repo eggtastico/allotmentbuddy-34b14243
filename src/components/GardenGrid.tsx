@@ -142,13 +142,21 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     ? Math.round(100 / settings.cellSizeCm)
     : Math.round(30.48 / settings.cellSizeCm);
 
-  const snapToGrid = useCallback((clientX: number, clientY: number) => {
+  const snapToGridFn = useCallback((clientX: number, clientY: number) => {
     if (!gridRef.current) return { x: 0, y: 0 };
     const rect = gridRef.current.getBoundingClientRect();
-    const x = Math.floor((clientX - rect.left) / cellSize);
-    const y = Math.floor((clientY - rect.top) / cellSize);
-    return { x: Math.max(0, Math.min(x, cols - 1)), y: Math.max(0, Math.min(y, rows - 1)) };
-  }, [cellSize, cols, rows]);
+    const rawX = (clientX - rect.left) / cellSize;
+    const rawY = (clientY - rect.top) / cellSize;
+    if (settings.snapToGrid !== false) {
+      const x = Math.floor(rawX);
+      const y = Math.floor(rawY);
+      return { x: Math.max(0, Math.min(x, cols - 1)), y: Math.max(0, Math.min(y, rows - 1)) };
+    }
+    // Free placement: round to 0.1 precision
+    const x = Math.round(Math.max(0, Math.min(rawX, cols - 1)) * 10) / 10;
+    const y = Math.round(Math.max(0, Math.min(rawY, rows - 1)) * 10) / 10;
+    return { x, y };
+  }, [cellSize, cols, rows, settings.snapToGrid]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -156,13 +164,13 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     setDragTooltip(null);
     const plantId = e.dataTransfer.getData('plantId');
     const structureId = e.dataTransfer.getData('structureId');
-    const { x, y } = snapToGrid(e.clientX, e.clientY);
+    const { x, y } = snapToGridFn(e.clientX, e.clientY);
     if (structureId) {
       onPlaceStructure(structureId, x, y);
     } else if (plantId) {
       onPlacePlant(plantId, x, y);
     }
-  }, [snapToGrid, onPlacePlant, onPlaceStructure]);
+  }, [snapToGridFn, onPlacePlant, onPlaceStructure]);
 
   useEffect(() => {
     if (plants.length > 0) {
@@ -176,10 +184,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
-    const { x, y } = snapToGrid(e.clientX, e.clientY);
+    const { x, y } = snapToGridFn(e.clientX, e.clientY);
     const plantId = draggingPlantId || e.dataTransfer.getData('plantId') || '';
     setDragTooltip(plantId ? { x: e.clientX, y: e.clientY, plantId, gridX: x, gridY: y } : null);
-  }, [draggingPlantId, snapToGrid]);
+  }, [draggingPlantId, snapToGridFn]);
 
   // Structure resize
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
@@ -280,7 +288,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     if (!movingPlant) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const { x, y } = snapToGrid(e.clientX, e.clientY);
+      const { x, y } = snapToGridFn(e.clientX, e.clientY);
       const positionChanged = x !== movingPlant.origX || y !== movingPlant.origY;
 
       if (!positionChanged) return;
@@ -305,7 +313,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [movingPlant, onMovePlant, onMovePlantStart, snapToGrid]);
+  }, [movingPlant, onMovePlant, onMovePlantStart, snapToGridFn]);
 
   // Panning with middle mouse or pan mode
   const handlePanStart = useCallback((e: React.MouseEvent) => {
