@@ -23,11 +23,14 @@ import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { DocsGuide } from '@/components/DocsGuide';
 import { SeedInventory } from '@/components/SeedInventory';
 import { PlantingSuggestions } from '@/components/PlantingSuggestions';
+import { GardenTasks } from '@/components/GardenTasks';
+import { MonthlyPlanner } from '@/components/MonthlyPlanner';
+import { GrowGuide } from '@/components/GrowGuide';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -68,6 +71,9 @@ const Index = () => {
   const [showDocs, setShowDocs] = useState(false);
   const [showSeedInventory, setShowSeedInventory] = useState(false);
   const [showPlantingSuggestions, setShowPlantingSuggestions] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
+  const [showGrowGuide, setShowGrowGuide] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
@@ -193,6 +199,15 @@ const Index = () => {
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlantingSuggestions(true); setMobileMenuOpen(false); }}>
         <Lightbulb className="h-3.5 w-3.5 mr-1" /> Suggestions
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowTasks(true); setMobileMenuOpen(false); }}>
+        <ListTodo className="h-3.5 w-3.5 mr-1" /> Tasks
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowMonthlyPlanner(true); setMobileMenuOpen(false); }}>
+        <CalendarRange className="h-3.5 w-3.5 mr-1" /> Planner
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowGrowGuide(true); setMobileMenuOpen(false); }}>
+        <Sparkles className="h-3.5 w-3.5 mr-1" /> Grow Guide
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowRotation(true); setMobileMenuOpen(false); }}>
         <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
@@ -386,6 +401,9 @@ const Index = () => {
       {showDocs && <DocsGuide onClose={() => setShowDocs(false)} />}
       {showSeedInventory && <SeedInventory onClose={() => setShowSeedInventory(false)} />}
       {showPlantingSuggestions && <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />}
+      {showTasks && <GardenTasks onClose={() => setShowTasks(false)} />}
+      {showMonthlyPlanner && <MonthlyPlanner onClose={() => setShowMonthlyPlanner(false)} />}
+      {showGrowGuide && <GrowGuide onClose={() => setShowGrowGuide(false)} />}
 
       {/* Mobile bottom nav */}
       <MobileBottomNav

@@ -1,41 +1,27 @@
 
 ## Plan
 
-### 1. Documentation Guide (overlay)
-- Create a `DocsGuide` component as a full-screen overlay triggered from header
-- Cover all features: filters, plot map, journal, calendar, themes, AI chat, weather, etc.
-- Add "📖 Guide" button to the header bar
-
-### 2. Expand Vegetable Library + Varieties
-- Add more vegetables to `plants.ts` (e.g., multiple tomato varieties, bean types, lettuce types)
-- Add a `variety` field to the Plant type so users can filter by variety
-- Update PlantSidebar filters to include variety selection
-
-### 3. Seed Pack AI Scanning
-- Add a camera/upload button in the plant sidebar or a dedicated "Scan Seed Pack" feature
-- Upload photo to Supabase Storage, send to Lovable AI (Gemini with vision) via edge function
-- AI extracts: plant name, variety, sowing instructions, spacing, harvest time, etc.
-- Return structured data to populate plant info
-
-### 4. Seed Inventory System (DB migration required)
-- Create `seed_inventory` table: user_id, plant_name, variety, quantity, purchased_date, expiry_date, seed_pack_photo, notes, ai_extracted_data
+### 1. Garden Task List (DB + UI)
+- Create `garden_tasks` table: user_id, title, due_date, period (weekly/monthly), completed, plant_name
 - RLS policies for user-only access
-- UI panel to view/add/edit seed inventory
-- Link inventory items to plants in the library
+- `GardenTasks.tsx` component with tabs for "This Week" / "This Month" / "Completed"
+- Allow adding custom tasks + auto-suggest seasonal tasks
 
-### 5. Planting Suggestions from Inventory
-- Based on current month/week, cross-reference inventory with planting calendar data
-- Show "Plant this week" / "Plant this month" suggestions using seeds the user actually has
-- Display in a widget or within the seasonal tasks component
+### 2. Monthly Planner Guide
+- `MonthlyPlanner.tsx` — a 12-month overview showing what to sow, transplant, harvest, and general garden jobs for each month
+- Uses data from `plants.ts` (sowIndoors, sowOutdoors, harvest fields)
+- Highlights current month, shows upcoming tasks
 
-### 6. Plot Selection Enhancement
-- When user selects a plant on their plot, show seed pack details (if scanned) alongside existing plant info
+### 3. "I Want to Grow..." AI Feature
+- `GrowGuide.tsx` — user selects plants they want to grow from the plant library
+- Sends selection to a new `grow-guide` edge function (Lovable AI)
+- AI returns personalised timeline: when to start seeds, transplant, expected harvest, spacing, companions, and plot placement tips
+- Results displayed in a clean timeline/card layout
 
 ### Order of implementation:
-1. DB migration for seed_inventory table
-2. Expand Plant type with variety field + add more vegetables
-3. Documentation guide overlay
-4. Seed inventory UI
-5. Seed pack AI scanning (edge function + UI)
-6. Planting suggestions from inventory
-7. Enhanced plot selection info
+1. DB migration for `garden_tasks` table
+2. Build GardenTasks component
+3. Build MonthlyPlanner component  
+4. Create grow-guide edge function
+5. Build GrowGuide component
+6. Wire everything into Index.tsx header/nav
