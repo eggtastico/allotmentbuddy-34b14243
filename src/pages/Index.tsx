@@ -510,7 +510,7 @@ const Index = () => {
       )}
 
       {/* Seasonal tasks widget */}
-      <SeasonalTasks />
+      <SeasonalTasks placedPlantIds={placedPlants.map(p => p.plantId)} />
       <ActionRequired placedPlants={placedPlants} />
 
       {/* Toolbar */}
