@@ -813,20 +813,24 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 </span>
                 {/* Spacing warning */}
                 {spacingIssues && (
-                  <span className="absolute -top-1.5 -right-1.5 text-[8px] bg-warning text-white rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm z-10" title={spacingIssues[0]}>
-                    ↔
+                  <span className="absolute -top-2.5 -right-2.5 text-[7px] bg-amber-500 text-white rounded-md px-1 py-0.5 font-bold shadow-md z-10 whitespace-nowrap animate-pulse" title={spacingIssues[0]}>
+                    ↔ Too close
                   </span>
                 )}
-                {!spacingIssues && sunMismatch && (
-                  <span className="absolute -top-1 -right-1 text-[7px] bg-amber-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold shadow-sm" title={`Prefers ${plantData.sunPreference}`}>
-                    !
+                {!spacingIssues && sunMismatch && cellSize >= 24 && (
+                  <span className="absolute -top-2.5 -right-2.5 text-[7px] bg-amber-500 text-white rounded-md px-1 py-0.5 font-bold shadow-md z-10 whitespace-nowrap" title={`Prefers ${plantData.sunPreference}`}>
+                    ☀ {plantData.sunPreference?.replace('-', ' ')}
                   </span>
                 )}
                 {relations?.hasEnemy && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive border border-card" title={`Enemy: ${relations.enemyNames.join(', ')}${relations.reasons.length > 0 ? ' — ' + relations.reasons[0] : ''}`} />
+                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[7px] bg-destructive text-destructive-foreground rounded-md px-1 py-0.5 font-bold shadow-md z-10 whitespace-nowrap" title={`Enemy: ${relations.enemyNames.join(', ')}${relations.reasons.length > 0 ? ' — ' + relations.reasons[0] : ''}`}>
+                    ❌ {relations.enemyNames[0]}
+                  </span>
                 )}
-                {relations?.hasCompanion && !relations?.hasEnemy && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-card" title={`Companion: ${relations.companionNames.join(', ')}${relations.reasons.length > 0 ? ' — ' + relations.reasons[0] : ''}`} />
+                {relations?.hasCompanion && !relations?.hasEnemy && cellSize >= 24 && (
+                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[7px] bg-primary text-primary-foreground rounded-md px-1 py-0.5 font-bold shadow-md z-10 whitespace-nowrap" title={`Companion: ${relations.companionNames.join(', ')}${relations.reasons.length > 0 ? ' — ' + relations.reasons[0] : ''}`}>
+                    ✅ {relations.companionNames[0]}
+                  </span>
                 )}
                 {/* Remove button */}
                 <button
