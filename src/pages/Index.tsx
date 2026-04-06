@@ -383,6 +383,9 @@ const Index = () => {
       )}
       {showPlotMap && <PlotMapPanel onClose={() => setShowPlotMap(false)} />}
       {showJournal && <GardenJournal onClose={() => setShowJournal(false)} />}
+      {showDocs && <DocsGuide onClose={() => setShowDocs(false)} />}
+      {showSeedInventory && <SeedInventory onClose={() => setShowSeedInventory(false)} />}
+      {showPlantingSuggestions && <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />}
 
       {/* Mobile bottom nav */}
       <MobileBottomNav
