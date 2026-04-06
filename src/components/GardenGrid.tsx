@@ -3,7 +3,8 @@ import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
-import { X } from 'lucide-react';
+import { X, Paintbrush } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface GardenGridProps {
   settings: PlotSettings;
@@ -27,6 +28,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const [showSunOverlay, setShowSunOverlay] = useState(true);
   const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
 
+  // Paint brush state: after dropping a plant, user can click-drag to fill rows/patches
+  const [brushPlantId, setBrushPlantId] = useState<string | null>(null);
+  const [isPainting, setIsPainting] = useState(false);
+  const paintedCellsRef = useRef<Set<string>>(new Set());
+
   const cellSize = settings.cellSizePx;
   const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
   const cols = Math.round(settings.widthM * cellsPerUnit);
@@ -34,13 +40,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const gridW = cols * cellSize;
   const gridH = rows * cellSize;
 
-  // Calculate shade zones
   const shadeZones = useMemo(
     () => calculateShadeZones(structures, settings, cols, rows),
     [structures, settings, cols, rows]
   );
 
-  // Companion/enemy relationship map for each placed plant
   const companionMap = useMemo(() => {
     const map = new Map<string, { hasCompanion: boolean; hasEnemy: boolean }>();
     const radius = 3;
@@ -63,7 +67,13 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return map;
   }, [plants]);
 
-  // Grid labels
+  // Set of occupied cells for quick lookup
+  const occupiedCells = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of plants) set.add(`${p.x},${p.y}`);
+    return set;
+  }, [plants]);
+
   const labelInterval = settings.unit === 'meters'
     ? Math.round(100 / settings.cellSizeCm)
     : Math.round(30.48 / settings.cellSizeCm);
@@ -86,10 +96,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       onPlaceStructure(structureId, x, y);
     } else if (plantId) {
       onPlacePlant(plantId, x, y);
+      // Activate brush mode for this plant type
+      setBrushPlantId(plantId);
     }
   }, [snapToGrid, onPlacePlant, onPlaceStructure]);
 
-  // Track newly placed plants for pop-in animation
   useEffect(() => {
     if (plants.length > 0) {
       const newest = plants[plants.length - 1];
@@ -103,6 +114,42 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     e.preventDefault();
     setDragOver(true);
   }, []);
+
+  // Paint mode: mouse down on empty cell starts painting
+  const handleGridMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!brushPlantId || e.button !== 0) return;
+    // Don't start painting if clicking on a plant or structure
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-plant-tile]') || target.closest('[data-structure-tile]')) return;
+
+    const { x, y } = snapToGrid(e.clientX, e.clientY);
+    const key = `${x},${y}`;
+    if (!occupiedCells.has(key)) {
+      paintedCellsRef.current = new Set([key]);
+      onPlacePlant(brushPlantId, x, y);
+      setIsPainting(true);
+    }
+  }, [brushPlantId, snapToGrid, occupiedCells, onPlacePlant]);
+
+  const handleGridMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPainting || !brushPlantId) return;
+    const { x, y } = snapToGrid(e.clientX, e.clientY);
+    const key = `${x},${y}`;
+    if (!occupiedCells.has(key) && !paintedCellsRef.current.has(key)) {
+      paintedCellsRef.current.add(key);
+      onPlacePlant(brushPlantId, x, y);
+    }
+  }, [isPainting, brushPlantId, snapToGrid, occupiedCells, onPlacePlant]);
+
+  useEffect(() => {
+    if (!isPainting) return;
+    const handleUp = () => {
+      setIsPainting(false);
+      paintedCellsRef.current.clear();
+    };
+    window.addEventListener('mouseup', handleUp);
+    return () => window.removeEventListener('mouseup', handleUp);
+  }, [isPainting]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
     e.preventDefault();
@@ -148,14 +195,30 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [moving, cellSize, onMoveStructure]);
 
-  // Compass rose direction
   const compassRotation = settings.southDirection;
-  
-  // Determine if cells are big enough to show labels
   const showLabels = cellSize >= 28;
+
+  const brushPlantData = brushPlantId ? getPlantById(brushPlantId) : null;
 
   return (
     <div className="flex-1 overflow-auto bg-muted/30 p-4">
+      {/* Brush mode indicator */}
+      {brushPlantId && brushPlantData && (
+        <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg w-fit mx-auto animate-fade-in">
+          <Paintbrush className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs text-foreground font-medium">
+            Paint mode: {brushPlantData.emoji} {brushPlantData.name}
+          </span>
+          <span className="text-[10px] text-muted-foreground">— click & drag on empty cells to fill</span>
+          <button
+            onClick={() => setBrushPlantId(null)}
+            className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
+          >
+            ✕ Clear
+          </button>
+        </div>
+      )}
+
       <div className="relative mx-auto" style={{ width: gridW + 40, minHeight: gridH + 40 }}>
         {/* Compass rose */}
         <div
@@ -198,7 +261,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         {/* Grid */}
         <div
           ref={gridRef}
-          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'} ${brushPlantId ? 'cursor-crosshair' : ''}`}
           style={{
             width: gridW,
             height: gridH,
@@ -207,7 +270,12 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => setDragOver(false)}
-          onClick={() => onSelectPlant(null)}
+          onMouseDown={handleGridMouseDown}
+          onMouseMove={handleGridMouseMove}
+          onClick={(e) => {
+            // Only deselect if not painting
+            if (!brushPlantId) onSelectPlant(null);
+          }}
         >
           {/* Grid labels */}
           {Array.from({ length: cols }).map((_, i) => (
@@ -251,6 +319,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             return (
               <div
                 key={struct.id}
+                data-structure-tile
                 className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group cursor-move"
                 style={{
                   left: struct.x * cellSize,
@@ -295,7 +364,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             );
           })}
 
-          {/* Placed plants — larger, nicer tiles */}
+          {/* Placed plants */}
           {plants.map(placed => {
             const plantData = getPlantById(placed.plantId);
             if (!plantData) return null;
@@ -305,21 +374,16 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             const relations = companionMap.get(placed.id);
             const isNew = newlyPlacedId === placed.id;
             
-            // Earthy background for each plant tile
             const bgColor = relations?.hasEnemy
               ? 'hsl(0 60% 95%)'
               : relations?.hasCompanion
               ? 'hsl(142 40% 93%)'
               : 'hsl(25 30% 94%)';
-            const darkBgColor = relations?.hasEnemy
-              ? 'hsl(0 30% 18%)'
-              : relations?.hasCompanion
-              ? 'hsl(142 25% 16%)'
-              : 'hsl(25 20% 15%)';
 
             return (
               <div
                 key={placed.id}
+                data-plant-tile
                 className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all group
                   ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-105 z-10' : 'z-[2] hover:scale-105 hover:z-[3]'}
                   ${isNew ? 'animate-plant-pop' : ''}`}
@@ -338,6 +402,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 }}
                 onClick={e => {
                   e.stopPropagation();
+                  // If clicking a plant, also set it as the brush
+                  setBrushPlantId(placed.plantId);
                   onSelectPlant(isSelected ? null : placed);
                 }}
                 onContextMenu={e => {
@@ -365,7 +431,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                 {relations?.hasCompanion && !relations?.hasEnemy && (
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-card" title="Companion plant nearby" />
                 )}
-                {/* Remove button on hover */}
                 <button
                   onClick={e => { e.stopPropagation(); onRemovePlant(placed.id); }}
                   className="absolute -top-1.5 -left-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
