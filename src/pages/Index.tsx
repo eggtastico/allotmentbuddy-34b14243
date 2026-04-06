@@ -128,7 +128,11 @@ const Index = () => {
     setCurrentPlanId(plan.id);
     setPlanName(plan.name);
     setSettings(plan.plot_settings as PlotSettings);
-    setPlacedPlants((plan.plants as PlacedPlant[]) || []);
+    setPlacedPlants(((plan.plants as any[]) || []).map(p => ({
+      ...p,
+      plantedAt: p.plantedAt || new Date().toISOString(),
+      stage: p.stage || 'seed',
+    })));
     setSelectedPlant(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
