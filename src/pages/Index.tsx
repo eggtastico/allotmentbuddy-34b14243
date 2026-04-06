@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import logoImg from '@/assets/logo.png';
+
 import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
