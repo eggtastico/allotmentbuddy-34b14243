@@ -4,8 +4,9 @@ import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
 import { getCompanionReason, categoryColors, categoryColorsDark } from '@/data/companionReasons';
-import { X, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Move, Lightbulb } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { suggestPlantsForBed } from '@/utils/bedPlantSuggestions';
 
 interface GardenGridProps {
   settings: PlotSettings;
@@ -672,32 +673,74 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                     ✎
                   </button>
                 )}
-                {/* Size editor popover */}
+                {/* Size editor + plant suggestions popover */}
                 {editingStructure === struct.id && (
                   <div
-                    className="absolute -bottom-20 left-0 z-50 bg-card border border-border rounded-lg shadow-lg p-2 flex items-center gap-2"
+                    className="absolute -bottom-2 left-0 translate-y-full z-50 bg-card border border-border rounded-lg shadow-lg p-2.5 min-w-[220px]"
                     onClick={e => e.stopPropagation()}
                     onMouseDown={e => e.stopPropagation()}
                   >
-                    <label className="text-[10px] text-muted-foreground">W</label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={struct.widthCells}
-                      onChange={e => onResizeStructure(struct.id, Math.max(1, Number(e.target.value)), struct.heightCells)}
-                      className="w-12 h-6 text-xs text-center"
-                    />
-                    <label className="text-[10px] text-muted-foreground">H</label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={struct.heightCells}
-                      onChange={e => onResizeStructure(struct.id, struct.widthCells, Math.max(1, Number(e.target.value)))}
-                      className="w-12 h-6 text-xs text-center"
-                    />
+                    {data.isContainer && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-[10px] text-muted-foreground">W</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={struct.widthCells}
+                          onChange={e => onResizeStructure(struct.id, Math.max(1, Number(e.target.value)), struct.heightCells)}
+                          className="w-12 h-6 text-xs text-center"
+                        />
+                        <label className="text-[10px] text-muted-foreground">H</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={struct.heightCells}
+                          onChange={e => onResizeStructure(struct.id, struct.widthCells, Math.max(1, Number(e.target.value)))}
+                          className="w-12 h-6 text-xs text-center"
+                        />
+                      </div>
+                    )}
+                    {data.canGrowInside && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-foreground flex items-center gap-1 mb-1">
+                          <Lightbulb className="h-3 w-3 text-primary" /> Suggested plants
+                        </p>
+                        <p className="text-[9px] text-muted-foreground mb-1.5">
+                          {struct.widthCells}×{struct.heightCells} cells ({struct.widthCells * settings.cellSizeCm}×{struct.heightCells * settings.cellSizeCm}cm)
+                        </p>
+                        <div className="space-y-0.5 max-h-[120px] overflow-y-auto">
+                          {suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer).map(s => (
+                            <div
+                              key={s.plant.id}
+                              className="flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded hover:bg-muted cursor-grab"
+                              draggable
+                              onDragStart={e => {
+                                e.dataTransfer.setData('plantId', s.plant.id);
+                                setEditingStructure(null);
+                              }}
+                            >
+                              <span>{s.plant.emoji}</span>
+                              <span className="font-medium text-foreground">{s.plant.name}</span>
+                              <span className="text-muted-foreground ml-auto">{s.reason}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
+                {/* Show suggestions button for growable non-container structures */}
+                {data.canGrowInside && !data.isContainer && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditingStructure(editingStructure === struct.id ? null : struct.id); }}
+                    className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px]"
+                    title="Plant suggestions"
+                    data-no-plant-move="true"
+                  >
+                    💡
+                  </button>
                 )}
                 <div
                   className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"

@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationData {
   name: string;
@@ -510,7 +511,7 @@ const Index = () => {
       )}
 
       {/* Seasonal tasks widget */}
-      <SeasonalTasks />
+      <SeasonalTasks placedPlantIds={placedPlants.map(p => p.plantId)} />
       <ActionRequired placedPlants={placedPlants} />
 
       {/* Toolbar */}
@@ -631,6 +632,23 @@ const Index = () => {
               const zones = calculateShadeZones(placedStructures, settings, c, r);
               return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
             })()}
+            onAddSuccessionTask={async (title, description) => {
+              if (!user) {
+                toast.error('Sign in to add tasks');
+                return;
+              }
+              const { error } = await supabase.from('garden_tasks').insert({
+                user_id: user.id,
+                title,
+                description,
+                period: 'monthly',
+              });
+              if (error) {
+                toast.error('Failed to add task');
+              } else {
+                toast.success('Succession task added! 📋');
+              }
+            }}
           />
         )}
       </div>

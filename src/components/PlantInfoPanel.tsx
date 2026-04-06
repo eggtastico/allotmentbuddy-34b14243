@@ -2,9 +2,10 @@ import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
-import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
+import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus } from 'lucide-react';
 import { sunExposureLabels } from '@/utils/sunCalculator';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
+import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
@@ -12,9 +13,10 @@ interface PlantInfoPanelProps {
   onClose: () => void;
   onRemove: (id: string) => void;
   sunExposure?: 'full-sun' | 'partial-shade' | 'full-shade';
+  onAddSuccessionTask?: (title: string, description: string) => void;
 }
 
-export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure }: PlantInfoPanelProps) {
+export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask }: PlantInfoPanelProps) {
   const plant = getPlantById(placed.plantId);
   if (!plant) return null;
 
@@ -238,17 +240,44 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         </div>
       )}
 
+      {/* Suggested bed sizes */}
+      <div className="bg-muted/50 border border-border rounded-md p-2 mb-3 text-xs">
+        <p className="font-medium text-foreground mb-1.5 flex items-center gap-1">
+          <Ruler className="h-3 w-3 text-primary" /> Ideal bed sizes
+        </p>
+        <div className="grid grid-cols-2 gap-1">
+          {suggestBedSizeForPlant(plant).map(s => (
+            <div key={s.label} className="bg-background rounded px-2 py-1.5 border border-border/50">
+              <p className="font-semibold text-foreground">{s.label}</p>
+              <p className="text-muted-foreground text-[10px]">{s.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Succession planting suggestions */}
       {plant.harvest && (
         <div className="bg-accent/10 border border-accent/20 rounded-md p-2 mb-3 text-xs">
           <p className="font-medium text-foreground mb-1.5">🔄 Follow-on crops</p>
-          <p className="text-muted-foreground text-[10px] mb-1">What to plant after {plant.name} finishes:</p>
+          <p className="text-muted-foreground text-[10px] mb-1">What to plant after {plant.name} finishes ({plant.harvest}):</p>
           <div className="space-y-1">
             {getSuccessionSuggestions(plant.id).map(s => (
               <div key={s.plant.id} className="flex items-center gap-1.5">
                 <span>{s.plant.emoji}</span>
                 <span className="font-medium text-foreground">{s.plant.name}</span>
-                <span className="text-muted-foreground text-[9px]">— {s.reason}</span>
+                <span className="text-muted-foreground text-[9px] flex-1">— {s.reason}</span>
+                {onAddSuccessionTask && (
+                  <button
+                    onClick={() => onAddSuccessionTask(
+                      `Plant ${s.plant.name} after ${plant.name}`,
+                      `${s.reason}. Harvest ${plant.name} ends ${plant.harvest}, then sow ${s.plant.name}.`
+                    )}
+                    className="shrink-0 h-4 w-4 rounded bg-primary/15 text-primary flex items-center justify-center hover:bg-primary/25 transition-colors"
+                    title="Add to tasks"
+                  >
+                    <CalendarPlus className="h-2.5 w-2.5" />
+                  </button>
+                )}
               </div>
             ))}
             {getSuccessionSuggestions(plant.id).length === 0 && (
