@@ -64,7 +64,28 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         )}
       </div>
 
-      {/* Key info */}
+      {/* Planted date & stage */}
+      <div className="mb-3 flex flex-wrap gap-2 text-xs">
+        {placed.plantedAt && (
+          <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
+            <span className="text-muted-foreground">📅 Planted:</span>
+            <span className="font-medium text-foreground">{new Date(placed.plantedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          </div>
+        )}
+        <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
+          <span>{placed.stage === 'seedling' ? '🌱' : '🌰'}</span>
+          <span className="font-medium text-foreground capitalize">{placed.stage || 'seed'}</span>
+        </div>
+        {placed.plantedAt && plant.daysToHarvest && (
+          <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
+            <span className="text-muted-foreground">🌾 Est. harvest:</span>
+            <span className="font-medium text-foreground">
+              {new Date(new Date(placed.plantedAt).getTime() + plant.daysToHarvest * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
         {plant.spacingCm && (
           <div className="bg-muted rounded-md p-2">

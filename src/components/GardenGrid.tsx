@@ -407,12 +407,26 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             const sunMismatch = plantData.sunPreference && plantData.sunPreference !== 'any' && plantData.sunPreference !== exposure;
             const relations = companionMap.get(placed.id);
             const isNew = newlyPlacedId === placed.id;
-            
+
+            // Growth-based sizing: days since planted
+            const daysSincePlanted = placed.plantedAt
+              ? Math.floor((Date.now() - new Date(placed.plantedAt).getTime()) / (1000 * 60 * 60 * 24))
+              : 0;
+            const daysToHarvest = plantData.daysToHarvest || 90;
+            const growthPct = Math.min(1, daysSincePlanted / daysToHarvest);
+            // Seedlings start bigger
+            const stageBoost = placed.stage === 'seedling' ? 0.3 : 0;
+            const scaleFactor = 0.55 + Math.min(0.45, (growthPct + stageBoost) * 0.45);
+            const emojiSize = Math.max(cellSize * scaleFactor, 14);
+
             const bgColor = relations?.hasEnemy
               ? 'hsl(0 60% 95%)'
               : relations?.hasCompanion
               ? 'hsl(142 40% 93%)'
               : 'hsl(25 30% 94%)';
+
+            // Stage indicator emoji
+            const stageEmoji = placed.stage === 'seedling' ? '🌱' : '🌰';
 
             return (
               <div
@@ -442,9 +456,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   e.preventDefault();
                   onRemovePlant(placed.id);
                 }}
-                title={`${plantData.name} — drag edges to fill area (right-click to remove)`}
+                title={`${plantData.name} (${placed.stage}, ${daysSincePlanted}d) — drag edges to fill area (right-click to remove)`}
               >
-                <span className="select-none leading-none" style={{ fontSize: Math.max(cellSize * 0.5, 14) }}>
+                <span className="select-none leading-none transition-all" style={{ fontSize: emojiSize }}>
                   {plantData.emoji}
                 </span>
                 {showLabels && (
@@ -452,6 +466,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                     {plantData.name.length > 6 ? plantData.name.slice(0, 5) + '…' : plantData.name}
                   </span>
                 )}
+                {/* Stage badge */}
+                <span className="absolute -top-1 -left-1 text-[8px] leading-none" title={placed.stage}>
+                  {stageEmoji}
+                </span>
                 {sunMismatch && (
                   <span className="absolute -top-1 -right-1 text-[7px] bg-amber-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold shadow-sm" title={`Prefers ${plantData.sunPreference}`}>
                     !
