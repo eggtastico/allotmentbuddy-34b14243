@@ -280,7 +280,7 @@ const Index = () => {
         />
       )}
       {showWeather && (
-        <WeatherYieldPanel plants={placedPlants} onClose={() => setShowWeather(false)} />
+        <WeatherYieldPanel plants={placedPlants} location={location} onClose={() => setShowWeather(false)} />
       )}
       {showRotation && (
         <RotationPanel
