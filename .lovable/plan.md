@@ -1,42 +1,38 @@
+## Plan: Dashboard Enhancements & New Features
 
+### 1. Seasonal Tasks Widget
+- Add a compact widget in the header/toolbar area showing 3 seeds to sow and 3 crops to harvest for the current month
+- Uses existing plant data (`sowingSeason`, `harvest` fields)
 
-## Plan: Enhance Plant Library & Companion Planting
+### 2. Plot Map Panel (modal)
+- New `PlotMapPanel` component opening as a modal/panel
+- Responsive 3×4 grid of garden beds
+- Click a bed to label it and assign a plant family with color coding
+- State stored locally (expandable to DB later)
 
-### 1. Expand Plant Data Model
-**File:** `src/types/garden.ts`
-- Add new fields to `Plant` interface: `family` (string), `frostHardiness` ('hardy' | 'half-hardy' | 'tender'), `difficulty` ('easy' | 'moderate' | 'challenging'), `sowingSeason` (string[]), `tips` (string)
+### 3. Garden Journal with Photo Uploads
+- **Database**: New `journal_entries` table (user_id, title, notes, photos array, created_at) with RLS
+- **Storage**: New `journal-photos` bucket with user-scoped upload policies
+- New `GardenJournal` component with dated entries, text notes, and photo upload (1-2 photos per entry)
 
-### 2. Expand to 100+ UK Allotment Plants
-**File:** `src/data/plants.ts`
-- Add ~40 new plants to reach 100+ total, covering common UK allotment varieties:
-  - **Vegetables:** Runner Bean, Broad Bean, Pak Choi, Rocket, Watercress, Sweetcorn (popcorn), Celeriac, Kohlrabi, Chicory, Endive, Florence Fennel, Globe Artichoke, Jerusalem Artichoke, Squash (butternut/winter), Marrow, Chilli Pepper, Sweet Potato, Shallot, Mangetout
-  - **Fruits:** Redcurrant, Whitecurrant, Blackberry, Plum (dwarf), Pear (dwarf), Cherry (dwarf), Cranberry, Loganberry, Damson
-  - **Herbs:** Chervil, Tarragon, Lemon Balm, Lovage, Sorrel, Bay, Chamomile, Horseradish, Marjoram
-  - **Flowers:** Sweet Pea, Dahlia, Cornflower, Poached Egg Plant, Zinnia, Cosmos, Foxglove, Echinacea
-- Populate all new fields (`family`, `frostHardiness`, `difficulty`, `tips`) for all plants (existing + new)
-- Use more distinct emoji where possible (avoid reusing 🌿 for every herb)
+### 4. Weather Rain Widget
+- Small header widget using Open-Meteo API (already partially integrated)
+- Shows rain probability for next 24 hours using the location from the header
 
-### 3. Enhanced Plant Sidebar with Filters
-**File:** `src/components/PlantSidebar.tsx`
-- Add filter dropdowns/badges for: **difficulty** (Easy/Moderate/Challenging), **season** (Spring/Summer/Autumn/Winter sowing), **sun preference**
-- Filters stack with existing category filter and search
-- Show plant count in filter badges
+### 5. Security Audit
+- Verify all tables have RLS enabled (garden_plans already does)
+- New journal_entries table will have proper RLS
 
-### 4. Plant Hover/Click Info Card
-**File:** `src/components/PlantSidebar.tsx`
-- Wrap each plant tile in a `HoverCard` (from existing `@/components/ui/hover-card`)
-- Card shows: sowing months, harvest months, spacing, sun preference, companion plants (good/bad), frost hardiness, difficulty badge, and tips
-- Compact layout using existing Badge and icon components
+### 6. Earthy Theme Option
+- Add "Earthy" theme toggle alongside existing dark mode
+- Forest Green primary, Sand backgrounds, Terracotta accents
+- CSS variables in index.css with `.theme-earthy` class
 
-### 5. Companion Planting Visual Feedback on Grid
-**File:** `src/components/GardenGrid.tsx`
-- When placing or hovering over a plant on the grid, check all adjacent plants (within ~3 cell radius) for companion/enemy relationships
-- Show green glow/border between companion pairs, red glow/border between enemy pairs
-- Add small companion/enemy indicators on placed plant tiles (green dot = has nearby companion, red dot = has nearby enemy)
+### 7. Mobile Bottom Navigation Bar
+- Fixed bottom nav bar on mobile with key actions (Plants, Calendar, Journal, AI, Weather)
+- Replaces the hamburger menu on small screens
 
 ### Technical Notes
-- All plant data remains client-side in `src/data/plants.ts` — no database changes needed
-- The expanded `Plant` type fields will automatically be available to AI Chat, Rotation, and Watering features since they import from the same data source
-- HoverCard is already installed in the project (`src/components/ui/hover-card.tsx`)
-- No new dependencies required
-
+- Database migration needed for journal_entries table + storage bucket
+- No changes to existing Supabase types file (auto-generated)
+- All new components are self-contained panels/modals

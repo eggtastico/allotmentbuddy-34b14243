@@ -47,6 +47,47 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          created_at: string
+          garden_plan_id: string | null
+          id: string
+          notes: string | null
+          photos: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          garden_plan_id?: string | null
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          garden_plan_id?: string | null
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_garden_plan_id_fkey"
+            columns: ["garden_plan_id"]
+            isOneToOne: false
+            referencedRelation: "garden_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

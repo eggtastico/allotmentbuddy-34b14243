@@ -15,11 +15,16 @@ import { WateringGuide } from '@/components/WateringGuide';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { LocationPicker } from '@/components/LocationPicker';
+import { SeasonalTasks } from '@/components/SeasonalTasks';
+import { PlotMapPanel } from '@/components/PlotMapPanel';
+import { GardenJournal } from '@/components/GardenJournal';
+import { RainWidget } from '@/components/RainWidget';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -55,6 +60,8 @@ const Index = () => {
   const [showRotation, setShowRotation] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [showWatering, setShowWatering] = useState(false);
+  const [showPlotMap, setShowPlotMap] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
@@ -181,6 +188,12 @@ const Index = () => {
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowWatering(true); setMobileMenuOpen(false); }}>
         <Droplets className="h-3.5 w-3.5 mr-1" /> Watering
       </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlotMap(true); setMobileMenuOpen(false); }}>
+        <Map className="h-3.5 w-3.5 mr-1" /> Plot Map
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowJournal(true); setMobileMenuOpen(false); }}>
+        <BookOpen className="h-3.5 w-3.5 mr-1" /> Journal
+      </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { handleExportPDF(); setMobileMenuOpen(false); }}>
         <Download className="h-3.5 w-3.5 mr-1" /> PDF
       </Button>
@@ -202,7 +215,7 @@ const Index = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background sm:pb-0 pb-14">
       <WelcomeModal />
 
       {/* Header */}
@@ -218,7 +231,7 @@ const Index = () => {
         </div>
 
         <LocationPicker location={location} onLocationChange={setLocation} />
-
+        <RainWidget location={location} />
         {/* Desktop nav */}
         <div className="hidden lg:flex items-center gap-1 ml-auto">
           {navButtons}
@@ -244,6 +257,9 @@ const Index = () => {
           {navButtons}
         </div>
       )}
+
+      {/* Seasonal tasks widget */}
+      <SeasonalTasks />
 
       {/* Toolbar */}
       <div className="flex items-center border-b border-border bg-card">
@@ -347,9 +363,21 @@ const Index = () => {
           plants={placedPlants}
           structures={placedStructures}
           location={location}
-          onClose={() => setShowWatering(false)}
+         onClose={() => setShowWatering(false)}
         />
       )}
+      {showPlotMap && <PlotMapPanel onClose={() => setShowPlotMap(false)} />}
+      {showJournal && <GardenJournal onClose={() => setShowJournal(false)} />}
+
+      {/* Mobile bottom nav */}
+      <MobileBottomNav
+        onToggleSidebar={() => setMobileSidebarOpen(prev => !prev)}
+        onShowCalendar={() => setShowCalendar(true)}
+        onShowAI={() => setShowAI(true)}
+        onShowJournal={() => setShowJournal(true)}
+        onShowPlotMap={() => setShowPlotMap(true)}
+        onShowWeather={() => setShowWeather(true)}
+      />
     </div>
   );
 };
