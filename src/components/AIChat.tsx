@@ -6,6 +6,13 @@ import { X, Send, Bot, Loader2 } from 'lucide-react';
 import { PlacedPlant, PlotSettings } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 
+interface LocationData {
+  name: string;
+  lat: number;
+  lon: number;
+  region?: string;
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -14,10 +21,11 @@ interface Message {
 interface AIChatProps {
   settings: PlotSettings;
   plants: PlacedPlant[];
+  location: LocationData | null;
   onClose: () => void;
 }
 
-export function AIChat({ settings, plants, onClose }: AIChatProps) {
+export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +37,9 @@ export function AIChat({ settings, plants, onClose }: AIChatProps) {
     .map(id => { const plant = getPlantById(id); return plant ? `${plant.emoji} ${plant.name} (x${plants.filter(pp => pp.plantId === id).length})` : ''; })
     .filter(Boolean).join(', ');
 
-  const systemContext = `User has a ${settings.widthM}x${settings.heightM} ${settings.unit} garden plot. Plants: ${plantSummary || 'none yet'}.`;
+  const locationStr = location ? `Location: ${location.name} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${location.region}` : ''}.` : '';
+
+  const systemContext = `User has a ${settings.widthM}x${settings.heightM} ${settings.unit} garden plot. ${locationStr} Plants: ${plantSummary || 'none yet'}.`;
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -71,6 +81,9 @@ export function AIChat({ settings, plants, onClose }: AIChatProps) {
             <div className="text-center py-8">
               <Bot className="h-10 w-10 text-primary mx-auto mb-3 opacity-50" />
               <p className="text-sm text-muted-foreground">Ask me anything about your garden!</p>
+              {location && (
+                <p className="text-[10px] text-muted-foreground mt-1">📍 Using your location: {location.name}</p>
+              )}
               <div className="flex flex-wrap gap-2 justify-center mt-3">
                 {['Suggest best layout for my plot', 'What should I plant this month?', 'Which plants grow well together?'].map(q => (
                   <button key={q} onClick={() => { setInput(q); }} className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground">

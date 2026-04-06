@@ -265,7 +265,7 @@ const Index = () => {
 
       {/* Modals */}
       {showCalendar && <PlantingCalendar placedPlants={placedPlants} onClose={() => setShowCalendar(false)} />}
-      {showAI && <AIChat settings={settings} plants={placedPlants} onClose={() => setShowAI(false)} />}
+      {showAI && <AIChat settings={settings} plants={placedPlants} location={location} onClose={() => setShowAI(false)} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showSaveLoad && user && (
         <SaveLoadPanel
@@ -280,7 +280,7 @@ const Index = () => {
         />
       )}
       {showWeather && (
-        <WeatherYieldPanel plants={placedPlants} onClose={() => setShowWeather(false)} />
+        <WeatherYieldPanel plants={placedPlants} location={location} onClose={() => setShowWeather(false)} />
       )}
       {showRotation && (
         <RotationPanel
@@ -293,6 +293,7 @@ const Index = () => {
         <WateringGuide
           plants={placedPlants}
           structures={placedStructures}
+          location={location}
           onClose={() => setShowWatering(false)}
         />
       )}

@@ -3,16 +3,24 @@ import { PlacedPlant, PlacedStructure } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Droplets, CloudRain, Sun, Wind, Loader2, Search, ToggleLeft, ToggleRight, RefreshCw, Thermometer, Umbrella } from 'lucide-react';
+import { X, Droplets, Sun, Wind, Loader2, RefreshCw, Thermometer, Umbrella } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { MapPin } from 'lucide-react';
+
+interface LocationData {
+  name: string;
+  lat: number;
+  lon: number;
+  region?: string;
+}
 
 interface WateringGuideProps {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
+  location: LocationData | null;
   onClose: () => void;
 }
 
@@ -35,10 +43,10 @@ interface WateringData {
 }
 
 const STATUS_CONFIG = {
-  water: { label: 'Water Today', color: 'bg-blue-500', icon: '💧', textColor: 'text-blue-400' },
-  skip: { label: 'Skip Watering', color: 'bg-emerald-500', icon: '✅', textColor: 'text-emerald-400' },
-  reduce: { label: 'Reduce Watering', color: 'bg-amber-500', icon: '⚠️', textColor: 'text-amber-400' },
-  extra: { label: 'Extra Water Needed', color: 'bg-red-500', icon: '🔴', textColor: 'text-red-400' },
+  water: { label: 'Water Today', icon: '💧', textColor: 'text-blue-400' },
+  skip: { label: 'Skip Watering', icon: '✅', textColor: 'text-emerald-400' },
+  reduce: { label: 'Reduce Watering', icon: '⚠️', textColor: 'text-amber-400' },
+  extra: { label: 'Extra Water Needed', icon: '🔴', textColor: 'text-red-400' },
 };
 
 const REC_CONFIG = {
@@ -48,17 +56,13 @@ const REC_CONFIG = {
   heavy: { label: 'Heavy', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
 };
 
-export function WateringGuide({ plants, structures, onClose }: WateringGuideProps) {
+export function WateringGuide({ plants, structures, location: loc, onClose }: WateringGuideProps) {
   const [loading, setLoading] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [data, setData] = useState<WateringData | null>(null);
   const [selfWateringPlants, setSelfWateringPlants] = useState<Set<string>>(new Set());
-  const [location, setLocation] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [weatherInfo, setWeatherInfo] = useState<any>(null);
 
-  // Determine which plants are inside structures
   const getPlantLocation = useCallback((plant: PlacedPlant): 'indoor' | 'outdoor' => {
     for (const struct of structures) {
       const structData = getStructureById(struct.structureId);
@@ -75,73 +79,40 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
     return 'outdoor';
   }, [structures]);
 
-  // Fetch weather
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
-    setWeatherLoading(true);
-    try {
-      const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=4`
-      );
-      const json = await res.json();
-      const weatherCode = json.current?.weather_code ?? 0;
-      const conditions = weatherCode >= 61 ? 'Rainy' : weatherCode >= 45 ? 'Foggy' : weatherCode >= 3 ? 'Overcast' : weatherCode >= 1 ? 'Partly cloudy' : 'Clear';
-
-      const info = {
-        temperature: json.current?.temperature_2m ?? 0,
-        humidity: json.current?.relative_humidity_2m ?? 0,
-        windSpeed: json.current?.wind_speed_10m ?? 0,
-        conditions,
-        locationName: location || 'Your location',
-        forecast: json.daily?.time?.slice(1, 4).map((d: string, i: number) => ({
-          date: d,
-          tempMax: json.daily.temperature_2m_max[i + 1],
-          tempMin: json.daily.temperature_2m_min[i + 1],
-          precip: json.daily.precipitation_sum[i + 1],
-        })) || [],
-      };
-      setWeatherInfo(info);
-    } catch {
-      toast.error('Failed to fetch weather data');
-    } finally {
-      setWeatherLoading(false);
-    }
-  }, [location]);
-
-  // Get location
+  // Fetch weather using shared location
   useEffect(() => {
-    navigator.geolocation?.getCurrentPosition(
-      (pos) => {
-        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setLocation('Your location');
-      },
-      () => {
-        // Default to London
-        setCoords({ lat: 51.5074, lon: -0.1278 });
-        setLocation('London');
-      }
-    );
-  }, []);
+    if (!loc) { setWeatherLoading(false); return; }
+    const fetchWeather = async () => {
+      setWeatherLoading(true);
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=4`
+        );
+        const json = await res.json();
+        const weatherCode = json.current?.weather_code ?? 0;
+        const conditions = weatherCode >= 61 ? 'Rainy' : weatherCode >= 45 ? 'Foggy' : weatherCode >= 3 ? 'Overcast' : weatherCode >= 1 ? 'Partly cloudy' : 'Clear';
 
-  useEffect(() => {
-    if (coords) fetchWeather(coords.lat, coords.lon);
-  }, [coords, fetchWeather]);
-
-  const handleSearch = async () => {
-    if (!searchInput.trim()) return;
-    try {
-      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchInput)}&count=1`);
-      const json = await res.json();
-      if (json.results?.[0]) {
-        const r = json.results[0];
-        setCoords({ lat: r.latitude, lon: r.longitude });
-        setLocation(`${r.name}, ${r.country}`);
-      } else {
-        toast.error('Location not found');
+        setWeatherInfo({
+          temperature: json.current?.temperature_2m ?? 0,
+          humidity: json.current?.relative_humidity_2m ?? 0,
+          windSpeed: json.current?.wind_speed_10m ?? 0,
+          conditions,
+          locationName: loc.name,
+          forecast: json.daily?.time?.slice(1, 4).map((d: string, i: number) => ({
+            date: d,
+            tempMax: json.daily.temperature_2m_max[i + 1],
+            tempMin: json.daily.temperature_2m_min[i + 1],
+            precip: json.daily.precipitation_sum[i + 1],
+          })) || [],
+        });
+      } catch {
+        toast.error('Failed to fetch weather data');
+      } finally {
+        setWeatherLoading(false);
       }
-    } catch {
-      toast.error('Search failed');
-    }
-  };
+    };
+    fetchWeather();
+  }, [loc]);
 
   const toggleSelfWatering = (plantId: string) => {
     setSelfWateringPlants(prev => {
@@ -204,7 +175,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
         className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-blue-400" />
@@ -216,23 +186,16 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Location search */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter postcode or city..."
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="text-sm"
-            />
-            <Button size="sm" onClick={handleSearch} variant="outline">
-              <Search className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {location && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>📍 {location}</span>
+          {/* Location info */}
+          {loc ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" /> {loc.name}
+              <span className="text-[10px]">— change in header</span>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground text-sm">
+              <MapPin className="h-6 w-6 mx-auto mb-1 opacity-50" />
+              Set your location in the header first
             </div>
           )}
 
@@ -276,14 +239,14 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                 {uniquePlants.map(p => {
                   const info = getPlantById(p.plantId);
                   if (!info) return null;
-                  const loc = getPlantLocation(p);
+                  const plantLoc = getPlantLocation(p);
                   return (
                     <div key={p.plantId} className="flex items-center justify-between py-1 px-2 rounded-md bg-muted/30">
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{info.emoji}</span>
                         <span className="text-xs text-foreground">{info.name}</span>
-                        <Badge variant="outline" className={`text-[9px] ${loc === 'indoor' ? 'border-primary/50 text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}>
-                          {loc === 'indoor' ? '🏠 Indoor' : '🌧️ Outdoor'}
+                        <Badge variant="outline" className={`text-[9px] ${plantLoc === 'indoor' ? 'border-primary/50 text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}>
+                          {plantLoc === 'indoor' ? '🏠 Indoor' : '🌧️ Outdoor'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-1">
@@ -300,10 +263,9 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
             </div>
           )}
 
-          {/* Get recommendation button */}
           <Button
             onClick={getAIRecommendation}
-            disabled={loading || weatherLoading || plants.length === 0}
+            disabled={loading || weatherLoading || plants.length === 0 || !loc}
             className="w-full"
           >
             {loading ? (
@@ -320,7 +282,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
           {/* AI Results */}
           {data && (
             <div className="space-y-3">
-              {/* Overall status */}
               <div className={`rounded-lg p-3 border ${data.overallStatus === 'skip' ? 'border-emerald-500/30 bg-emerald-500/10' : data.overallStatus === 'extra' ? 'border-red-500/30 bg-red-500/10' : data.overallStatus === 'reduce' ? 'border-amber-500/30 bg-amber-500/10' : 'border-blue-500/30 bg-blue-500/10'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">{STATUS_CONFIG[data.overallStatus]?.icon}</span>
@@ -331,7 +292,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                 <p className="text-xs text-foreground/80">{data.summary}</p>
               </div>
 
-              {/* Per-plant recommendations */}
               {data.plants?.length > 0 && (
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plant-by-Plant</h3>
@@ -345,9 +305,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                             {REC_CONFIG[p.recommendation]?.label || p.recommendation}
                           </Badge>
                           {p.selfWatering && <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-300">💧 Auto</Badge>}
-                          <Badge variant="outline" className={`text-[9px] ${p.location === 'indoor' ? 'border-primary/50 text-primary' : 'border-muted-foreground/30'}`}>
-                            {p.location === 'indoor' ? '🏠' : '🌧️'}
-                          </Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground truncate">{p.reason}</p>
                       </div>
@@ -359,7 +316,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                 </div>
               )}
 
-              {/* Forecast outlook */}
               {data.forecast && (
                 <div className="bg-muted/30 rounded-lg p-3">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">3-Day Outlook</h3>
@@ -367,7 +323,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                 </div>
               )}
 
-              {/* Tips */}
               {data.tips?.length > 0 && (
                 <div className="space-y-1">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tips</h3>
@@ -379,7 +334,6 @@ export function WateringGuide({ plants, structures, onClose }: WateringGuideProp
                 </div>
               )}
 
-              {/* Refresh */}
               <Button variant="outline" size="sm" onClick={getAIRecommendation} className="w-full text-xs" disabled={loading}>
                 <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh Advice
               </Button>
