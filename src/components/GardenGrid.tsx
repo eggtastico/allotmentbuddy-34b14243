@@ -4,9 +4,10 @@ import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
 import { getCompanionReason, categoryColors, categoryColorsDark } from '@/data/companionReasons';
-import { X, ZoomIn, ZoomOut, Move, Lightbulb } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Move, Lightbulb, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { suggestPlantsForBed } from '@/utils/bedPlantSuggestions';
+import { useFavouritePlants } from '@/hooks/useFavouritePlants';
 
 interface GardenGridProps {
   settings: PlotSettings;
