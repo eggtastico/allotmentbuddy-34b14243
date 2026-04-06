@@ -49,17 +49,23 @@ export function suggestPlantsForBed(
     suggestions.push({ plant, fitCount, reason });
   }
 
-  // Sort: best fit first (more plants), then easy first
+  const favSet = new Set(favouriteIds || []);
+
+  // Sort: favourites first (by order), then best fit, then easy
   return suggestions
     .sort((a, b) => {
+      const aFav = favSet.has(a.plant.id);
+      const bFav = favSet.has(b.plant.id);
+      if (aFav !== bFav) return aFav ? -1 : 1;
+      if (aFav && bFav && favouriteIds) {
+        return favouriteIds.indexOf(a.plant.id) - favouriteIds.indexOf(b.plant.id);
+      }
       // Prioritise plants that fill the space well
       const aUtil = (a.fitCount * a.plant.spacingCm * a.plant.spacingCm) / bedAreaCm2;
       const bUtil = (b.fitCount * b.plant.spacingCm * b.plant.spacingCm) / bedAreaCm2;
-      // Closer to 1.0 = better utilisation
       const aDiff = Math.abs(1 - aUtil);
       const bDiff = Math.abs(1 - bUtil);
       if (Math.abs(aDiff - bDiff) > 0.3) return aDiff - bDiff;
-      // Then easy first
       const diffOrder = { easy: 0, moderate: 1, challenging: 2 };
       return (diffOrder[a.plant.difficulty || 'moderate'] || 1) - (diffOrder[b.plant.difficulty || 'moderate'] || 1);
     })
