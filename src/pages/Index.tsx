@@ -20,11 +20,14 @@ import { PlotMapPanel } from '@/components/PlotMapPanel';
 import { GardenJournal } from '@/components/GardenJournal';
 import { RainWidget } from '@/components/RainWidget';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { DocsGuide } from '@/components/DocsGuide';
+import { SeedInventory } from '@/components/SeedInventory';
+import { PlantingSuggestions } from '@/components/PlantingSuggestions';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -62,6 +65,9 @@ const Index = () => {
   const [showWatering, setShowWatering] = useState(false);
   const [showPlotMap, setShowPlotMap] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
+  const [showSeedInventory, setShowSeedInventory] = useState(false);
+  const [showPlantingSuggestions, setShowPlantingSuggestions] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
@@ -173,11 +179,20 @@ const Index = () => {
 
   const navButtons = (
     <>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowDocs(true); setMobileMenuOpen(false); }}>
+        <HelpCircle className="h-3.5 w-3.5 mr-1" /> Guide
+      </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowCalendar(true); setMobileMenuOpen(false); }}>
         <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowAI(true); setMobileMenuOpen(false); }}>
         <Bot className="h-3.5 w-3.5 mr-1" /> AI Help
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowSeedInventory(true); setMobileMenuOpen(false); }}>
+        <Package className="h-3.5 w-3.5 mr-1" /> Seeds
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlantingSuggestions(true); setMobileMenuOpen(false); }}>
+        <Lightbulb className="h-3.5 w-3.5 mr-1" /> Suggestions
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowRotation(true); setMobileMenuOpen(false); }}>
         <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
@@ -368,6 +383,9 @@ const Index = () => {
       )}
       {showPlotMap && <PlotMapPanel onClose={() => setShowPlotMap(false)} />}
       {showJournal && <GardenJournal onClose={() => setShowJournal(false)} />}
+      {showDocs && <DocsGuide onClose={() => setShowDocs(false)} />}
+      {showSeedInventory && <SeedInventory onClose={() => setShowSeedInventory(false)} />}
+      {showPlantingSuggestions && <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />}
 
       {/* Mobile bottom nav */}
       <MobileBottomNav

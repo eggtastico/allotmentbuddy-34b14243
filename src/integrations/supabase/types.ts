@@ -88,6 +88,51 @@ export type Database = {
           },
         ]
       }
+      seed_inventory: {
+        Row: {
+          ai_extracted_data: Json | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          plant_name: string
+          purchased_date: string | null
+          quantity: number
+          seed_pack_photo_url: string | null
+          updated_at: string
+          user_id: string
+          variety: string | null
+        }
+        Insert: {
+          ai_extracted_data?: Json | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          plant_name: string
+          purchased_date?: string | null
+          quantity?: number
+          seed_pack_photo_url?: string | null
+          updated_at?: string
+          user_id: string
+          variety?: string | null
+        }
+        Update: {
+          ai_extracted_data?: Json | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          plant_name?: string
+          purchased_date?: string | null
+          quantity?: number
+          seed_pack_photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          variety?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

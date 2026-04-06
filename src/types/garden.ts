@@ -3,6 +3,7 @@ export interface Plant {
   name: string;
   emoji: string;
   category: 'vegetable' | 'fruit' | 'herb' | 'flower';
+  variety?: string;
   spacingCm: number;
   companions: string[];
   enemies: string[];
@@ -19,6 +20,7 @@ export interface Plant {
   difficulty?: 'easy' | 'moderate' | 'challenging';
   sowingSeason?: string[];
   tips?: string;
+  seedPackData?: Record<string, any>;
 }
 
 export type PlantStage = 'seed' | 'seedling';

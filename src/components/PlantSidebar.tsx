@@ -84,6 +84,13 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null);
   const [sunFilter, setSunFilter] = useState<string | null>(null);
+  const [varietyFilter, setVarietyFilter] = useState<string | null>(null);
+
+  // Get unique varieties for current category
+  const availableVarieties = [...new Set(
+    plants.filter(p => p.variety && (!activeCategory || p.category === activeCategory))
+      .map(p => p.variety!)
+  )].sort();
 
   const filtered = plants.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -91,7 +98,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
     const matchesDifficulty = !difficultyFilter || p.difficulty === difficultyFilter;
     const matchesSeason = !seasonFilter || (p.sowingSeason && p.sowingSeason.includes(seasonFilter));
     const matchesSun = !sunFilter || p.sunPreference === sunFilter;
-    return matchesSearch && matchesCategory && matchesDifficulty && matchesSeason && matchesSun;
+    const matchesVariety = !varietyFilter || p.variety === varietyFilter;
+    return matchesSearch && matchesCategory && matchesDifficulty && matchesSeason && matchesSun && matchesVariety;
   });
 
   const filteredStructures = structures.filter(s =>
@@ -104,7 +112,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
     return acc;
   }, {} as Record<string, typeof plants>);
 
-  const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter].filter(Boolean).length;
+  const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
     <div className="w-64 border-r border-border bg-card flex flex-col h-full">
@@ -203,9 +211,25 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                 ))}
               </div>
             </div>
+            {availableVarieties.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground mb-1">Variety</p>
+                <div className="flex gap-1 flex-wrap">
+                  {availableVarieties.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setVarietyFilter(varietyFilter === v ? null : v)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${varietyFilter === v ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {activeFilterCount > 0 && (
               <button
-                onClick={() => { setDifficultyFilter(null); setSeasonFilter(null); setSunFilter(null); }}
+                onClick={() => { setDifficultyFilter(null); setSeasonFilter(null); setSunFilter(null); setVarietyFilter(null); }}
                 className="text-[10px] text-muted-foreground hover:text-foreground"
               >
                 Clear filters
