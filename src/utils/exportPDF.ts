@@ -71,7 +71,11 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
 
   // Place plants
   const uniquePlants = [...new Set(plants.map(p => p.plantId))];
-  const plantDataMap = new Map(uniquePlants.map(id => [id, getPlantById(id)!]).filter(([, d]) => d));
+  const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+  uniquePlants.forEach(id => {
+    const d = getPlantById(id);
+    if (d) plantDataMap.set(id, d);
+  });
 
   doc.setFontSize(Math.min(cellW * 0.55, 7));
   doc.setFont('helvetica', 'bold');
