@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SignedImage } from '@/components/SignedImage';
 
 interface SeedItem {
   id: string;
@@ -103,8 +104,8 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       const { error: uploadError } = await supabase.storage.from('seed-pack-photos').upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('seed-pack-photos').getPublicUrl(filePath);
-      const photoUrl = urlData.publicUrl;
+      const { data: signedData } = await supabase.storage.from('seed-pack-photos').createSignedUrl(filePath, 3600);
+      const photoUrl = signedData?.signedUrl || filePath;
 
       // Convert to base64 for AI
       const reader = new FileReader();
@@ -220,7 +221,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
               {seeds.map(seed => (
                 <div key={seed.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 group">
                   {seed.seed_pack_photo_url && (
-                    <img src={seed.seed_pack_photo_url} alt="" className="h-10 w-10 rounded object-cover border border-border" />
+                    <SignedImage bucket="seed-pack-photos" path={seed.seed_pack_photo_url} alt="" className="h-10 w-10 rounded object-cover border border-border" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
