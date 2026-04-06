@@ -146,7 +146,10 @@ const Index = () => {
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
-    if (occupied) return;
+    if (occupied) {
+      setDragging(null);
+      return;
+    }
     pushUndo(placedPlants);
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -154,6 +157,7 @@ const Index = () => {
       plantedAt: new Date().toISOString(),
       stage: defaultStage,
     }]);
+    setDragging(null);
   }, [placedPlants, defaultStage, pushUndo]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
@@ -185,6 +189,10 @@ const Index = () => {
     if (selectedPlant?.id === id) setSelectedPlant(null);
   }, [selectedPlant, pushUndo, placedPlants]);
 
+  const handleMovePlantStart = useCallback(() => {
+    pushUndo(placedPlants);
+  }, [placedPlants, pushUndo]);
+
   const handleMovePlant = useCallback((id: string, x: number, y: number) => {
     const plantToMove = placedPlants.find(p => p.id === id);
     if (!plantToMove) return;
@@ -193,10 +201,9 @@ const Index = () => {
     const occupied = placedPlants.some(p => p.id !== id && p.x === x && p.y === y);
     if (positionUnchanged || occupied) return;
 
-    pushUndo(placedPlants);
     setPlacedPlants(prev => prev.map(p => p.id === id ? { ...p, x, y } : p));
     setSelectedPlant(prev => prev?.id === id ? { ...prev, x, y } : prev);
-  }, [placedPlants, pushUndo]);
+  }, [placedPlants]);
 
   const handleClear = useCallback(() => {
     setShowClearConfirm(true);
@@ -220,6 +227,7 @@ const Index = () => {
       widthCells: structData.widthCells,
       heightCells: structData.heightCells,
     }]);
+    setDragging(null);
   }, []);
 
   const handleRemoveStructure = useCallback((id: string) => {
@@ -580,6 +588,7 @@ const Index = () => {
           onPlacePlant={handlePlacePlant}
           onRemovePlant={handleRemovePlant}
           onMovePlant={handleMovePlant}
+          onMovePlantStart={handleMovePlantStart}
           onSelectPlant={setSelectedPlant}
           onPlaceStructure={handlePlaceStructure}
           onRemoveStructure={handleRemoveStructure}
