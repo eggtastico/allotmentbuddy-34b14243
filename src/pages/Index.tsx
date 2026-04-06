@@ -188,6 +188,12 @@ const Index = () => {
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowWatering(true); setMobileMenuOpen(false); }}>
         <Droplets className="h-3.5 w-3.5 mr-1" /> Watering
       </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlotMap(true); setMobileMenuOpen(false); }}>
+        <Map className="h-3.5 w-3.5 mr-1" /> Plot Map
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowJournal(true); setMobileMenuOpen(false); }}>
+        <BookOpen className="h-3.5 w-3.5 mr-1" /> Journal
+      </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { handleExportPDF(); setMobileMenuOpen(false); }}>
         <Download className="h-3.5 w-3.5 mr-1" /> PDF
       </Button>
