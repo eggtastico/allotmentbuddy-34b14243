@@ -48,7 +48,7 @@ export function ActionRequired({ placedPlants }: ActionRequiredProps) {
         harvestReady,
         daysSincePlanted,
       };
-    }).filter(Boolean) as NonNullable<ReturnType<typeof Array.prototype.map>[number]>[];
+    }).filter((x): x is NonNullable<typeof x> => x !== null);
   }, [placedPlants]);
 
   const attentionCrops = cropData.filter(c => c.needsAttention);
