@@ -186,11 +186,6 @@ const Index = () => {
     setSelectedPlant(null);
   }, [placedPlants, pushUndo]);
 
-  const handleRemovePlant = useCallback((id: string) => {
-    setPlacedPlants(prev => prev.filter(p => p.id !== id));
-    if (selectedPlant?.id === id) setSelectedPlant(null);
-  }, [selectedPlant]);
-
   const handlePlaceStructure = useCallback((structureId: string, x: number, y: number) => {
     const structData = getStructureById(structureId);
     if (!structData) return;
@@ -213,12 +208,6 @@ const Index = () => {
 
   const handleMoveStructure = useCallback((id: string, x: number, y: number) => {
     setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, x, y } : s));
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setPlacedPlants([]);
-    setPlacedStructures([]);
-    setSelectedPlant(null);
   }, []);
 
   const handleLoadPlan = useCallback((plan: any) => {
