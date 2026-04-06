@@ -265,6 +265,7 @@ const Index = () => {
           onResizeStructure={handleResizeStructure}
           onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
+          onFillPlantArea={handleFillPlantArea}
         />
         {selectedPlant && (
           <PlantInfoPanel
