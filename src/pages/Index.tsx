@@ -258,6 +258,9 @@ const Index = () => {
         </div>
       )}
 
+      {/* Seasonal tasks widget */}
+      <SeasonalTasks />
+
       {/* Toolbar */}
       <div className="flex items-center border-b border-border bg-card">
         <div className="flex-1">
