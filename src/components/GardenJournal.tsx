@@ -52,8 +52,8 @@ export function GardenJournal({ onClose }: Props) {
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from('journal-photos').getPublicUrl(path);
-    setPendingPhotos(prev => [...prev, urlData.publicUrl]);
+    // Store the path, not the URL — we'll generate signed URLs for display
+    setPendingPhotos(prev => [...prev, path]);
     setUploading(false);
     toast.success('Photo uploaded! 📸');
   };
