@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
-import { getPlantById } from '@/data/plants';
+import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
 import { X } from 'lucide-react';
