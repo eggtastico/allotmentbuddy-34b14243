@@ -62,8 +62,10 @@ const Index = () => {
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       plantId, x, y,
+      plantedAt: new Date().toISOString(),
+      stage: defaultStage,
     }]);
-  }, [placedPlants]);
+  }, [placedPlants, defaultStage]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
     setPlacedPlants(prev => {
