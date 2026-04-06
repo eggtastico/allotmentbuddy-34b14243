@@ -5,6 +5,7 @@ import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
 import { getStructureById } from '@/data/structures';
+import { getPlantById } from '@/data/plants';
 import { PlotToolbar } from '@/components/PlotToolbar';
 import { PlantingCalendar } from '@/components/PlantingCalendar';
 import { AIChat } from '@/components/AIChat';
@@ -52,7 +53,7 @@ const Index = () => {
   const { plans, save, isSaving } = useGardenPlans();
 
   const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180,
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180, snapToGrid: true,
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
@@ -145,9 +146,18 @@ const Index = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
-    const occupied = placedPlants.some(p => p.x === x && p.y === y);
-    if (occupied) {
+    // Check spacing: new plant must be far enough from same-type plants
+    const plantData = getPlantById(plantId);
+    const spacingCells = plantData ? Math.max(1, plantData.spacingCm / settings.cellSizeCm) : 1;
+    const tooClose = placedPlants.some(p => {
+      const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+      if (dist < 0.5) return true; // overlapping
+      if (p.plantId === plantId && dist < spacingCells) return true; // same plant too close
+      return false;
+    });
+    if (tooClose) {
       setDragging(null);
+      toast.error(`${plantData?.name || 'Plant'} needs ${plantData?.spacingCm || 20}cm spacing`);
       return;
     }
     pushUndo(placedPlants);
@@ -158,30 +168,39 @@ const Index = () => {
       stage: defaultStage,
     }]);
     setDragging(null);
-  }, [placedPlants, defaultStage, pushUndo]);
+  }, [placedPlants, defaultStage, pushUndo, settings.cellSizeCm]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
     pushUndo(placedPlants);
+    const plantData = getPlantById(plantId);
+    const spacingCells = plantData ? Math.max(1, Math.ceil(plantData.spacingCm / settings.cellSizeCm)) : 1;
     setPlacedPlants(prev => {
-      const occupied = new Set(prev.map(p => `${p.x},${p.y}`));
       const newPlants: PlacedPlant[] = [];
-      for (let dy = 0; dy < h; dy++) {
-        for (let dx = 0; dx < w; dx++) {
-          const key = `${originX + dx},${originY + dy}`;
-          if (!occupied.has(key)) {
-            newPlants.push({
-              id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${dx}-${dy}`,
-              plantId, x: originX + dx, y: originY + dy,
-              plantedAt: new Date().toISOString(),
-              stage: defaultStage,
-            });
-            occupied.add(key);
-          }
+      const allPlants = [...prev];
+      // Step by spacing interval instead of every cell
+      for (let dy = 0; dy < h; dy += spacingCells) {
+        for (let dx = 0; dx < w; dx += spacingCells) {
+          const px = originX + dx;
+          const py = originY + dy;
+          // Check no existing plant is too close
+          const blocked = allPlants.some(p => {
+            const dist = Math.sqrt((p.x - px) ** 2 + (p.y - py) ** 2);
+            return dist < spacingCells * 0.9;
+          });
+          if (blocked) continue;
+          const np: PlacedPlant = {
+            id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${dx}-${dy}`,
+            plantId, x: px, y: py,
+            plantedAt: new Date().toISOString(),
+            stage: defaultStage,
+          };
+          newPlants.push(np);
+          allPlants.push(np);
         }
       }
       return [...prev, ...newPlants];
     });
-  }, [placedPlants, pushUndo]);
+  }, [placedPlants, pushUndo, settings.cellSizeCm]);
 
   const handleRemovePlant = useCallback((id: string) => {
     pushUndo(placedPlants);
