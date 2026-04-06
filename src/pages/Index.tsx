@@ -64,6 +64,26 @@ const Index = () => {
     }]);
   }, [placedPlants]);
 
+  const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
+    setPlacedPlants(prev => {
+      const occupied = new Set(prev.map(p => `${p.x},${p.y}`));
+      const newPlants: PlacedPlant[] = [];
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          const key = `${originX + dx},${originY + dy}`;
+          if (!occupied.has(key)) {
+            newPlants.push({
+              id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${dx}-${dy}`,
+              plantId, x: originX + dx, y: originY + dy,
+            });
+            occupied.add(key);
+          }
+        }
+      }
+      return [...prev, ...newPlants];
+    });
+  }, []);
+
   const handleRemovePlant = useCallback((id: string) => {
     setPlacedPlants(prev => prev.filter(p => p.id !== id));
     if (selectedPlant?.id === id) setSelectedPlant(null);
@@ -245,6 +265,7 @@ const Index = () => {
           onResizeStructure={handleResizeStructure}
           onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
+          onFillPlantArea={handleFillPlantArea}
         />
         {selectedPlant && (
           <PlantInfoPanel
