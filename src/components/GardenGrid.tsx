@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
-import { getPlantById } from '@/data/plants';
+import { getPlantById, plants as allPlantData } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
 import { X } from 'lucide-react';
@@ -38,6 +38,29 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     () => calculateShadeZones(structures, settings, cols, rows),
     [structures, settings, cols, rows]
   );
+
+  // Companion/enemy relationship map for each placed plant
+  const companionMap = useMemo(() => {
+    const map = new Map<string, { hasCompanion: boolean; hasEnemy: boolean }>();
+    const radius = 3;
+    for (const p of plants) {
+      const pData = getPlantById(p.plantId);
+      if (!pData) continue;
+      let hasCompanion = false;
+      let hasEnemy = false;
+      for (const other of plants) {
+        if (other.id === p.id) continue;
+        const dist = Math.abs(other.x - p.x) + Math.abs(other.y - p.y);
+        if (dist > radius) continue;
+        const oData = getPlantById(other.plantId);
+        if (!oData) continue;
+        if (pData.companions.includes(other.plantId) || oData.companions.includes(p.plantId)) hasCompanion = true;
+        if (pData.enemies.includes(other.plantId) || oData.enemies.includes(p.plantId)) hasEnemy = true;
+      }
+      map.set(p.id, { hasCompanion, hasEnemy });
+    }
+    return map;
+  }, [plants]);
 
   // Grid labels: show every N cells to match 1m or 1ft marks
   const labelInterval = settings.unit === 'meters'
@@ -271,9 +294,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             const plantData = getPlantById(placed.plantId);
             if (!plantData) return null;
             const isSelected = selectedPlantId === placed.id;
-            // Sun warning: check if plant's sun preference mismatches its position
+            // Sun warning
             const exposure = getSunExposure(placed.x, placed.y, shadeZones);
             const sunMismatch = plantData.sunPreference && plantData.sunPreference !== 'any' && plantData.sunPreference !== exposure;
+            const relations = companionMap.get(placed.id);
             return (
               <div
                 key={placed.id}
@@ -283,6 +307,12 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   top: placed.y * cellSize,
                   width: cellSize,
                   height: cellSize,
+                  boxShadow: relations?.hasEnemy
+                    ? '0 0 6px 2px rgba(239,68,68,0.45)'
+                    : relations?.hasCompanion
+                    ? '0 0 6px 2px rgba(34,197,94,0.4)'
+                    : undefined,
+                  borderRadius: '4px',
                 }}
                 onClick={e => {
                   e.stopPropagation();
@@ -292,13 +322,19 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   e.preventDefault();
                   onRemovePlant(placed.id);
                 }}
-                title={`${plantData.name}${sunMismatch ? ` ⚠️ Prefers ${plantData.sunPreference}` : ''} (right-click to remove)`}
+                title={`${plantData.name}${sunMismatch ? ` ⚠️ Prefers ${plantData.sunPreference}` : ''}${relations?.hasCompanion ? ' 🟢 Companion nearby' : ''}${relations?.hasEnemy ? ' 🔴 Enemy nearby' : ''} (right-click to remove)`}
               >
                 <span className="text-lg select-none">{plantData.emoji}</span>
                 {sunMismatch && (
                   <span className="absolute -top-1 -right-1 text-[8px] bg-amber-500/80 text-white rounded-full w-3 h-3 flex items-center justify-center" title={`Prefers ${plantData.sunPreference}`}>
                     !
                   </span>
+                )}
+                {relations?.hasEnemy && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" title="Enemy plant nearby" />
+                )}
+                {relations?.hasCompanion && !relations?.hasEnemy && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-white" title="Companion plant nearby" />
                 )}
               </div>
             );
