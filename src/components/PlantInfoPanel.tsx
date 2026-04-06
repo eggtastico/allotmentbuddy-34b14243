@@ -2,9 +2,10 @@ import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
-import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers } from 'lucide-react';
+import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus } from 'lucide-react';
 import { sunExposureLabels } from '@/utils/sunCalculator';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
+import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
 
 interface PlantInfoPanelProps {
   placed: PlacedPlant;
