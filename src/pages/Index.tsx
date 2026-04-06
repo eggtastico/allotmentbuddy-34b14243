@@ -15,11 +15,16 @@ import { WateringGuide } from '@/components/WateringGuide';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { LocationPicker } from '@/components/LocationPicker';
+import { SeasonalTasks } from '@/components/SeasonalTasks';
+import { PlotMapPanel } from '@/components/PlotMapPanel';
+import { GardenJournal } from '@/components/GardenJournal';
+import { RainWidget } from '@/components/RainWidget';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useAuth } from '@/hooks/useAuth';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
