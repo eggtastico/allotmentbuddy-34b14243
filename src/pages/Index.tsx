@@ -71,6 +71,9 @@ const Index = () => {
   const [showDocs, setShowDocs] = useState(false);
   const [showSeedInventory, setShowSeedInventory] = useState(false);
   const [showPlantingSuggestions, setShowPlantingSuggestions] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
+  const [showGrowGuide, setShowGrowGuide] = useState(false);
 
   const handlePlacePlant = useCallback((plantId: string, x: number, y: number) => {
     const occupied = placedPlants.some(p => p.x === x && p.y === y);
