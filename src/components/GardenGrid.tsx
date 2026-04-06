@@ -39,6 +39,29 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     [structures, settings, cols, rows]
   );
 
+  // Companion/enemy relationship map for each placed plant
+  const companionMap = useMemo(() => {
+    const map = new Map<string, { hasCompanion: boolean; hasEnemy: boolean }>();
+    const radius = 3;
+    for (const p of plants) {
+      const pData = getPlantById(p.plantId);
+      if (!pData) continue;
+      let hasCompanion = false;
+      let hasEnemy = false;
+      for (const other of plants) {
+        if (other.id === p.id) continue;
+        const dist = Math.abs(other.x - p.x) + Math.abs(other.y - p.y);
+        if (dist > radius) continue;
+        const oData = getPlantById(other.plantId);
+        if (!oData) continue;
+        if (pData.companions.includes(other.plantId) || oData.companions.includes(p.plantId)) hasCompanion = true;
+        if (pData.enemies.includes(other.plantId) || oData.enemies.includes(p.plantId)) hasEnemy = true;
+      }
+      map.set(p.id, { hasCompanion, hasEnemy });
+    }
+    return map;
+  }, [plants]);
+
   // Grid labels: show every N cells to match 1m or 1ft marks
   const labelInterval = settings.unit === 'meters'
     ? Math.round(100 / settings.cellSizeCm)
