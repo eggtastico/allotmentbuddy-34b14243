@@ -13,6 +13,7 @@ interface PlantInfoPanelProps {
   onClose: () => void;
   onRemove: (id: string) => void;
   sunExposure?: 'full-sun' | 'partial-shade' | 'full-shade';
+  onAddSuccessionTask?: (title: string, description: string) => void;
 }
 
 export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure }: PlantInfoPanelProps) {
