@@ -1,38 +1,41 @@
-## Plan: Dashboard Enhancements & New Features
 
-### 1. Seasonal Tasks Widget
-- Add a compact widget in the header/toolbar area showing 3 seeds to sow and 3 crops to harvest for the current month
-- Uses existing plant data (`sowingSeason`, `harvest` fields)
+## Plan
 
-### 2. Plot Map Panel (modal)
-- New `PlotMapPanel` component opening as a modal/panel
-- Responsive 3×4 grid of garden beds
-- Click a bed to label it and assign a plant family with color coding
-- State stored locally (expandable to DB later)
+### 1. Documentation Guide (overlay)
+- Create a `DocsGuide` component as a full-screen overlay triggered from header
+- Cover all features: filters, plot map, journal, calendar, themes, AI chat, weather, etc.
+- Add "📖 Guide" button to the header bar
 
-### 3. Garden Journal with Photo Uploads
-- **Database**: New `journal_entries` table (user_id, title, notes, photos array, created_at) with RLS
-- **Storage**: New `journal-photos` bucket with user-scoped upload policies
-- New `GardenJournal` component with dated entries, text notes, and photo upload (1-2 photos per entry)
+### 2. Expand Vegetable Library + Varieties
+- Add more vegetables to `plants.ts` (e.g., multiple tomato varieties, bean types, lettuce types)
+- Add a `variety` field to the Plant type so users can filter by variety
+- Update PlantSidebar filters to include variety selection
 
-### 4. Weather Rain Widget
-- Small header widget using Open-Meteo API (already partially integrated)
-- Shows rain probability for next 24 hours using the location from the header
+### 3. Seed Pack AI Scanning
+- Add a camera/upload button in the plant sidebar or a dedicated "Scan Seed Pack" feature
+- Upload photo to Supabase Storage, send to Lovable AI (Gemini with vision) via edge function
+- AI extracts: plant name, variety, sowing instructions, spacing, harvest time, etc.
+- Return structured data to populate plant info
 
-### 5. Security Audit
-- Verify all tables have RLS enabled (garden_plans already does)
-- New journal_entries table will have proper RLS
+### 4. Seed Inventory System (DB migration required)
+- Create `seed_inventory` table: user_id, plant_name, variety, quantity, purchased_date, expiry_date, seed_pack_photo, notes, ai_extracted_data
+- RLS policies for user-only access
+- UI panel to view/add/edit seed inventory
+- Link inventory items to plants in the library
 
-### 6. Earthy Theme Option
-- Add "Earthy" theme toggle alongside existing dark mode
-- Forest Green primary, Sand backgrounds, Terracotta accents
-- CSS variables in index.css with `.theme-earthy` class
+### 5. Planting Suggestions from Inventory
+- Based on current month/week, cross-reference inventory with planting calendar data
+- Show "Plant this week" / "Plant this month" suggestions using seeds the user actually has
+- Display in a widget or within the seasonal tasks component
 
-### 7. Mobile Bottom Navigation Bar
-- Fixed bottom nav bar on mobile with key actions (Plants, Calendar, Journal, AI, Weather)
-- Replaces the hamburger menu on small screens
+### 6. Plot Selection Enhancement
+- When user selects a plant on their plot, show seed pack details (if scanned) alongside existing plant info
 
-### Technical Notes
-- Database migration needed for journal_entries table + storage bucket
-- No changes to existing Supabase types file (auto-generated)
-- All new components are self-contained panels/modals
+### Order of implementation:
+1. DB migration for seed_inventory table
+2. Expand Plant type with variety field + add more vegetables
+3. Documentation guide overlay
+4. Seed inventory UI
+5. Seed pack AI scanning (edge function + UI)
+6. Planting suggestions from inventory
+7. Enhanced plot selection info
