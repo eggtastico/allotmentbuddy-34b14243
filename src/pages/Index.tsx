@@ -215,7 +215,7 @@ const Index = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background sm:pb-0 pb-14">
       <WelcomeModal />
 
       {/* Header */}
