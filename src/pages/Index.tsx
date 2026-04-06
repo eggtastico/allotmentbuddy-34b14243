@@ -246,7 +246,28 @@ const Index = () => {
       )}
 
       {/* Toolbar */}
-      <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+      <div className="flex items-center gap-2 border-b border-border">
+        <PlotToolbar settings={settings} onSettingsChange={setSettings} plantCount={placedPlants.length} onClear={handleClear} />
+        <div className="flex items-center gap-1 px-3 py-1 shrink-0">
+          <span className="text-xs text-muted-foreground mr-1">Planting as:</span>
+          <Button
+            variant={defaultStage === 'seed' ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setDefaultStage('seed')}
+          >
+            🌰 Seed
+          </Button>
+          <Button
+            variant={defaultStage === 'seedling' ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setDefaultStage('seedling')}
+          >
+            🌱 Seedling
+          </Button>
+        </div>
+      </div>
 
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden relative">
