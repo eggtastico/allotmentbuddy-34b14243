@@ -358,6 +358,7 @@ const Index = () => {
 
       {/* Seasonal tasks widget */}
       <SeasonalTasks />
+      <ActionRequired placedPlants={placedPlants} />
 
       {/* Toolbar */}
       <div className="flex items-center border-b border-border bg-card flex-wrap">
