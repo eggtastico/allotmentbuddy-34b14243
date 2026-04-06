@@ -179,11 +179,20 @@ const Index = () => {
 
   const navButtons = (
     <>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowDocs(true); setMobileMenuOpen(false); }}>
+        <HelpCircle className="h-3.5 w-3.5 mr-1" /> Guide
+      </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowCalendar(true); setMobileMenuOpen(false); }}>
         <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowAI(true); setMobileMenuOpen(false); }}>
         <Bot className="h-3.5 w-3.5 mr-1" /> AI Help
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowSeedInventory(true); setMobileMenuOpen(false); }}>
+        <Package className="h-3.5 w-3.5 mr-1" /> Seeds
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowPlantingSuggestions(true); setMobileMenuOpen(false); }}>
+        <Lightbulb className="h-3.5 w-3.5 mr-1" /> Suggestions
       </Button>
       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setShowRotation(true); setMobileMenuOpen(false); }}>
         <Shuffle className="h-3.5 w-3.5 mr-1" /> Rotation
