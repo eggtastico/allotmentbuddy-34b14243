@@ -84,6 +84,11 @@ export default {
           "0%, 100%": { transform: "scale(1)" },
           "50%": { transform: "scale(1.1)" },
         },
+        "plant-pop": {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "60%": { transform: "scale(1.15)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
         "fade-in": {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -93,6 +98,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "plant-bounce": "plant-bounce 0.3s ease-in-out",
+        "plant-pop": "plant-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
         "fade-in": "fade-in 0.3s ease-out",
       },
     },
