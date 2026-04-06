@@ -5,6 +5,7 @@ import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure, sunExposureColors } from '@/utils/sunCalculator';
 import { getCompanionReason, categoryColors, categoryColorsDark } from '@/data/companionReasons';
 import { X, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface GardenGridProps {
   settings: PlotSettings;
@@ -45,6 +46,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const [showColorCoding, setShowColorCoding] = useState(true);
   const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
   const [dragTooltip, setDragTooltip] = useState<DragTooltip | null>(null);
+
+  const [editingStructure, setEditingStructure] = useState<string | null>(null);
 
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
@@ -629,7 +632,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               <div
                 key={struct.id}
                 data-structure-tile
-                className="absolute rounded-md border-2 border-dashed flex flex-col items-center justify-center group cursor-move"
+                className={`absolute border-2 border-dashed flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'}`}
                 style={{
                   left: struct.x * cellSize,
                   top: struct.y * cellSize,
@@ -644,16 +647,58 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               >
                 <span className="text-lg">{data.emoji}</span>
                 <span className="text-[10px] font-medium text-foreground/80">{data.name}</span>
-                {data.canGrowInside && (
+                {data.canGrowInside && !data.isContainer && (
                   <span className="text-[8px] text-primary font-medium">🌱 Grow inside</span>
                 )}
+                {data.isContainer && (
+                  <span className="text-[8px] text-muted-foreground">{struct.widthCells}×{struct.heightCells}</span>
+                )}
                 <button
-                  onClick={e => { e.stopPropagation(); onRemoveStructure(struct.id); }}
+                  onClick={e => { e.stopPropagation(); onRemoveStructure(struct.id); setEditingStructure(null); }}
                   className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Remove structure"
+                  data-no-plant-move="true"
                 >
                   <X className="h-3 w-3" />
                 </button>
+                {/* Edit size button for containers */}
+                {data.isContainer && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditingStructure(editingStructure === struct.id ? null : struct.id); }}
+                    className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px]"
+                    title="Edit size"
+                    data-no-plant-move="true"
+                  >
+                    ✎
+                  </button>
+                )}
+                {/* Size editor popover */}
+                {editingStructure === struct.id && (
+                  <div
+                    className="absolute -bottom-20 left-0 z-50 bg-card border border-border rounded-lg shadow-lg p-2 flex items-center gap-2"
+                    onClick={e => e.stopPropagation()}
+                    onMouseDown={e => e.stopPropagation()}
+                  >
+                    <label className="text-[10px] text-muted-foreground">W</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={struct.widthCells}
+                      onChange={e => onResizeStructure(struct.id, Math.max(1, Number(e.target.value)), struct.heightCells)}
+                      className="w-12 h-6 text-xs text-center"
+                    />
+                    <label className="text-[10px] text-muted-foreground">H</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={struct.heightCells}
+                      onChange={e => onResizeStructure(struct.id, struct.widthCells, Math.max(1, Number(e.target.value)))}
+                      className="w-12 h-6 text-xs text-center"
+                    />
+                  </div>
+                )}
                 <div
                   className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ background: 'hsl(var(--primary) / 0.4)' }}
