@@ -631,6 +631,23 @@ const Index = () => {
               const zones = calculateShadeZones(placedStructures, settings, c, r);
               return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
             })()}
+            onAddSuccessionTask={async (title, description) => {
+              if (!user) {
+                toast.error('Sign in to add tasks');
+                return;
+              }
+              const { error } = await supabase.from('garden_tasks').insert({
+                user_id: user.id,
+                title,
+                description,
+                period: 'monthly',
+              });
+              if (error) {
+                toast.error('Failed to add task');
+              } else {
+                toast.success('Succession task added! 📋');
+              }
+            }}
           />
         )}
       </div>
