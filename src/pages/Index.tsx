@@ -124,7 +124,7 @@ const Index = () => {
   // Auto-save with debounce (3s after last change)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => {
-    if (!user || placedPlants.length === 0) return;
+    if (!user || (placedPlants.length === 0 && placedStructures.length === 0)) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
       save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: placedStructures as any })
