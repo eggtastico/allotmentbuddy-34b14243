@@ -703,6 +703,7 @@ const Index = () => {
           onMoveStructure={handleMoveStructure}
           selectedPlantId={selectedPlant?.id ?? null}
           onFillPlantArea={handleFillPlantArea}
+          onSmartAutoFill={handleSmartAutoFill}
           onSettingsChange={setSettings}
           draggingPlantId={dragging}
         />
