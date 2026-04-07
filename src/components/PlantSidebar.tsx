@@ -526,9 +526,11 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                   draggable
                   onDragStart={e => {
                     e.dataTransfer.setData('structureId', structure.id);
+                    onDragStart(structure.id);
                   }}
-                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
-                  title={structure.description}
+                  onClick={() => onDragStart(structure.id)}
+                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-pointer active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
+                  title={`${structure.description} — tap to select, then tap grid to place`}
                 >
                   <span className="text-lg">{structure.emoji}</span>
                   <div className="flex-1 min-w-0">
