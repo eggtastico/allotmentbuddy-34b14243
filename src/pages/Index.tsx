@@ -229,7 +229,7 @@ const Index = () => {
       if (!plant) continue;
       if (isContainer && plant.spacingCm > 50) continue;
       const spacingCells = Math.max(1, Math.ceil(plant.spacingCm / settings.cellSizeCm));
-      const existing = existingCounts.get(fav.plantId) || 0;
+      const existing = existingCounts[fav.plantId] || 0;
       const remaining = fav.quantity > 0 ? Math.max(0, fav.quantity - existing) : Infinity;
       if (remaining <= 0) continue;
       slots.push({ plantId: fav.plantId, maxQty: remaining === Infinity ? 9999 : remaining, spacingCells });
