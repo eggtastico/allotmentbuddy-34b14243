@@ -38,7 +38,7 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange, draggingPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onCancelPlacement, onSettingsChange, draggingPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
