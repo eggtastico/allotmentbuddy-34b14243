@@ -645,17 +645,14 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   </button>
                 )}
                 {/* Standalone auto-fill button */}
-                {data.canGrowInside && onFillPlantArea && (
+                {data.canGrowInside && onSmartAutoFill && (
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      const best = suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer, favouriteIds);
-                      if (best.length > 0) {
-                        onFillPlantArea(best[0].plant.id, struct.x, struct.y, struct.widthCells, struct.heightCells);
-                      }
+                      onSmartAutoFill(struct.x, struct.y, struct.widthCells, struct.heightCells, !!data.isContainer);
                     }}
                     className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                    title={favouriteIds.length > 0 ? 'Auto-fill with top favourite' : 'Auto-fill with best plant'}
+                    title="Smart auto-fill with favourites"
                     data-no-plant-move="true"
                   >
                     <Wand2 className="h-3 w-3" />
