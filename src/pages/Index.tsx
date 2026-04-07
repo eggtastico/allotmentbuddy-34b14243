@@ -279,6 +279,14 @@ const Index = () => {
       plantedAt: p.plantedAt || new Date().toISOString(),
       stage: p.stage || 'seed',
     })));
+    setPlacedStructures(((plan.beds as any[]) || []).map((s: any) => ({
+      id: s.id || `struct-${Date.now()}`,
+      structureId: s.structureId || s.type || 'raised-bed',
+      x: s.x ?? 0,
+      y: s.y ?? 0,
+      widthCells: s.widthCells ?? s.width ?? 4,
+      heightCells: s.heightCells ?? s.height ?? 2,
+    })));
     setSelectedPlant(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
