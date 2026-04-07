@@ -24,6 +24,8 @@ interface GardenGridProps {
   onMoveStructure: (id: string, x: number, y: number) => void;
   selectedPlantId: string | null;
   onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
+  onSmartAutoFill?: (x: number, y: number, w: number, h: number, isContainer: boolean) => void;
+  onCancelPlacement?: () => void;
   onSettingsChange?: (s: PlotSettings) => void;
   draggingPlantId?: string | null;
 }
@@ -36,7 +38,7 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSettingsChange, draggingPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onCancelPlacement, onSettingsChange, draggingPlantId }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -471,10 +473,18 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           </button>
         </div>
 
+        {/* Placement mode indicator */}
+        {draggingPlantId && (
+          <div className="mb-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium text-center animate-pulse">
+            {getPlantById(draggingPlantId)?.emoji || getStructureById(draggingPlantId)?.emoji || '📌'}{' '}
+            Tap on the grid to place · <button onClick={() => onCancelPlacement?.()} className="underline">Cancel</button>
+          </div>
+        )}
+
         {/* Grid */}
         <div
           ref={gridRef}
-          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${draggingPlantId ? 'border-primary bg-primary/5 cursor-crosshair' : dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
           style={{
             width: gridW,
             height: gridH,
@@ -483,7 +493,33 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => { setDragOver(false); setDragTooltip(null); }}
-          onClick={() => onSelectPlant(null)}
+          onClick={(e) => {
+            // Tap-to-place for mobile: if a plant/structure is selected for placement
+            if (draggingPlantId && gridRef.current) {
+              const { x, y } = snapToGridFn(e.clientX, e.clientY);
+              // Check if it's a structure
+              const structData = getStructureById(draggingPlantId);
+              if (structData) {
+                onPlaceStructure(draggingPlantId, x, y);
+              } else {
+                onPlacePlant(draggingPlantId, x, y);
+              }
+              return;
+            }
+            onSelectPlant(null);
+          }}
+          onTouchEnd={(e) => {
+            if (draggingPlantId && gridRef.current && e.changedTouches.length > 0) {
+              const touch = e.changedTouches[0];
+              const { x, y } = snapToGridFn(touch.clientX, touch.clientY);
+              const structData = getStructureById(draggingPlantId);
+              if (structData) {
+                onPlaceStructure(draggingPlantId, x, y);
+              } else {
+                onPlacePlant(draggingPlantId, x, y);
+              }
+            }
+          }}
         >
           {/* Grid labels */}
           {Array.from({ length: cols }).map((_, i) => (
@@ -644,17 +680,14 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   </button>
                 )}
                 {/* Standalone auto-fill button */}
-                {data.canGrowInside && onFillPlantArea && (
+                {data.canGrowInside && onSmartAutoFill && (
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      const best = suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer, favouriteIds);
-                      if (best.length > 0) {
-                        onFillPlantArea(best[0].plant.id, struct.x, struct.y, struct.widthCells, struct.heightCells);
-                      }
+                      onSmartAutoFill(struct.x, struct.y, struct.widthCells, struct.heightCells, !!data.isContainer);
                     }}
                     className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                    title={favouriteIds.length > 0 ? 'Auto-fill with top favourite' : 'Auto-fill with best plant'}
+                    title="Smart auto-fill with favourites"
                     data-no-plant-move="true"
                   >
                     <Wand2 className="h-3 w-3" />
@@ -717,20 +750,16 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                           ))}
                         </div>
                         {/* Auto-fill button */}
-                        {onFillPlantArea && favouriteIds.length > 0 && (
+                        {onSmartAutoFill && favouriteIds.length > 0 && (
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              // Auto-fill with best favourite that fits
-                              const best = suggestPlantsForBed(struct.widthCells, struct.heightCells, settings.cellSizeCm, data.isContainer, favouriteIds);
-                              if (best.length > 0) {
-                                onFillPlantArea(best[0].plant.id, struct.x, struct.y, struct.widthCells, struct.heightCells);
-                                setEditingStructure(null);
-                              }
+                              onSmartAutoFill(struct.x, struct.y, struct.widthCells, struct.heightCells, !!data.isContainer);
+                              setEditingStructure(null);
                             }}
                             className="mt-2 w-full flex items-center justify-center gap-1.5 text-[10px] font-semibold px-2 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                           >
-                            <Wand2 className="h-3 w-3" /> Auto-fill with best favourite
+                            <Wand2 className="h-3 w-3" /> Smart auto-fill
                           </button>
                         )}
                       </div>
