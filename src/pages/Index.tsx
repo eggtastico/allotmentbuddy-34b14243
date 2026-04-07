@@ -134,7 +134,7 @@ const Index = () => {
         .catch(() => {});
     }, 3000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [placedPlants, settings, user]);
+  }, [placedPlants, placedStructures, settings, user]);
 
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
