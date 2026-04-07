@@ -477,7 +477,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         {draggingPlantId && (
           <div className="mb-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium text-center animate-pulse">
             {getPlantById(draggingPlantId)?.emoji || getStructureById(draggingPlantId)?.emoji || '📌'}{' '}
-            Tap on the grid to place · <button onClick={() => {/* parent will clear */}} className="underline">Cancel</button>
+            Tap on the grid to place · <button onClick={() => onCancelPlacement?.()} className="underline">Cancel</button>
           </div>
         )}
 
