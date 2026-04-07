@@ -127,8 +127,9 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { pla
             e.dataTransfer.setData('plantId', plant.id);
             onDragStart(plant.id);
           }}
-          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
-          title={plant.name}
+          onClick={() => onDragStart(plant.id)}
+          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-pointer active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+          title={`${plant.name} — tap to select, then tap grid to place`}
         >
           <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
           <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
