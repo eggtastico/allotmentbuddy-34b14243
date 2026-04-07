@@ -219,7 +219,7 @@ const Index = () => {
 
     const slots: { plantId: string; maxQty: number; spacingCells: number }[] = [];
 
-    const existingCounts = new Map<string, number>();
+    const existingCounts: Record<string, number> = {};
     for (const p of placedPlants) {
       existingCounts.set(p.plantId, (existingCounts.get(p.plantId) || 0) + 1);
     }
