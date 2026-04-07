@@ -472,10 +472,18 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           </button>
         </div>
 
+        {/* Placement mode indicator */}
+        {draggingPlantId && (
+          <div className="mb-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium text-center animate-pulse">
+            {getPlantById(draggingPlantId)?.emoji || getStructureById(draggingPlantId)?.emoji || '📌'}{' '}
+            Tap on the grid to place · <button onClick={() => {/* parent will clear */}} className="underline">Cancel</button>
+          </div>
+        )}
+
         {/* Grid */}
         <div
           ref={gridRef}
-          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${draggingPlantId ? 'border-primary bg-primary/5 cursor-crosshair' : dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
           style={{
             width: gridW,
             height: gridH,
