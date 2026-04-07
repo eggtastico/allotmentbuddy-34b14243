@@ -151,11 +151,13 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { pla
   );
 }
 
-function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite }: {
+function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite, getQuantity, setQuantity }: {
   onDragStart: (id: string) => void;
   favouriteIds: string[];
   reorder: (from: number, to: number) => void;
   toggleFavourite: (id: string) => void;
+  getQuantity: (plantId: string) => number;
+  setQuantity: (plantId: string, qty: number) => void;
 }) {
   const dragItemRef = useRef<number | null>(null);
   const dragOverItemRef = useRef<number | null>(null);
@@ -189,11 +191,12 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite }: 
   return (
     <div className="space-y-0.5">
       <p className="text-[10px] text-muted-foreground px-1 font-semibold mb-1">
-        Drag to reorder priority · Top = planted first
+        Drag to reorder priority · Set qty (0 = auto)
       </p>
       {favouriteIds.map((plantId, index) => {
         const plant = getPlantById(plantId);
         if (!plant) return null;
+        const qty = getQuantity(plantId);
         return (
           <div
             key={plantId}
@@ -207,13 +210,32 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite }: 
             onDragEnter={() => handleDragEnter(index)}
             onDragEnd={handleDragEnd}
             onDragOver={e => e.preventDefault()}
-            className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+            className="flex items-center gap-1 p-1.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
           >
             <GripVertical className="h-3 w-3 text-muted-foreground/40 shrink-0" />
             <span className="text-[10px] font-bold text-muted-foreground w-4 text-center shrink-0">{index + 1}</span>
             <span className="text-base">{plant.emoji}</span>
-            <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
-            <span className="text-[9px] text-muted-foreground shrink-0">{plant.spacingCm}cm</span>
+            <span className="truncate text-foreground font-medium flex-1 text-[11px]">{plant.name}</span>
+            {/* Quantity controls */}
+            <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+              <button
+                onClick={() => setQuantity(plantId, qty - 1)}
+                className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted-foreground/10 text-muted-foreground"
+                title="Decrease quantity"
+              >
+                <Minus className="h-2.5 w-2.5" />
+              </button>
+              <span className={`text-[10px] w-5 text-center font-semibold ${qty === 0 ? 'text-muted-foreground' : 'text-primary'}`}>
+                {qty === 0 ? '∞' : qty}
+              </span>
+              <button
+                onClick={() => setQuantity(plantId, qty + 1)}
+                className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted-foreground/10 text-muted-foreground"
+                title="Increase quantity"
+              >
+                <Plus className="h-2.5 w-2.5" />
+              </button>
+            </div>
             <button
               onClick={e => { e.stopPropagation(); e.preventDefault(); toggleFavourite(plantId); }}
               onMouseDown={e => e.stopPropagation()}
@@ -228,7 +250,6 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite }: 
     </div>
   );
 }
-
 export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
