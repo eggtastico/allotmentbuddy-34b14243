@@ -127,7 +127,7 @@ const Index = () => {
     if (!user || placedPlants.length === 0) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: [] })
+      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: placedStructures as any })
         .then((result: any) => {
           if (!currentPlanId && result?.id) setCurrentPlanId(result.id);
         })
