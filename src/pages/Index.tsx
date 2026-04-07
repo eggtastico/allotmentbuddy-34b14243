@@ -706,6 +706,7 @@ const Index = () => {
           onSmartAutoFill={handleSmartAutoFill}
           onSettingsChange={setSettings}
           draggingPlantId={dragging}
+          onCancelPlacement={() => setDragging(null)}
         />
         {selectedPlant && (
           <PlantInfoPanel
