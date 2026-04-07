@@ -217,8 +217,7 @@ const Index = () => {
     pushUndo(placedPlants);
     const favs = getFavouritesWithQuantity();
 
-    type PlantSlot = { plantId: string; maxQty: number; spacingCells: number };
-    const slots: PlantSlot[] = [];
+    const slots: { plantId: string; maxQty: number; spacingCells: number }[] = [];
 
     const existingCounts = new Map<string, number>();
     for (const p of placedPlants) {
