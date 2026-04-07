@@ -680,7 +680,7 @@ const Index = () => {
           currentName={planName}
           settings={settings}
           plants={placedPlants}
-          beds={[]}
+          beds={placedStructures as any}
           onLoad={handleLoadPlan}
           onNewPlan={handleNewPlan}
           onClose={() => setShowSaveLoad(false)}
