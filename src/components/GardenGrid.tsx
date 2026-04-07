@@ -484,7 +484,33 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => { setDragOver(false); setDragTooltip(null); }}
-          onClick={() => onSelectPlant(null)}
+          onClick={(e) => {
+            // Tap-to-place for mobile: if a plant/structure is selected for placement
+            if (draggingPlantId && gridRef.current) {
+              const { x, y } = snapToGridFn(e.clientX, e.clientY);
+              // Check if it's a structure
+              const structData = getStructureById(draggingPlantId);
+              if (structData) {
+                onPlaceStructure(draggingPlantId, x, y);
+              } else {
+                onPlacePlant(draggingPlantId, x, y);
+              }
+              return;
+            }
+            onSelectPlant(null);
+          }}
+          onTouchEnd={(e) => {
+            if (draggingPlantId && gridRef.current && e.changedTouches.length > 0) {
+              const touch = e.changedTouches[0];
+              const { x, y } = snapToGridFn(touch.clientX, touch.clientY);
+              const structData = getStructureById(draggingPlantId);
+              if (structData) {
+                onPlaceStructure(draggingPlantId, x, y);
+              } else {
+                onPlacePlant(draggingPlantId, x, y);
+              }
+            }
+          }}
         >
           {/* Grid labels */}
           {Array.from({ length: cols }).map((_, i) => (
