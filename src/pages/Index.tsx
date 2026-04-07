@@ -213,6 +213,75 @@ const Index = () => {
     });
   }, [placedPlants, pushUndo, settings.cellSizeCm]);
 
+  const handleSmartAutoFill = useCallback((originX: number, originY: number, w: number, h: number, isContainer: boolean) => {
+    pushUndo(placedPlants);
+    const favs = getFavouritesWithQuantity();
+
+    type PlantSlot = { plantId: string; maxQty: number; spacingCells: number };
+    const slots: PlantSlot[] = [];
+
+    const existingCounts = new Map<string, number>();
+    for (const p of placedPlants) {
+      existingCounts.set(p.plantId, (existingCounts.get(p.plantId) || 0) + 1);
+    }
+
+    for (const fav of favs) {
+      const plant = getPlantById(fav.plantId);
+      if (!plant) continue;
+      if (isContainer && plant.spacingCm > 50) continue;
+      const spacingCells = Math.max(1, Math.ceil(plant.spacingCm / settings.cellSizeCm));
+      const existing = existingCounts.get(fav.plantId) || 0;
+      const remaining = fav.quantity > 0 ? Math.max(0, fav.quantity - existing) : Infinity;
+      if (remaining <= 0) continue;
+      slots.push({ plantId: fav.plantId, maxQty: remaining === Infinity ? 9999 : remaining, spacingCells });
+    }
+
+    if (slots.length === 0) {
+      const suggested = allPlantsList.filter(p => !isContainer || p.spacingCm <= 50).slice(0, 3);
+      for (const p of suggested) {
+        slots.push({ plantId: p.id, maxQty: 9999, spacingCells: Math.max(1, Math.ceil(p.spacingCm / settings.cellSizeCm)) });
+      }
+    }
+
+    setPlacedPlants(prev => {
+      const newPlants: PlacedPlant[] = [];
+      const allPlants = [...prev];
+
+      const positions: { x: number; y: number }[] = [];
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          positions.push({ x: originX + dx, y: originY + dy });
+        }
+      }
+
+      for (const slot of slots) {
+        let placed = 0;
+        for (const pos of positions) {
+          if (placed >= slot.maxQty) break;
+          const tooClose = allPlants.some(p => {
+            const dist = Math.sqrt((p.x - pos.x) ** 2 + (p.y - pos.y) ** 2);
+            if (dist < 0.5) return true;
+            if (p.plantId === slot.plantId && dist < slot.spacingCells * 0.9) return true;
+            return false;
+          });
+          if (tooClose) continue;
+
+          const np: PlacedPlant = {
+            id: `${slot.plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${pos.x}-${pos.y}`,
+            plantId: slot.plantId, x: pos.x, y: pos.y,
+            plantedAt: new Date().toISOString(),
+            stage: defaultStage,
+          };
+          newPlants.push(np);
+          allPlants.push(np);
+          placed++;
+        }
+      }
+
+      return [...prev, ...newPlants];
+    });
+  }, [placedPlants, pushUndo, settings.cellSizeCm, defaultStage, getFavouritesWithQuantity]);
+
   const handleRemovePlant = useCallback((id: string) => {
     pushUndo(placedPlants);
     setPlacedPlants(prev => prev.filter(p => p.id !== id));
