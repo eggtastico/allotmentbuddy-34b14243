@@ -262,7 +262,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const [groupMode, setGroupMode] = useState<GroupMode>('category');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  const { isFavourite, toggleFavourite, reorder, getFavouriteIds } = useFavouritePlants();
+  const { isFavourite, toggleFavourite, reorder, getFavouriteIds, getQuantity, setQuantity } = useFavouritePlants();
   const favouriteIds = getFavouriteIds();
 
   const availableVarieties = [...new Set(
