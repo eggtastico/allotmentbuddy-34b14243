@@ -3,7 +3,7 @@ import { plants } from '@/data/plants';
 import { structures } from '@/data/structures';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight, Star, GripVertical } from 'lucide-react';
+import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight, Star, GripVertical, Minus, Plus } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
