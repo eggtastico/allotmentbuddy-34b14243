@@ -221,7 +221,7 @@ const Index = () => {
 
     const existingCounts: Record<string, number> = {};
     for (const p of placedPlants) {
-      existingCounts.set(p.plantId, (existingCounts.get(p.plantId) || 0) + 1);
+      existingCounts[p.plantId] = (existingCounts[p.plantId] || 0) + 1;
     }
 
     for (const fav of favs) {
