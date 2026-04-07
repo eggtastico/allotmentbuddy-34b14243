@@ -25,6 +25,7 @@ interface GardenGridProps {
   selectedPlantId: string | null;
   onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
   onSmartAutoFill?: (x: number, y: number, w: number, h: number, isContainer: boolean) => void;
+  onCancelPlacement?: () => void;
   onSettingsChange?: (s: PlotSettings) => void;
   draggingPlantId?: string | null;
 }
