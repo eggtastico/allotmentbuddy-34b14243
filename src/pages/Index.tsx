@@ -296,6 +296,7 @@ const Index = () => {
     setPlanName('My Garden');
     setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180 });
     setPlacedPlants([]);
+    setPlacedStructures([]);
     setSelectedPlant(null);
   }, []);
 
