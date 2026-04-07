@@ -484,6 +484,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
             favouriteIds={favouriteIds}
             reorder={reorder}
             toggleFavourite={toggleFavourite}
+            getQuantity={getQuantity}
+            setQuantity={setQuantity}
           />
         ) : tab === 'plants' ? (
           <>
