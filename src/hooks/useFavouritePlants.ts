@@ -5,13 +5,16 @@ const STORAGE_KEY = 'allotment-buddy-favourite-plants';
 export interface FavouritePlant {
   plantId: string;
   order: number;
+  quantity: number; // desired number of this plant (0 = no limit / auto)
 }
 
 export function useFavouritePlants() {
   const [favourites, setFavourites] = useState<FavouritePlant[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      // migrate old entries without quantity
+      return parsed.map((f: any) => ({ ...f, quantity: f.quantity ?? 0 }));
     } catch {
       return [];
     }
@@ -30,9 +33,19 @@ export function useFavouritePlants() {
       if (prev.some(f => f.plantId === plantId)) {
         return prev.filter(f => f.plantId !== plantId);
       }
-      return [...prev, { plantId, order: prev.length }];
+      return [...prev, { plantId, order: prev.length, quantity: 0 }];
     });
   }, []);
+
+  const setQuantity = useCallback((plantId: string, quantity: number) => {
+    setFavourites(prev =>
+      prev.map(f => f.plantId === plantId ? { ...f, quantity: Math.max(0, quantity) } : f)
+    );
+  }, []);
+
+  const getQuantity = useCallback((plantId: string) => {
+    return favourites.find(f => f.plantId === plantId)?.quantity ?? 0;
+  }, [favourites]);
 
   const reorder = useCallback((fromIndex: number, toIndex: number) => {
     setFavourites(prev => {
@@ -47,5 +60,9 @@ export function useFavouritePlants() {
     return favourites.sort((a, b) => a.order - b.order).map(f => f.plantId);
   }, [favourites]);
 
-  return { favourites, isFavourite, toggleFavourite, reorder, getFavouriteIds };
+  const getFavouritesWithQuantity = useCallback(() => {
+    return [...favourites].sort((a, b) => a.order - b.order);
+  }, [favourites]);
+
+  return { favourites, isFavourite, toggleFavourite, reorder, getFavouriteIds, setQuantity, getQuantity, getFavouritesWithQuantity };
 }

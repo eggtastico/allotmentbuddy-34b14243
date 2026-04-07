@@ -111,22 +111,30 @@ const Index = () => {
       plantedAt: p.plantedAt || new Date().toISOString(),
       stage: p.stage || 'seed',
     })));
+    setPlacedStructures(((latest.beds as any[]) || []).map((s: any) => ({
+      id: s.id || `struct-${Date.now()}`,
+      structureId: s.structureId || s.type || 'raised-bed',
+      x: s.x ?? 0,
+      y: s.y ?? 0,
+      widthCells: s.widthCells ?? s.width ?? 4,
+      heightCells: s.heightCells ?? s.height ?? 2,
+    })));
   }, [user, plans]);
 
   // Auto-save with debounce (3s after last change)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => {
-    if (!user || placedPlants.length === 0) return;
+    if (!user || (placedPlants.length === 0 && placedStructures.length === 0)) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: [] })
+      save({ id: currentPlanId ?? undefined, name: planName, settings, plants: placedPlants, beds: placedStructures as any })
         .then((result: any) => {
           if (!currentPlanId && result?.id) setCurrentPlanId(result.id);
         })
         .catch(() => {});
     }, 3000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [placedPlants, settings, user]);
+  }, [placedPlants, placedStructures, settings, user]);
 
   // Modals
   const [showCalendar, setShowCalendar] = useState(false);
@@ -271,6 +279,14 @@ const Index = () => {
       plantedAt: p.plantedAt || new Date().toISOString(),
       stage: p.stage || 'seed',
     })));
+    setPlacedStructures(((plan.beds as any[]) || []).map((s: any) => ({
+      id: s.id || `struct-${Date.now()}`,
+      structureId: s.structureId || s.type || 'raised-bed',
+      x: s.x ?? 0,
+      y: s.y ?? 0,
+      widthCells: s.widthCells ?? s.width ?? 4,
+      heightCells: s.heightCells ?? s.height ?? 2,
+    })));
     setSelectedPlant(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
@@ -280,6 +296,7 @@ const Index = () => {
     setPlanName('My Garden');
     setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180 });
     setPlacedPlants([]);
+    setPlacedStructures([]);
     setSelectedPlant(null);
   }, []);
 
@@ -663,7 +680,7 @@ const Index = () => {
           currentName={planName}
           settings={settings}
           plants={placedPlants}
-          beds={[]}
+          beds={placedStructures as any}
           onLoad={handleLoadPlan}
           onNewPlan={handleNewPlan}
           onClose={() => setShowSaveLoad(false)}
