@@ -61,7 +61,7 @@ const Index = () => {
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
   const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
-  const [dragging, setDragging] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null); // used only for drag-and-drop dataTransfer
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
   const [location, setLocation] = useState<LocationData | null>(null);
