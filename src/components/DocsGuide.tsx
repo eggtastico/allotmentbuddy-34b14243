@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Sprout, Leaf, Calendar, Bot, Map, BookOpen, Droplets, CloudSun, Shuffle, Download, Filter, Search, Camera, Package, Lightbulb } from 'lucide-react';
+import { X, Sprout, Leaf, Calendar, Bot, Map, BookOpen, Droplets, CloudSun, Shuffle, Download, Filter, Search, Camera, Package, Lightbulb, Star, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
