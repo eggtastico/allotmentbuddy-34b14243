@@ -193,9 +193,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     e.preventDefault();
     setDragOver(true);
     const { x, y } = snapToGridFn(e.clientX, e.clientY);
-    const plantId = draggingPlantId || e.dataTransfer.getData('plantId') || '';
+    const plantId = e.dataTransfer.getData('plantId') || '';
     setDragTooltip(plantId ? { x: e.clientX, y: e.clientY, plantId, gridX: x, gridY: y } : null);
-  }, [draggingPlantId, snapToGridFn]);
+  }, [snapToGridFn]);
 
   // Structure resize
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
