@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Sprout, Leaf, Calendar, Bot, Map, BookOpen, Droplets, CloudSun, Shuffle, Download, Filter, Search, Camera, Package, Lightbulb } from 'lucide-react';
+import { X, Sprout, Leaf, Calendar, Bot, Map, BookOpen, Droplets, CloudSun, Shuffle, Download, Filter, Search, Camera, Package, Lightbulb, Star, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -20,10 +20,17 @@ const sections = [
 3. Choose whether you're planting as seed (🌰) or seedling (🌱)
 4. Click any placed plant to see detailed info, companions, and warnings
 
+**Favourite Plants:**
+- Star ⭐ your favourite plants in the library to build a priority list
+- Set crop quantities for each favourite (how many you want to grow)
+- Reorder favourites by dragging to set priority
+- Favourites are used by the Auto-fill feature to plan your beds
+
 **Your Plot:**
 - Resize your garden using the width/height controls in the toolbar
 - Switch between meters and feet
 - Set your south-facing direction for accurate sun calculations
+- Place structures (raised beds, greenhouses) and resize them by dragging edges
 - Clear the entire plot with the reset button`
   },
   {
@@ -50,6 +57,57 @@ Switch to the Structures tab to add raised beds, greenhouses, paths, and other s
 
 **Hover for Details:**
 Hover over any plant in the sidebar to see a popup with full growing info including sowing times, harvest periods, spacing, companions, and tips.`
+  },
+  {
+    id: 'favourites',
+    icon: <Star className="h-4 w-4" />,
+    title: 'Favourite Plants & Priority',
+    content: `Build a personalised priority list of your favourite plants!
+
+**Adding Favourites:**
+- Click the ⭐ star icon next to any plant in the library to favourite it
+- Switch to the "Favourites" tab in the sidebar to see your list
+
+**Setting Quantities:**
+- Use the + and − buttons next to each favourite to set how many you want to grow
+- ∞ means unlimited — the auto-fill will use as many as fit
+- Set specific numbers (e.g. 4 tomatoes, 6 lettuce) for precise planning
+
+**Priority Order:**
+- Drag favourites up and down in the list to set priority
+- Higher priority plants are placed first by the Auto-fill feature
+- The order also influences bed suggestions when you hover over structures
+
+**How it's used:**
+- Auto-fill respects your quantity limits and priority order
+- Bed suggestions prioritise your favourites over other plants
+- Helps you plan exactly what you want to grow each season`
+  },
+  {
+    id: 'auto-fill',
+    icon: <Wand2 className="h-4 w-4" />,
+    title: 'Auto-Fill Beds',
+    content: `Let Allotment Buddy automatically fill your raised beds and containers with the best plants!
+
+**How to Use:**
+1. Place a raised bed or container on your garden grid
+2. Hover over the structure to reveal the ✨ wand button
+3. Click the wand to auto-fill with plants from your favourites list
+
+**How It Works:**
+- Plants are placed in priority order from your favourites list
+- Quantity limits are respected — if you set 4 tomatoes, only 4 will be placed
+- Spacing rules are followed automatically so plants aren't too close together
+- Already-placed plants across your whole garden count toward quantity limits
+
+**Best Results:**
+- Star and prioritise your favourite plants first
+- Set quantities for each plant you want to grow
+- Place your structures, then use auto-fill on each one
+- The system fills beds intelligently based on plant spacing needs
+
+**Manual Override:**
+After auto-fill, you can still move, remove, or add individual plants manually.`
   },
   {
     id: 'seed-scanning',

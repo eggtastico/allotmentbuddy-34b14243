@@ -25,9 +25,7 @@ interface GardenGridProps {
   selectedPlantId: string | null;
   onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
   onSmartAutoFill?: (x: number, y: number, w: number, h: number, isContainer: boolean) => void;
-  onCancelPlacement?: () => void;
   onSettingsChange?: (s: PlotSettings) => void;
-  draggingPlantId?: string | null;
 }
 
 interface DragTooltip {
@@ -38,7 +36,7 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onCancelPlacement, onSettingsChange, draggingPlantId }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange }: GardenGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -195,9 +193,9 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     e.preventDefault();
     setDragOver(true);
     const { x, y } = snapToGridFn(e.clientX, e.clientY);
-    const plantId = draggingPlantId || e.dataTransfer.getData('plantId') || '';
+    const plantId = e.dataTransfer.getData('plantId') || '';
     setDragTooltip(plantId ? { x: e.clientX, y: e.clientY, plantId, gridX: x, gridY: y } : null);
-  }, [draggingPlantId, snapToGridFn]);
+  }, [snapToGridFn]);
 
   // Structure resize
   const handleResizeStart = useCallback((e: React.MouseEvent, structId: string, startW: number, startH: number, edge: 'right' | 'bottom' | 'corner') => {
@@ -473,18 +471,10 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           </button>
         </div>
 
-        {/* Placement mode indicator */}
-        {draggingPlantId && (
-          <div className="mb-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium text-center animate-pulse">
-            {getPlantById(draggingPlantId)?.emoji || getStructureById(draggingPlantId)?.emoji || '📌'}{' '}
-            Tap on the grid to place · <button onClick={() => onCancelPlacement?.()} className="underline">Cancel</button>
-          </div>
-        )}
-
         {/* Grid */}
         <div
           ref={gridRef}
-          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${draggingPlantId ? 'border-primary bg-primary/5 cursor-crosshair' : dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+          className={`relative garden-grid-pattern border-2 rounded-lg transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
           style={{
             width: gridW,
             height: gridH,
@@ -493,32 +483,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => { setDragOver(false); setDragTooltip(null); }}
-          onClick={(e) => {
-            // Tap-to-place for mobile: if a plant/structure is selected for placement
-            if (draggingPlantId && gridRef.current) {
-              const { x, y } = snapToGridFn(e.clientX, e.clientY);
-              // Check if it's a structure
-              const structData = getStructureById(draggingPlantId);
-              if (structData) {
-                onPlaceStructure(draggingPlantId, x, y);
-              } else {
-                onPlacePlant(draggingPlantId, x, y);
-              }
-              return;
-            }
+          onClick={() => {
             onSelectPlant(null);
-          }}
-          onTouchEnd={(e) => {
-            if (draggingPlantId && gridRef.current && e.changedTouches.length > 0) {
-              const touch = e.changedTouches[0];
-              const { x, y } = snapToGridFn(touch.clientX, touch.clientY);
-              const structData = getStructureById(draggingPlantId);
-              if (structData) {
-                onPlaceStructure(draggingPlantId, x, y);
-              } else {
-                onPlacePlant(draggingPlantId, x, y);
-              }
-            }
           }}
         >
           {/* Grid labels */}

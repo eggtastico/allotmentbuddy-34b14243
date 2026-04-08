@@ -127,9 +127,8 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { pla
             e.dataTransfer.setData('plantId', plant.id);
             onDragStart(plant.id);
           }}
-          onClick={() => onDragStart(plant.id)}
-          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-pointer active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
-          title={`${plant.name} — tap to select, then tap grid to place`}
+          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+          title={plant.name}
         >
           <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
           <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
@@ -528,9 +527,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                     e.dataTransfer.setData('structureId', structure.id);
                     onDragStart(structure.id);
                   }}
-                  onClick={() => onDragStart(structure.id)}
-                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-pointer active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
-                  title={`${structure.description} — tap to select, then tap grid to place`}
+                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
+                  title={structure.description}
                 >
                   <span className="text-lg">{structure.emoji}</span>
                   <div className="flex-1 min-w-0">
