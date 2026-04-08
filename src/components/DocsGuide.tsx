@@ -20,10 +20,17 @@ const sections = [
 3. Choose whether you're planting as seed (🌰) or seedling (🌱)
 4. Click any placed plant to see detailed info, companions, and warnings
 
+**Favourite Plants:**
+- Star ⭐ your favourite plants in the library to build a priority list
+- Set crop quantities for each favourite (how many you want to grow)
+- Reorder favourites by dragging to set priority
+- Favourites are used by the Auto-fill feature to plan your beds
+
 **Your Plot:**
 - Resize your garden using the width/height controls in the toolbar
 - Switch between meters and feet
 - Set your south-facing direction for accurate sun calculations
+- Place structures (raised beds, greenhouses) and resize them by dragging edges
 - Clear the entire plot with the reset button`
   },
   {
