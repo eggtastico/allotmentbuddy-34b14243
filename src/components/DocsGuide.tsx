@@ -59,6 +59,57 @@ Switch to the Structures tab to add raised beds, greenhouses, paths, and other s
 Hover over any plant in the sidebar to see a popup with full growing info including sowing times, harvest periods, spacing, companions, and tips.`
   },
   {
+    id: 'favourites',
+    icon: <Star className="h-4 w-4" />,
+    title: 'Favourite Plants & Priority',
+    content: `Build a personalised priority list of your favourite plants!
+
+**Adding Favourites:**
+- Click the ⭐ star icon next to any plant in the library to favourite it
+- Switch to the "Favourites" tab in the sidebar to see your list
+
+**Setting Quantities:**
+- Use the + and − buttons next to each favourite to set how many you want to grow
+- ∞ means unlimited — the auto-fill will use as many as fit
+- Set specific numbers (e.g. 4 tomatoes, 6 lettuce) for precise planning
+
+**Priority Order:**
+- Drag favourites up and down in the list to set priority
+- Higher priority plants are placed first by the Auto-fill feature
+- The order also influences bed suggestions when you hover over structures
+
+**How it's used:**
+- Auto-fill respects your quantity limits and priority order
+- Bed suggestions prioritise your favourites over other plants
+- Helps you plan exactly what you want to grow each season`
+  },
+  {
+    id: 'auto-fill',
+    icon: <Wand2 className="h-4 w-4" />,
+    title: 'Auto-Fill Beds',
+    content: `Let Allotment Buddy automatically fill your raised beds and containers with the best plants!
+
+**How to Use:**
+1. Place a raised bed or container on your garden grid
+2. Hover over the structure to reveal the ✨ wand button
+3. Click the wand to auto-fill with plants from your favourites list
+
+**How It Works:**
+- Plants are placed in priority order from your favourites list
+- Quantity limits are respected — if you set 4 tomatoes, only 4 will be placed
+- Spacing rules are followed automatically so plants aren't too close together
+- Already-placed plants across your whole garden count toward quantity limits
+
+**Best Results:**
+- Star and prioritise your favourite plants first
+- Set quantities for each plant you want to grow
+- Place your structures, then use auto-fill on each one
+- The system fills beds intelligently based on plant spacing needs
+
+**Manual Override:**
+After auto-fill, you can still move, remove, or add individual plants manually.`
+  },
+  {
     id: 'seed-scanning',
     icon: <Camera className="h-4 w-4" />,
     title: 'Seed Pack Scanning',
