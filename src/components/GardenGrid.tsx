@@ -450,18 +450,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       }}
       onTouchEnd={() => { touchPanRef.current = null; }}
     >
-
-      <div
-        className="relative mx-auto transition-transform"
-        style={{
-          width: gridW + 40,
-          minHeight: gridH + 40,
-          transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
-        }}
-      >
+      {/* Fixed UI Overlay - Compass & Measurement Labels (stays visible when panning) */}
+      <div className="fixed top-4 right-4 z-30 pointer-events-auto">
         {/* Compass rose */}
         <div
-          className="absolute -top-1 -right-1 z-20 flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-1"
           title={`South is at ${settings.southDirection}°`}
         >
           <div
@@ -509,7 +502,70 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             </button>
           </div>
         </div>
+      </div>
 
+      {/* Fixed Measurement Bars - Column & Row Labels */}
+      <div className="fixed top-4 left-4 right-4 bottom-4 pointer-events-none z-20" style={{
+        perspective: '1000px',
+      }}>
+        {/* Column measurement labels at top */}
+        <div className="absolute" style={{
+          top: panOffset.y,
+          left: panOffset.x,
+          height: 20,
+        }}>
+          {Array.from({ length: cols }).map((_, i) => (
+            i % labelInterval === 0 && (
+              <span
+                key={`col-${i}`}
+                className="absolute text-[10px] text-muted-foreground font-medium"
+                style={{
+                  left: i * cellSize + 16,
+                  top: 0,
+                  width: cellSize,
+                  textAlign: 'center',
+                }}
+              >
+                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+              </span>
+            )
+          ))}
+        </div>
+
+        {/* Row measurement labels at left */}
+        <div className="absolute" style={{
+          top: panOffset.y,
+          left: panOffset.x,
+          width: 40,
+        }}>
+          {Array.from({ length: rows }).map((_, i) => (
+            i % labelInterval === 0 && (
+              <span
+                key={`row-${i}`}
+                className="absolute text-[10px] text-muted-foreground font-medium"
+                style={{
+                  left: 0,
+                  top: i * cellSize + 8,
+                  width: 32,
+                  textAlign: 'right',
+                  paddingRight: 4,
+                }}
+              >
+                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+              </span>
+            )
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="relative mx-auto transition-transform"
+        style={{
+          width: gridW + 40,
+          minHeight: gridH + 40,
+          transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+        }}
+      >
         {/* Grid */}
         <div
           ref={gridRef}
@@ -641,20 +697,43 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             if (!data) return null;
             const structureMode = propStructureMode ?? internalStructureMode;
             const isDisabled = !structureMode;
+
+            // Render individual cell fills for structures
+            const cellFills = [];
+            for (let row = 0; row < struct.heightCells; row++) {
+              for (let col = 0; col < struct.widthCells; col++) {
+                cellFills.push(
+                  <div
+                    key={`${struct.id}-cell-${row}-${col}`}
+                    className={`absolute rounded-sm pointer-events-none ${data.shape === 'circle' ? 'opacity-30' : 'opacity-40'}`}
+                    style={{
+                      left: (struct.x + col) * cellSize + 1,
+                      top: (struct.y + row) * cellSize + 1,
+                      width: cellSize - 2,
+                      height: cellSize - 2,
+                      backgroundColor: data.color,
+                      zIndex: 0,
+                    }}
+                  />
+                );
+              }
+            }
+
             return (
-              <div
-                key={struct.id}
-                data-structure-tile
-                className={`absolute border-2 border-dashed flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'} ${isDisabled ? 'pointer-events-none opacity-60' : ''}`}
-                style={{
-                  left: struct.x * cellSize,
-                  top: struct.y * cellSize,
-                  width: struct.widthCells * cellSize,
-                  height: struct.heightCells * cellSize,
-                  backgroundColor: data.color,
-                  borderColor: data.canGrowInside ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
-                  zIndex: moving?.id === struct.id ? 10 : 1,
-                }}
+              <div key={struct.id}>
+                {cellFills}
+                <div
+                  data-structure-tile
+                  className={`absolute border-2 border-dashed flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'} ${isDisabled ? 'pointer-events-none opacity-60' : ''}`}
+                  style={{
+                    left: struct.x * cellSize,
+                    top: struct.y * cellSize,
+                    width: struct.widthCells * cellSize,
+                    height: struct.heightCells * cellSize,
+                    backgroundColor: data.color,
+                    borderColor: data.canGrowInside ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
+                    zIndex: moving?.id === struct.id ? 10 : 1,
+                  }}
                 title={`${data.name} — drag to move`}
                 onPointerDown={e => handleMoveStart(e, struct.id, struct.x, struct.y)}
               >
@@ -799,6 +878,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   onPointerDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'corner')}
                 />
               </div>
+              </div>
             );
           })}
 
@@ -821,8 +901,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             const daysToHarvest = plantData.daysToHarvest || 90;
             const growthPct = Math.min(1, daysSincePlanted / daysToHarvest);
             const stageBoost = placed.stage === 'seedling' ? 0.3 : 0;
-            const scaleFactor = 0.55 + Math.min(0.45, (growthPct + stageBoost) * 0.45);
-            const emojiSize = Math.max(cellSize * scaleFactor, 14);
+            const scaleFactor = 0.65 + Math.min(0.55, (growthPct + stageBoost) * 0.55);
+            const emojiSize = Math.max(cellSize * scaleFactor, 18);
 
             // Color coding by category
             const catColor = showColorCoding
@@ -874,6 +954,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                     ? '0 0 8px 2px rgba(245,158,11,0.4)'
                     : '0 1px 3px rgba(0,0,0,0.12)',
                   background: `var(--plant-tile-bg, ${bgColor})`,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))',
                 }}
                 onClick={e => {
                   e.stopPropagation();
@@ -1018,44 +1099,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
               </div>
             );
           })()}
-        </div>
-
-        {/* Floating measurement bar overlay - stays visible during pan/zoom */}
-        <div className="absolute pointer-events-none" style={{ top: 0, left: 0 }}>
-          {/* Column labels */}
-          {Array.from({ length: cols }).map((_, i) => (
-            i % labelInterval === 0 && (
-              <span
-                key={`col-${i}`}
-                className="absolute text-[10px] text-muted-foreground font-medium"
-                style={{
-                  left: i * cellSize,
-                  top: -16,
-                  width: cellSize,
-                  textAlign: 'center',
-                }}
-              >
-                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-              </span>
-            )
-          ))}
-          {/* Row labels */}
-          {Array.from({ length: rows }).map((_, i) => (
-            i % labelInterval === 0 && (
-              <span
-                key={`row-${i}`}
-                className="absolute text-[10px] text-muted-foreground font-medium"
-                style={{
-                  left: -28,
-                  top: i * cellSize - 5,
-                  width: 24,
-                  textAlign: 'right',
-                }}
-              >
-                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-              </span>
-            )
-          ))}
         </div>
       </div>
     </div>
