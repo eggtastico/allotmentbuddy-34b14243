@@ -641,9 +641,34 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             if (!data) return null;
             const structureMode = propStructureMode ?? internalStructureMode;
             const isDisabled = !structureMode;
+
+            // Render individual cell fills for structures (makes paths fill all tiles)
+            const cellFills = [];
+            for (let row = 0; row < struct.heightCells; row++) {
+              for (let col = 0; col < struct.widthCells; col++) {
+                cellFills.push(
+                  <div
+                    key={`${struct.id}-cell-${row}-${col}`}
+                    className="absolute rounded-sm pointer-events-none"
+                    style={{
+                      left: (struct.x + col) * cellSize + 1,
+                      top: (struct.y + row) * cellSize + 1,
+                      width: cellSize - 2,
+                      height: cellSize - 2,
+                      backgroundColor: data.color,
+                      opacity: 0.4,
+                      zIndex: 0,
+                    }}
+                  />
+                );
+              }
+            }
+
             return (
-              <div
-                key={struct.id}
+              <div key={struct.id}>
+                {cellFills}
+                <div
+                  data-structure-tile
                 data-structure-tile
                 className={`absolute border-2 border-dashed flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'} ${isDisabled ? 'pointer-events-none opacity-60' : ''}`}
                 style={{
@@ -799,6 +824,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   onPointerDown={e => handleResizeStart(e, struct.id, struct.widthCells, struct.heightCells, 'corner')}
                 />
               </div>
+              </div>
             );
           })}
 
@@ -821,8 +847,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
             const daysToHarvest = plantData.daysToHarvest || 90;
             const growthPct = Math.min(1, daysSincePlanted / daysToHarvest);
             const stageBoost = placed.stage === 'seedling' ? 0.3 : 0;
-            const scaleFactor = 0.55 + Math.min(0.45, (growthPct + stageBoost) * 0.45);
-            const emojiSize = Math.max(cellSize * scaleFactor, 14);
+            const scaleFactor = 0.65 + Math.min(0.55, (growthPct + stageBoost) * 0.55);
+            const emojiSize = Math.max(cellSize * scaleFactor, 18);
 
             // Color coding by category
             const catColor = showColorCoding
@@ -874,6 +900,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                     ? '0 0 8px 2px rgba(245,158,11,0.4)'
                     : '0 1px 3px rgba(0,0,0,0.12)',
                   background: `var(--plant-tile-bg, ${bgColor})`,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))',
                 }}
                 onClick={e => {
                   e.stopPropagation();
