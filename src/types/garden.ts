@@ -20,10 +20,18 @@ export interface Plant {
   difficulty?: 'easy' | 'moderate' | 'challenging';
   sowingSeason?: string[];
   tips?: string;
-  seedPackData?: Record<string, any>;
+  seedPackData?: Record<string, unknown>;
 }
 
 export type PlantStage = 'seed' | 'seedling';
+
+export interface PlantPhoto {
+  id: string;
+  dataUrl: string; // Base64 encoded image
+  timestamp: number;
+  width?: number;
+  height?: number;
+}
 
 export interface PlacedPlant {
   id: string;
@@ -32,6 +40,7 @@ export interface PlacedPlant {
   y: number;
   plantedAt: string; // ISO date string
   stage: PlantStage;
+  photos?: PlantPhoto[];
 }
 
 export interface GardenBed {
@@ -63,10 +72,19 @@ export interface PlotSettings {
   snapToGrid?: boolean; // if true, plants snap to grid cells; if false, free placement
 }
 
+export interface Location {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  address?: string;
+  timestamp?: number;
+}
+
 export interface GardenPlan {
   id: string;
   name: string;
   settings: PlotSettings;
   plants: PlacedPlant[];
-  beds: GardenBed[];
+  beds: PlacedStructure[];
+  location?: Location;
 }

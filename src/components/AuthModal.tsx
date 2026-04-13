@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sprout, Loader2 } from 'lucide-react';
@@ -27,8 +27,9 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
         toast.success('Welcome back! 🌱');
         onClose();
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Authentication failed');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -37,19 +38,15 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) {
-        toast.error('Google sign-in failed');
-        return;
-      }
-      if (result.redirected) return;
-      toast.success('Welcome! 🌱');
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Google sign-in failed');
-    } finally {
+      if (error) throw error;
+      // Browser redirects to Google — loading state stays until redirect
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed';
+      toast.error(errorMessage);
       setGoogleLoading(false);
     }
   };

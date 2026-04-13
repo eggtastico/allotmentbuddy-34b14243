@@ -205,8 +205,8 @@ export function WeatherYieldPanel({ plants, location: loc, onClose }: Props) {
           lastFrostDate: lastFrost >= 0 ? data.daily.time[lastFrost] : null,
           firstFrostDate: firstFrost >= 0 ? data.daily.time[dailyMins.length - 1 - firstFrost] : null,
         });
-      } catch (e: any) {
-        setError(e.message || 'Failed to fetch weather');
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to fetch weather');
       } finally {
         setLoading(false);
       }

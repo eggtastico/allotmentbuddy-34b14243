@@ -12,27 +12,14 @@ import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
 import { getPlantById } from '@/data/plants';
-
-const categoryOrder = ['vegetable', 'fruit', 'herb', 'flower'] as const;
-const categoryLabels = { vegetable: '🥦 Vegetables', fruit: '🍓 Fruits', herb: '🌿 Herbs', flower: '🌼 Flowers' };
-
-const difficultyColors = { easy: 'bg-primary/15 text-primary', moderate: 'bg-warning/15 text-warning', challenging: 'bg-accent/15 text-accent' };
-const hardinessLabels = { hardy: '❄️ Hardy', 'half-hardy': '🌤️ Half-hardy', tender: '☀️ Tender' };
-const sunLabels = { 'full-sun': '☀️ Full sun', 'partial-shade': '⛅ Partial shade', 'full-shade': '🌑 Full shade', any: '🌤️ Any' };
+import { categoryOrder, categoryLabels, difficultyColors, hardinessLabels, sunLabels, familyEmojis } from '@/components/constants/PlantSidebar';
 
 type GroupMode = 'category' | 'family';
 
-const familyEmojis: Record<string, string> = {
-  Solanaceae: '🍅', Apiaceae: '🥕', Fabaceae: '🫘', Cucurbitaceae: '🥒',
-  Brassicaceae: '🥦', Amaryllidaceae: '🧅', Asteraceae: '🌻', Lamiaceae: '🌿',
-  Rosaceae: '🍓', Amaranthaceae: '🍃', Grossulariaceae: '🫐', Ericaceae: '🫐',
-  Poaceae: '🌽', Asparagaceae: '🌿', Polygonaceae: '🍃', Boraginaceae: '💙',
-  Tropaeolaceae: '🌸', Convolvulaceae: '🍠', Limnanthaceae: '🌼', Plantaginaceae: '🌺',
-  Moraceae: '🫐', Vitaceae: '🍇', Lauraceae: '🌿',
-};
-
 interface PlantSidebarProps {
   onDragStart: (plantId: string) => void;
+  pendingPlantId?: string | null;
+  onSelectPlant?: (plantId: string, isStructure?: boolean) => void;
 }
 
 function PlantHoverInfo({ plant }: { plant: Plant }) {
@@ -117,7 +104,14 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
   );
 }
 
-function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { plant: Plant; onDragStart: (id: string) => void; isFavourite: boolean; onToggleFavourite: (id: string) => void }) {
+function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPending, onSelectPlant }: {
+  plant: Plant;
+  onDragStart: (id: string) => void;
+  isFavourite: boolean;
+  onToggleFavourite: (id: string) => void;
+  isPending?: boolean;
+  onSelectPlant?: (id: string) => void;
+}) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
@@ -127,16 +121,17 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite }: { pla
             e.dataTransfer.setData('plantId', plant.id);
             onDragStart(plant.id);
           }}
-          className="flex items-center gap-1.5 p-2 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px]"
+          onClick={() => onSelectPlant?.(plant.id)}
+          className={`flex items-center gap-2 sm:p-2 p-3 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px] sm:min-h-[36px] min-h-[48px] ${isPending ? 'ring-2 ring-primary bg-primary/10' : ''}`}
           title={plant.name}
         >
-          <span className="text-base group-hover:animate-plant-bounce">{plant.emoji}</span>
+          <span className="sm:text-base text-lg group-hover:animate-plant-bounce flex-shrink-0">{plant.emoji}</span>
           <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
           <button
             onClick={e => { e.stopPropagation(); e.preventDefault(); onToggleFavourite(plant.id); }}
             onMouseDown={e => e.stopPropagation()}
             className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center transition-colors ${
-              isFavourite ? 'text-amber-500' : 'text-muted-foreground/30 opacity-0 group-hover:opacity-100'
+              isFavourite ? 'text-amber-500' : 'text-muted-foreground/30 sm:opacity-0 sm:group-hover:opacity-100'
             }`}
             title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
           >
@@ -250,7 +245,7 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite, ge
     </div>
   );
 }
-export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
+export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: PlantSidebarProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [tab, setTab] = useState<'plants' | 'favourites' | 'structures'>('plants');
@@ -320,7 +315,7 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
   const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
-    <div className="w-64 border-r border-border bg-card flex flex-col h-full">
+    <div className="w-full sm:w-64 border-r border-border bg-card flex flex-col h-full">
       <div className="p-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm text-foreground">🌱 Plant Library <span className="text-muted-foreground font-normal text-xs">({plants.length})</span></h2>
@@ -505,7 +500,15 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                 <CollapsibleContent>
                   <div className="grid grid-cols-2 gap-1 mt-0.5 mb-1.5">
                     {items.map(plant => (
-                      <PlantItem key={plant.id} plant={plant} onDragStart={onDragStart} isFavourite={isFavourite(plant.id)} onToggleFavourite={toggleFavourite} />
+                      <PlantItem
+                        key={plant.id}
+                        plant={plant}
+                        onDragStart={onDragStart}
+                        isFavourite={isFavourite(plant.id)}
+                        onToggleFavourite={toggleFavourite}
+                        isPending={pendingPlantId === plant.id}
+                        onSelectPlant={onSelectPlant}
+                      />
                     ))}
                   </div>
                 </CollapsibleContent>
@@ -517,7 +520,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
           </>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground px-1">Drag structures onto your plot.</p>
+            <p className="text-xs text-muted-foreground px-1 hidden sm:block">Drag structures onto your plot.</p>
+            <p className="text-xs text-muted-foreground px-1 sm:hidden">Tap a structure to select it, then tap the grid to place it.</p>
             <div className="space-y-1">
               {filteredStructures.map(structure => (
                 <div
@@ -527,7 +531,8 @@ export function PlantSidebar({ onDragStart }: PlantSidebarProps) {
                     e.dataTransfer.setData('structureId', structure.id);
                     onDragStart(structure.id);
                   }}
-                  className="flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px]"
+                  onClick={() => onSelectPlant?.(structure.id, true)}
+                  className={`flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px] ${pendingPlantId === structure.id ? 'ring-2 ring-primary bg-primary/10' : ''}`}
                   title={structure.description}
                 >
                   <span className="text-lg">{structure.emoji}</span>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { SignedImage } from '@/components/SignedImage';
+import { PhotoGallery } from '@/components/PhotoGallery';
 
 interface JournalEntry {
   id: string;
@@ -126,12 +127,22 @@ export function GardenJournal({ onClose }: Props) {
             placeholder="Notes about your garden today..."
             className="w-full bg-background rounded-md border border-input px-3 py-2 text-sm min-h-[60px] resize-none"
           />
-          {/* Photo previews */}
+          {/* Photo gallery */}
           {pendingPhotoUrls.length > 0 && (
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {pendingPhotoUrls.map((url, i) => (
-                <img key={i} src={url} alt="Upload" className="w-16 h-16 rounded-md object-cover border border-border" />
-              ))}
+            <div className="mt-2">
+              <label className="text-xs font-medium text-foreground mb-1 block">Photos ({pendingPhotoUrls.length})</label>
+              <PhotoGallery
+                images={pendingPhotoUrls}
+                onImagesChange={(newUrls) => {
+                  setPendingPhotoUrls(newUrls);
+                  // Keep paths in sync
+                  setPendingPhotoPaths(prev => prev.slice(0, newUrls.length));
+                }}
+                onImageDelete={(index) => {
+                  setPendingPhotoUrls(prev => prev.filter((_, i) => i !== index));
+                  setPendingPhotoPaths(prev => prev.filter((_, i) => i !== index));
+                }}
+              />
             </div>
           )}
           <div className="flex items-center gap-2 mt-2">
@@ -175,10 +186,12 @@ export function GardenJournal({ onClose }: Props) {
                 </div>
                 {entry.notes && <p className="text-xs text-foreground/80 mt-1">{entry.notes}</p>}
                 {entry.photos && entry.photos.length > 0 && (
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {entry.photos.map((photoPath, i) => (
-                      <SignedImage key={i} bucket="journal-photos" path={photoPath} alt="Garden photo" className="w-20 h-20 rounded-md object-cover border border-border" />
-                    ))}
+                  <div className="mt-2">
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                      {entry.photos.map((photoPath, i) => (
+                        <SignedImage key={i} bucket="journal-photos" path={photoPath} alt="Garden photo" className="w-full h-20 rounded-md object-cover border border-border cursor-pointer hover:ring-2 ring-primary" />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

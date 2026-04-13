@@ -5,13 +5,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { plants } from '@/data/plants';
 import { CalendarRange, ChevronLeft, ChevronRight, Sprout, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MONTHS, MONTH_ABBRS } from '@/components/constants/MonthlyPlanner';
 
 interface MonthlyPlannerProps {
   onClose: () => void;
 }
-
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTH_ABBRS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function monthInRange(rangeStr: string | undefined, monthIndex: number): boolean {
   if (!rangeStr) return false;

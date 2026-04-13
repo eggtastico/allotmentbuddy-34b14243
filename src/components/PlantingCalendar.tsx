@@ -3,8 +3,15 @@ import { PlacedPlant } from '@/types/garden';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { getPlantById } from '@/data/plants';
+import { MONTHS } from '@/components/constants/PlantingCalendar';
+import { useFrostDates } from '@/hooks/useFrostDates';
+import { getFrostSafetyColor, formatFrostDates } from '@/utils/frostDateCalculator';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+interface LocationData {
+  lat: number;
+  lon: number;
+  name?: string;
+}
 
 function parseMonthRange(range?: string): number[] {
   if (!range || range === 'Year-round') return range === 'Year-round' ? [0,1,2,3,4,5,6,7,8,9,10,11] : [];
@@ -24,10 +31,12 @@ function parseMonthRange(range?: string): number[] {
 
 interface PlantingCalendarProps {
   placedPlants: PlacedPlant[];
+  location?: LocationData | null;
   onClose: () => void;
 }
 
-export function PlantingCalendar({ placedPlants, onClose }: PlantingCalendarProps) {
+export function PlantingCalendar({ placedPlants, location, onClose }: PlantingCalendarProps) {
+  const frostDates = useFrostDates(location);
   const uniquePlantIds = [...new Set(placedPlants.map(p => p.plantId))];
   const gardenPlants = uniquePlantIds.map(id => getPlantById(id)).filter(Boolean);
 
@@ -45,10 +54,20 @@ export function PlantingCalendar({ placedPlants, onClose }: PlantingCalendarProp
           </div>
         ) : (
           <div className="overflow-x-auto">
+            {/* Frost dates section */}
+            {frostDates && (
+              <div className="p-4 border-b border-border bg-muted/30">
+                <div className="text-sm font-semibold text-foreground mb-2">❄️ Frost-Safe Planting Window</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatFrostDates(frostDates)}
+                </div>
+              </div>
+            )}
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left p-2 sticky left-0 bg-card min-w-[120px]">Plant</th>
+                  {frostDates && <th className="p-2 text-center min-w-[50px] text-muted-foreground font-medium" title="Frost hardiness">🌡️</th>}
                   {MONTHS.map(m => (
                     <th key={m} className="p-2 text-center min-w-[44px] text-muted-foreground font-medium">{m}</th>
                   ))}
@@ -62,6 +81,9 @@ export function PlantingCalendar({ placedPlants, onClose }: PlantingCalendarProp
                   const harvestMonths = parseMonthRange(plant.harvest);
                   const count = placedPlants.filter(p => p.plantId === plant.id).length;
 
+                  const frostColor = frostDates ? getFrostSafetyColor(plant.frostHardiness, frostDates) : null;
+                  const frostEmoji = plant.frostHardiness === 'hardy' ? '🟢' : plant.frostHardiness === 'half-hardy' ? '🟡' : plant.frostHardiness === 'tender' ? '🔴' : '⚪';
+
                   return (
                     <tr key={plant.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="p-2 sticky left-0 bg-card">
@@ -71,6 +93,11 @@ export function PlantingCalendar({ placedPlants, onClose }: PlantingCalendarProp
                           <Badge variant="outline" className="text-[10px] px-1 py-0">{count}</Badge>
                         </div>
                       </td>
+                      {frostDates && (
+                        <td className="p-2 text-center text-base" title={plant.frostHardiness || 'Unknown'}>
+                          {frostEmoji}
+                        </td>
+                      )}
                       {MONTHS.map((_, i) => {
                         const isSowIndoor = sowIndoorMonths.includes(i);
                         const isSowOutdoor = sowOutdoorMonths.includes(i);
@@ -88,10 +115,19 @@ export function PlantingCalendar({ placedPlants, onClose }: PlantingCalendarProp
                 })}
               </tbody>
             </table>
-            <div className="p-3 border-t border-border flex gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-garden-water/60 inline-block" /> Sow indoors</span>
-              <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-primary/60 inline-block" /> Sow outdoors</span>
-              <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-accent/60 inline-block" /> Harvest</span>
+            <div className="p-3 border-t border-border space-y-2 text-xs text-muted-foreground">
+              <div className="flex gap-4 flex-wrap">
+                <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-garden-water/60 inline-block" /> Sow indoors</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-primary/60 inline-block" /> Sow outdoors</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-5 rounded-sm bg-accent/60 inline-block" /> Harvest</span>
+              </div>
+              {frostDates && (
+                <div className="flex gap-4 flex-wrap">
+                  <span className="flex items-center gap-1">🟢 Hardy (plant anytime)</span>
+                  <span className="flex items-center gap-1">🟡 Half-hardy (after last frost)</span>
+                  <span className="flex items-center gap-1">🔴 Tender (wait for warm soil)</span>
+                </div>
+              )}
             </div>
           </div>
         )}

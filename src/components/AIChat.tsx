@@ -87,16 +87,25 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
     setLoading(true);
 
     try {
-      const resp = await supabase.functions.invoke('garden-ai', {
-        body: { messages: newMessages, context: systemContext },
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch('/api/garden-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ messages: newMessages, context: systemContext }),
       });
-
-      if (resp.error) throw resp.error;
-
-      const text = resp.data?.reply || 'Sorry, I had trouble responding.';
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(err.error || 'Request failed');
+      }
+      const data = await resp.json();
+      const text = data.reply || 'Sorry, I had trouble responding.';
       setMessages(prev => [...prev, { role: 'assistant', content: text }]);
-    } catch (err: any) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message || 'Something went wrong'}` }]);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }]);
     } finally {
       setLoading(false);
     }

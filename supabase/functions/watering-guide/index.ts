@@ -10,8 +10,9 @@ serve(async (req) => {
 
   try {
     const { weatherData, plants, structures } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    console.log('[watering-guide] API Key loaded:', OPENROUTER_API_KEY ? 'YES' : 'NO');
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured in Supabase secrets");
 
     const systemPrompt = `You are Allotment Buddy's AI watering advisor. Analyze weather data and garden plants to give specific, actionable watering recommendations.
 
@@ -65,23 +66,25 @@ ${structures.map((s: any) => `- ${s.name} at position (${s.x},${s.y}), size ${s.
 
 Analyze this data and provide watering recommendations for each plant. Consider which plants are sheltered inside structures (won't get rain) vs exposed outdoors.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "X-Title": "Allotment Buddy",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: { type: "json_object" },
       }),
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error("[watering-guide] OpenRouter error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -92,9 +95,7 @@ Analyze this data and provide watering recommendations for each plant. Consider 
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error("AI gateway error");
+      throw new Error(`OpenRouter error ${response.status}: ${t}`);
     }
 
     const data = await response.json();

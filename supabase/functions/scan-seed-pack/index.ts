@@ -17,58 +17,45 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    console.log('[scan-seed-pack] API Key loaded:', OPENROUTER_API_KEY ? 'YES' : 'NO');
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY not configured in Supabase secrets");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "X-Title": "Allotment Buddy",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro-exp:free",
         messages: [
           {
             role: "system",
-            content: `You are a seed packet scanner. Extract structured information from seed packet images. Always respond with a JSON object using the extract_seed_info tool.`
+            content: `You are a seed packet scanner. Extract structured information from seed packet images and respond with ONLY a valid JSON object (no markdown, no extra text). The JSON must have these fields:
+{
+  "plant_name": "string (required)",
+  "variety": "string or null",
+  "sow_indoors": "string like 'Feb-Mar' or null",
+  "sow_outdoors": "string like 'Apr-Jun' or null",
+  "harvest": "string like 'Jul-Oct' or null",
+  "spacing_cm": "number or null",
+  "days_to_harvest": "number or null",
+  "depth_cm": "number or null",
+  "tips": "string or null",
+  "sun_preference": "full-sun|partial-shade|full-shade|any or null",
+  "difficulty": "easy|moderate|challenging or null"
+}`
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract all growing information from this seed packet image. Include plant name, variety, sowing dates, spacing, harvest period, and any tips." },
+              { type: "text", text: "Extract all growing information from this seed packet image. Respond with ONLY valid JSON, no markdown or extra text." },
               { type: "image_url", image_url: { url: imageBase64 } }
             ]
           }
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_seed_info",
-              description: "Extract structured seed packet information",
-              parameters: {
-                type: "object",
-                properties: {
-                  plant_name: { type: "string", description: "Name of the plant" },
-                  variety: { type: "string", description: "Variety or cultivar name" },
-                  sow_indoors: { type: "string", description: "Indoor sowing period e.g. Feb-Mar" },
-                  sow_outdoors: { type: "string", description: "Outdoor sowing period e.g. Apr-Jun" },
-                  harvest: { type: "string", description: "Harvest period e.g. Jul-Oct" },
-                  spacing_cm: { type: "number", description: "Plant spacing in cm" },
-                  days_to_harvest: { type: "number", description: "Days from sowing to harvest" },
-                  depth_cm: { type: "number", description: "Sowing depth in cm" },
-                  tips: { type: "string", description: "Growing tips from the packet" },
-                  sun_preference: { type: "string", enum: ["full-sun", "partial-shade", "full-shade", "any"] },
-                  difficulty: { type: "string", enum: ["easy", "moderate", "challenging"] },
-                },
-                required: ["plant_name"],
-                additionalProperties: false,
-              }
-            }
-          }
-        ],
-        tool_choice: { type: "function", function: { name: "extract_seed_info" } },
       }),
     });
 
@@ -89,13 +76,23 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const content = data.choices?.[0]?.message?.content || "{}";
     let extracted = {};
-    if (toolCall?.function?.arguments) {
-      try {
-        extracted = JSON.parse(toolCall.function.arguments);
-      } catch {
-        extracted = { plant_name: "Unknown" };
+
+    try {
+      // Try to parse the content as JSON
+      extracted = JSON.parse(content);
+    } catch {
+      // If it fails, try to extract JSON from the content
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          extracted = JSON.parse(jsonMatch[0]);
+        } catch {
+          extracted = { plant_name: "Unknown", error: "Could not parse response" };
+        }
+      } else {
+        extracted = { plant_name: "Unknown", error: "No JSON found in response" };
       }
     }
 

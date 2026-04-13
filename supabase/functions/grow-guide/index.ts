@@ -8,10 +8,15 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Log incoming request
+  const authHeader = req.headers.get("authorization");
+  console.log('[grow-guide] Incoming request - Auth header present:', !!authHeader);
+
   try {
     const { plants } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    console.log('[grow-guide] API Key loaded:', OPENROUTER_API_KEY ? 'YES' : 'NO');
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured in Supabase secrets");
 
     const now = new Date();
     const monthName = now.toLocaleString('en-GB', { month: 'long' });
@@ -34,14 +39,15 @@ Then provide an **Overall Plan**:
 
 Keep it practical, specific to UK climate, and encouraging. Use markdown formatting with headers and bullet points. Use emojis sparingly.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "X-Title": "Allotment Buddy",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `I want to grow these plants on my UK allotment:\n\n${plants}\n\nPlease create a comprehensive growing guide with timings, companions, and layout suggestions.` },
@@ -50,6 +56,8 @@ Keep it practical, specific to UK climate, and encouraging. Use markdown formatt
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error("[grow-guide] OpenRouter error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -60,9 +68,7 @@ Keep it practical, specific to UK climate, and encouraging. Use markdown formatt
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error("AI gateway error");
+      throw new Error(`OpenRouter error ${response.status}: ${t}`);
     }
 
     const data = await response.json();

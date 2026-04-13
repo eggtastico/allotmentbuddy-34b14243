@@ -17,7 +17,7 @@ interface SeedItem {
   purchased_date: string | null;
   expiry_date: string | null;
   seed_pack_photo_url: string | null;
-  ai_extracted_data: Record<string, any>;
+  ai_extracted_data: Record<string, unknown>;
   notes: string;
 }
 
@@ -48,7 +48,9 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
     setLoading(false);
   };
 
-  useEffect(() => { loadSeeds(); }, [user]);
+  useEffect(() => {
+    loadSeeds();
+  }, [user]);
 
   const handleSave = async () => {
     if (!user || !form.plant_name.trim()) return;
@@ -74,7 +76,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
     setForm({ plant_name: '', variety: '', quantity: 1, purchased_date: '', expiry_date: '', notes: '' });
     setShowAdd(false);
     setEditId(null);
-    loadSeeds();
+    await loadSeeds();
   };
 
   const handleDelete = async (id: string) => {
@@ -114,13 +116,21 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
         reader.readAsDataURL(file);
       });
 
-      // Call AI edge function
-      const { data, error } = await supabase.functions.invoke('scan-seed-pack', {
-        body: { imageBase64: base64 },
+      // Call AI endpoint (auth-gated, Gemini-powered)
+      const { data: { session } } = await supabase.auth.getSession();
+      const aiResp = await fetch('/api/scan-seed-pack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ imageBase64: base64 }),
       });
-
-      if (error) throw error;
-
+      if (!aiResp.ok) {
+        const err = await aiResp.json().catch(() => ({ error: 'Scan failed' }));
+        throw new Error(err.error || 'Scan failed');
+      }
+      const data = await aiResp.json();
       const extracted = data?.extracted || {};
 
       // Save to inventory
@@ -137,8 +147,9 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       if (insertError) throw insertError;
       toast.success(`Scanned: ${extracted.plant_name || 'seed pack'}`);
       loadSeeds();
-    } catch (err: any) {
-      toast.error('Scan failed: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      toast.error('Scan failed: ' + errorMessage);
     } finally {
       setScanning(false);
     }

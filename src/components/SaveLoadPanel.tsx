@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useGardenPlans } from '@/hooks/useGardenPlans';
-import { PlacedPlant, GardenBed, PlotSettings } from '@/types/garden';
+import { PlacedPlant, PlacedStructure, PlotSettings } from '@/types/garden';
+import { type GardenPlanRow } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Save, FolderOpen, Trash2, Plus, Loader2, X } from 'lucide-react';
@@ -11,8 +12,8 @@ interface SaveLoadPanelProps {
   currentName: string;
   settings: PlotSettings;
   plants: PlacedPlant[];
-  beds: GardenBed[];
-  onLoad: (plan: any) => void;
+  beds: PlacedStructure[];
+  onLoad: (plan: GardenPlanRow) => void;
   onNewPlan: () => void;
   onClose: () => void;
 }
@@ -43,7 +44,7 @@ export function SaveLoadPanel({ currentPlanId, currentName, settings, plants, be
 
           {/* Plan list */}
           <div className="space-y-1 max-h-60 overflow-y-auto">
-            {plans.map((plan: any) => (
+            {plans.map((plan: GardenPlanRow) => (
               <div key={plan.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted group">
                 <button className="flex-1 text-left text-sm text-foreground" onClick={() => { onLoad(plan); onClose(); }}>
                   <span className="font-medium">{plan.name}</span>

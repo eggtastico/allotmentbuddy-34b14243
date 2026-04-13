@@ -10,9 +10,8 @@ interface ActionRequiredProps {
 }
 
 export function ActionRequired({ placedPlants }: ActionRequiredProps) {
-  const now = new Date();
-
   const cropData = useMemo(() => {
+    const now = new Date();
     const groups = new Map<string, { plantId: string; plantedAt: Date; count: number }>();
     for (const pp of placedPlants) {
       const existing = groups.get(pp.plantId);

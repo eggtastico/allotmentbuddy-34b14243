@@ -43,7 +43,9 @@ export function GardenTasks({ onClose }: GardenTasksProps) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchTasks(); }, [user]);
+  useEffect(() => {
+    fetchTasks();
+  }, [user]);
 
   const addTask = async () => {
     if (!user || !newTitle.trim()) return;
@@ -57,7 +59,7 @@ export function GardenTasks({ onClose }: GardenTasksProps) {
     if (error) { toast.error('Failed to add task'); return; }
     setNewTitle(''); setNewDesc(''); setNewDueDate(''); setAdding(false);
     toast.success('Task added! ✅');
-    fetchTasks();
+    await fetchTasks();
   };
 
   const toggleComplete = async (task: Task) => {

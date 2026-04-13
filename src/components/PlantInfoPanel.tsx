@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
-import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus } from 'lucide-react';
+import { generateId } from '@/lib/uuid';
+import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus, Camera } from 'lucide-react';
+import { PhotoGallery } from '@/components/PhotoGallery';
+import { CameraCapture } from '@/components/CameraCapture';
+import { savePhoto } from '@/lib/photoStorage';
 import { sunExposureLabels } from '@/utils/sunCalculator';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
@@ -14,11 +19,43 @@ interface PlantInfoPanelProps {
   onRemove: (id: string) => void;
   sunExposure?: 'full-sun' | 'partial-shade' | 'full-shade';
   onAddSuccessionTask?: (title: string, description: string) => void;
+  onUpdatePlaced?: (updated: PlacedPlant) => void;
+  modal?: boolean;
 }
 
-export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask }: PlantInfoPanelProps) {
+export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask, onUpdatePlaced, modal }: PlantInfoPanelProps) {
   const plant = getPlantById(placed.plantId);
   if (!plant) return null;
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  const handlePhotoCapture = async (photoDataUrl: string) => {
+    // Note: In a full implementation, we'd pass the gardenId
+    // For now, we'll just update the placed plant with the new photo
+    if (onUpdatePlaced) {
+      const newPhoto = {
+        id: generateId(),
+        dataUrl: photoDataUrl,
+        timestamp: Date.now(),
+      };
+      const updated = {
+        ...placed,
+        photos: [...(placed.photos || []), newPhoto],
+      };
+      onUpdatePlaced(updated);
+    }
+  };
+
+  const handleDeletePhoto = (photoId: string) => {
+    if (onUpdatePlaced) {
+      const updated = {
+        ...placed,
+        photos: (placed.photos || []).filter(p => p.id !== photoId),
+      };
+      onUpdatePlaced(updated);
+    }
+  };
+
 
   // Check companions and enemies in the garden
   const placedPlantIds = [...new Set(allPlaced.filter(p => p.id !== placed.id).map(p => p.plantId))];
@@ -57,8 +94,8 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
   };
   const sunInfo = plant.sunPreference ? sunLabels[plant.sunPreference] : null;
 
-  return (
-    <div className="w-72 border-l border-border bg-card p-4 overflow-y-auto animate-fade-in">
+  const panelContent = (
+    <div className="w-full">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-3xl">{plant.emoji}</span>
@@ -287,12 +324,66 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         </div>
       )}
 
+      {/* Photos section */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-medium text-foreground">📷 Photos</h4>
+          {onUpdatePlaced && (
+            <button
+              onClick={() => setIsCameraOpen(true)}
+              className="p-1 rounded hover:bg-muted text-primary text-xs flex items-center gap-1"
+              title="Take a photo"
+            >
+              <Camera className="w-3 h-3" />
+              Add
+            </button>
+          )}
+        </div>
+        <PhotoGallery
+          photos={placed.photos}
+          onImageDelete={handleDeletePhoto}
+          readOnly={!onUpdatePlaced}
+        />
+      </div>
+
       <button
         onClick={() => onRemove(placed.id)}
         className="w-full text-xs py-2 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
       >
         Remove from garden
       </button>
+
+      {/* Camera capture modal */}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handlePhotoCapture}
+        title={`Photograph ${plant.name}`}
+        description={`Take a photo of your ${plant.name} plant`}
+      />
+    </div>
+  );
+
+  // Render as modal on sm-md, as sidebar on lg+
+  if (modal) {
+    return (
+      <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-card rounded-t-xl sm:rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fade-in p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="font-semibold text-foreground">{plant.name}</h3>
+            <button onClick={onClose} className="p-1 rounded hover:bg-muted">
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          {panelContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden lg:block w-72 border-l border-border bg-card p-4 overflow-y-auto animate-fade-in">
+      {panelContent}
     </div>
   );
 }

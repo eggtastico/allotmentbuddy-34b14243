@@ -130,6 +130,7 @@ export function WateringGuide({ plants, structures, location: loc, onClose }: Wa
     }
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const plantData = plants.map(p => {
         const plantInfo = getPlantById(p.plantId);
         if (!plantInfo) return null;
@@ -153,15 +154,24 @@ export function WateringGuide({ plants, structures, location: loc, onClose }: Wa
         };
       }).filter(Boolean);
 
-      const { data: result, error } = await supabase.functions.invoke('watering-guide', {
-        body: { weatherData: weatherInfo, plants: plantData, structures: structData },
+      const resp = await fetch('/api/watering-guide', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ weatherData: weatherInfo, plants: plantData, structures: structData }),
       });
 
-      if (error) throw error;
-      if (result?.error) throw new Error(result.error);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(err.error || 'Request failed');
+      }
+      const result = await resp.json();
       setData(result);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to get watering advice');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get watering advice';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

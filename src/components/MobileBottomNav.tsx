@@ -1,4 +1,4 @@
-import { Sprout, Calendar, Bot, BookOpen, Map, CloudSun } from 'lucide-react';
+import { Sprout, Calendar, Bot, BookOpen, Map, CloudSun, ShoppingCart } from 'lucide-react';
 
 interface Props {
   onToggleSidebar: () => void;
@@ -7,12 +7,14 @@ interface Props {
   onShowJournal: () => void;
   onShowPlotMap: () => void;
   onShowWeather: () => void;
+  onShowShoppingList: () => void;
 }
 
-export function MobileBottomNav({ onToggleSidebar, onShowCalendar, onShowAI, onShowJournal, onShowPlotMap, onShowWeather }: Props) {
+export function MobileBottomNav({ onToggleSidebar, onShowCalendar, onShowAI, onShowJournal, onShowPlotMap, onShowWeather, onShowShoppingList }: Props) {
   const items = [
     { icon: Sprout, label: 'Plants', action: onToggleSidebar },
     { icon: Calendar, label: 'Calendar', action: onShowCalendar },
+    { icon: ShoppingCart, label: 'Shopping', action: onShowShoppingList },
     { icon: Map, label: 'Plot Map', action: onShowPlotMap },
     { icon: BookOpen, label: 'Journal', action: onShowJournal },
     { icon: Bot, label: 'AI Help', action: onShowAI },

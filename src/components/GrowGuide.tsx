@@ -44,10 +44,21 @@ export function GrowGuide({ onClose }: GrowGuideProps) {
       .join('\n');
 
     try {
-      const { data, error } = await supabase.functions.invoke('grow-guide', {
-        body: { plants: plantList },
+      const { data: { session } } = await supabase.auth.getSession();
+      // Use Nginx-proxied API endpoint
+      const resp = await fetch('/api/grow-guide', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ plants: plantList }),
       });
-      if (error) throw error;
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(err.error || 'Request failed');
+      }
+      const data = await resp.json();
       setResult(data.reply || 'No guidance generated.');
     } catch (e) {
       console.error(e);

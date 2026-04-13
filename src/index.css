@@ -167,16 +167,32 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
     font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+    scrollbar-gutter: stable;
   }
 }
 
 @layer utilities {
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-inset-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-inset-right {
+    padding-right: env(safe-area-inset-right);
+  }
   .garden-grid-pattern {
     background-image:
       linear-gradient(hsl(var(--garden-grid)) 1px, transparent 1px),

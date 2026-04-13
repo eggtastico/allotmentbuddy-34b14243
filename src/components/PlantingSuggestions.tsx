@@ -5,25 +5,26 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { plants } from '@/data/plants';
+import { monthNames, seasonMap } from '@/components/constants/PlantingSuggestions';
 
 interface SeedItem {
   id: string;
   plant_name: string;
   variety: string;
   quantity: number;
-  ai_extracted_data: Record<string, any>;
+  ai_extracted_data: Record<string, unknown>;
+}
+
+interface Suggestion {
+  seed: SeedItem;
+  plant: typeof plants[0];
+  canSow: boolean;
+  canHarvest: boolean;
 }
 
 interface PlantingSuggestionsProps {
   onClose: () => void;
 }
-
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const seasonMap: Record<number, string[]> = {
-  0: ['winter'], 1: ['winter', 'spring'], 2: ['spring'], 3: ['spring'], 4: ['spring', 'summer'],
-  5: ['summer'], 6: ['summer'], 7: ['summer', 'autumn'], 8: ['autumn'], 9: ['autumn'],
-  10: ['autumn', 'winter'], 11: ['winter'],
-};
 
 function matchesSowingMonth(plantData: typeof plants[0], month: number): boolean {
   const seasons = seasonMap[month] || [];
@@ -53,7 +54,7 @@ export function PlantingSuggestions({ onClose }: PlantingSuggestionsProps) {
   }, [user]);
 
   // Match seeds to plant library
-  const getSuggestions = (month: number) => {
+  const getSuggestions = (month: number): Suggestion[] => {
     return seeds.map(seed => {
       const match = plants.find(p =>
         p.name.toLowerCase() === seed.plant_name.toLowerCase() ||
@@ -65,7 +66,7 @@ export function PlantingSuggestions({ onClose }: PlantingSuggestionsProps) {
       const canHarvest = matchesHarvestMonth(match, month);
       if (!canSow && !canHarvest) return null;
       return { seed, plant: match, canSow, canHarvest };
-    }).filter(Boolean);
+    }).filter((s): s is Suggestion => s !== null);
   };
 
   const thisMonthSuggestions = getSuggestions(currentMonth);
@@ -100,7 +101,7 @@ export function PlantingSuggestions({ onClose }: PlantingSuggestionsProps) {
                 </p>
               ) : (
                 <div className="space-y-1.5 ml-6">
-                  {thisMonthSuggestions.map((s: any) => (
+                  {thisMonthSuggestions.map((s: Suggestion) => (
                     <div key={s.seed.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
                       <span className="text-lg">{s.plant.emoji}</span>
                       <div className="flex-1 min-w-0">
@@ -130,7 +131,7 @@ export function PlantingSuggestions({ onClose }: PlantingSuggestionsProps) {
                 <p className="text-xs text-muted-foreground ml-6">Nothing from your inventory for next month.</p>
               ) : (
                 <div className="space-y-1 ml-6">
-                  {nextMonthSuggestions.map((s: any) => (
+                  {nextMonthSuggestions.map((s: Suggestion) => (
                     <div key={s.seed.id} className="flex items-center gap-2 p-1.5 rounded-md text-xs text-muted-foreground">
                       <span>{s.plant.emoji}</span>
                       <span>{s.seed.plant_name}</span>

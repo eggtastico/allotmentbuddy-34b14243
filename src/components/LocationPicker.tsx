@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Search, Loader2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Thermometer, Droplets, Wind, Sun } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Location } from '@/types/garden';
+import { getWeatherData, getFrostData, getSunData } from '@/lib/weatherByLocation';
 
 interface LocationData {
   name: string;
@@ -20,13 +22,17 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
   const [input, setInput] = useState('');
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
+  const [weather, setWeather] = useState<any>(null);
+  const [frostData, setFrostData] = useState<any>(null);
 
   // Auto-detect on first load
   useEffect(() => {
     if (location) return;
     const stored = localStorage.getItem('ab-location');
     if (stored) {
-      try { onLocationChange(JSON.parse(stored)); return; } catch {}
+      try { onLocationChange(JSON.parse(stored)); return; } catch {
+        // Stored location is invalid, ignore and continue with geolocation
+      }
     }
     navigator.geolocation?.getCurrentPosition(
       async (pos) => {
@@ -41,6 +47,15 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
       }
     );
   }, [location, onLocationChange]);
+
+  // Fetch weather data when location changes
+  useEffect(() => {
+    if (location) {
+      const locationObj: Location = { lat: location.lat, lng: location.lon };
+      getWeatherData(locationObj).then(setWeather).catch(console.error);
+      setFrostData(getFrostData(locationObj));
+    }
+  }, [location]);
 
   const search = useCallback(async () => {
     const q = input.trim();
@@ -82,7 +97,9 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
         setOpen(false);
         setInput('');
       }
-    } catch {} finally {
+    } catch {
+      // Geocoding failed, location remains unchanged
+    } finally {
       setSearching(false);
     }
   }, [input, onLocationChange]);
@@ -109,6 +126,37 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
             {searching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
           </Button>
         </form>
+
+        {/* Weather info */}
+        {location && weather && (
+          <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-muted/30 rounded-md">
+            <div className="flex items-center gap-1 text-xs">
+              <Thermometer className="w-3 h-3 text-orange-500" />
+              <span>{Math.round(weather.temperature)}°C</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Droplets className="w-3 h-3 text-blue-500" />
+              <span>{weather.humidity}%</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Wind className="w-3 h-3" />
+              <span>{Math.round(weather.windSpeed)} km/h</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Sun className="w-3 h-3 text-yellow-500" />
+              <span>UV {Math.round(weather.uvIndex)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Frost dates */}
+        {location && frostData && (
+          <div className="text-xs mb-3 p-2 bg-muted/30 rounded-md">
+            <p className="font-medium">🌡️ Frost Dates</p>
+            <p className="text-muted-foreground">Last: {frostData.lastSpringFrost}</p>
+            <p className="text-muted-foreground">First: {frostData.firstFallFrost}</p>
+          </div>
+        )}
 
         {/* Mini map */}
         {location && (
