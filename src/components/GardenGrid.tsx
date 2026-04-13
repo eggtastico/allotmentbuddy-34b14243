@@ -450,49 +450,43 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       }}
       onTouchEnd={() => { touchPanRef.current = null; }}
     >
-      {/* Fixed Measurement Bars - stays visible always */}
-      <div className="fixed top-4 left-4 z-20 pointer-events-none">
-        {/* Column measurements */}
-        <div style={{ position: 'fixed', top: 16, left: 16 }}>
-          {Array.from({ length: cols }).map((_, i) => (
-            i % labelInterval === 0 && (
-              <span
-                key={`col-${i}`}
-                className="absolute text-[9px] text-muted-foreground font-semibold"
-                style={{
-                  left: i * cellSize + panOffset.x,
-                  top: 0,
-                  width: cellSize,
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-              </span>
-            )
-          ))}
-        </div>
-        {/* Row measurements */}
-        <div style={{ position: 'fixed', top: 16, left: 16 }}>
-          {Array.from({ length: rows }).map((_, i) => (
-            i % labelInterval === 0 && (
-              <span
-                key={`row-${i}`}
-                className="absolute text-[9px] text-muted-foreground font-semibold"
-                style={{
-                  left: 0,
-                  top: i * cellSize + panOffset.y,
-                  width: 32,
-                  textAlign: 'right',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-              </span>
-            )
-          ))}
-        </div>
-      </div>
+      {/* Fixed Measurement Bars - Column labels (horizontal) */}
+      {Array.from({ length: cols }).map((_, i) => (
+        i % labelInterval === 0 && (
+          <div
+            key={`col-label-${i}`}
+            className="fixed text-[9px] text-muted-foreground font-semibold pointer-events-none z-20"
+            style={{
+              left: i * cellSize + panOffset.x + 16,
+              top: 16,
+              width: cellSize,
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+          </div>
+        )
+      ))}
+
+      {/* Fixed Measurement Bars - Row labels (vertical) */}
+      {Array.from({ length: rows }).map((_, i) => (
+        i % labelInterval === 0 && (
+          <div
+            key={`row-label-${i}`}
+            className="fixed text-[9px] text-muted-foreground font-semibold pointer-events-none z-20"
+            style={{
+              left: 16,
+              top: i * cellSize + panOffset.y + 16,
+              width: 32,
+              textAlign: 'right',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+          </div>
+        )
+      ))}
 
       <div
         className="relative mx-auto transition-transform"
