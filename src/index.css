@@ -194,20 +194,7 @@
     padding-right: env(safe-area-inset-right);
   }
   .garden-grid-pattern {
-    background-image:
-      /* Solid lines every 5 cells (1m at 20cm cells) */
-      linear-gradient(hsl(var(--garden-grid)) 2px, transparent 2px),
-      linear-gradient(90deg, hsl(var(--garden-grid)) 2px, transparent 2px),
-      /* Dots at every cell intersection */
-      radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 1px, transparent 1px);
-    background-size:
-      500px 100%,
-      100% 500px,
-      20px 20px;
-    background-position:
-      0 0,
-      0 0,
-      0 0;
+    background-color: hsl(var(--card));
   }
   .scrollbar-thin {
     scrollbar-width: thin;

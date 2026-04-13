@@ -450,6 +450,49 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       }}
       onTouchEnd={() => { touchPanRef.current = null; }}
     >
+      {/* Fixed Measurement Bars - stays visible always */}
+      <div className="fixed top-4 left-4 z-20 pointer-events-none">
+        {/* Column measurements */}
+        <div style={{ position: 'fixed', top: 16, left: 16 }}>
+          {Array.from({ length: cols }).map((_, i) => (
+            i % labelInterval === 0 && (
+              <span
+                key={`col-${i}`}
+                className="absolute text-[9px] text-muted-foreground font-semibold"
+                style={{
+                  left: i * cellSize + panOffset.x,
+                  top: 0,
+                  width: cellSize,
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+              </span>
+            )
+          ))}
+        </div>
+        {/* Row measurements */}
+        <div style={{ position: 'fixed', top: 16, left: 16 }}>
+          {Array.from({ length: rows }).map((_, i) => (
+            i % labelInterval === 0 && (
+              <span
+                key={`row-${i}`}
+                className="absolute text-[9px] text-muted-foreground font-semibold"
+                style={{
+                  left: 0,
+                  top: i * cellSize + panOffset.y,
+                  width: 32,
+                  textAlign: 'right',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
+              </span>
+            )
+          ))}
+        </div>
+      </div>
 
       <div
         className="relative mx-auto transition-transform"
@@ -1047,47 +1090,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           })()}
         </div>
 
-        {/* Floating measurement bar overlay - stays visible during pan/zoom */}
-        <div className="absolute pointer-events-none" style={{ top: 0, left: 0 }}>
-          {/* Column labels - sticky to top */}
-          <div className="sticky top-0 z-10 pointer-events-none" style={{ height: 0 }}>
-            {Array.from({ length: cols }).map((_, i) => (
-              i % labelInterval === 0 && (
-                <span
-                  key={`col-${i}`}
-                  className="absolute text-[10px] text-muted-foreground font-medium"
-                  style={{
-                    left: i * cellSize,
-                    top: -16,
-                    width: cellSize,
-                    textAlign: 'center',
-                  }}
-                >
-                {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-              </span>
-            )
-          ))}
-          </div>
-          {/* Row labels - sticky to left */}
-          <div className="sticky left-0 z-10 pointer-events-none" style={{ width: 0 }}>
-            {Array.from({ length: rows }).map((_, i) => (
-              i % labelInterval === 0 && (
-                <span
-                  key={`row-${i}`}
-                  className="absolute text-[10px] text-muted-foreground font-medium"
-                  style={{
-                    left: -28,
-                    top: i * cellSize - 5,
-                    width: 24,
-                    textAlign: 'right',
-                  }}
-                >
-                  {settings.unit === 'meters' ? `${Math.round(i * settings.cellSizeCm / 100)}m` : `${Math.round(i * settings.cellSizeCm / 30.48)}ft`}
-                </span>
-              )
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
