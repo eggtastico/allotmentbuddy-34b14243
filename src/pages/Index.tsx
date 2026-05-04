@@ -19,10 +19,8 @@ import { PlotToolbar } from '@/components/PlotToolbar';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { LocationPicker } from '@/components/LocationPicker';
-import { SeasonalTasks } from '@/components/SeasonalTasks';
 import { RainWidget } from '@/components/RainWidget';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
-import { ActionRequired } from '@/components/ActionRequired';
 import { SocialShare } from '@/components/SocialShare';
 
 // Lazy-loaded modal components
@@ -54,6 +52,7 @@ import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { logError } from '@/utils/errorUtils';
+import { GardenAssistantPanel } from '@/components/GardenAssistantPanel';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -720,9 +719,8 @@ const Index = () => {
         </div>
       )}
 
-      {/* Seasonal tasks widget */}
-      <SeasonalTasks placedPlantIds={placedPlants.map(p => p.plantId)} />
-      <ActionRequired placedPlants={placedPlants} />
+      {/* Garden Assistant Panel */}
+      <GardenAssistantPanel placedPlants={placedPlants} frostDates={frostDates} />
 
       {/* Install prompt */}
       <div className="px-4 py-2 bg-card border-b border-border">
