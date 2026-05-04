@@ -5,13 +5,12 @@ import { GardenPlanRow } from '@/lib/schemas';
 import { db, initializeSyncStatus, getLocalGardens } from '@/lib/db';
 import { AppShell, type NavSection } from '@/components/AppShell';
 import { PhotosView } from '@/components/PhotosView';
-import { TasksView } from '@/components/TasksView';
-import { GuidesView } from '@/components/GuidesView';
 import { BottomNavBar } from '@/components/BottomNavBar';
 import { SetupWizard, type WizardSettings } from '@/components/SetupWizard';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
+import { IsometricGardenGrid } from '@/components/IsometricGardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
 import { getStructureById } from '@/data/structures';
 import { getPlantById, plants as allPlantsList } from '@/data/plants';
@@ -43,13 +42,18 @@ const GardenTasks = React.lazy(() => import('@/components/GardenTasks').then(m =
 const MonthlyPlanner = React.lazy(() => import('@/components/MonthlyPlanner').then(m => ({ default: m.MonthlyPlanner })));
 const GrowGuide = React.lazy(() => import('@/components/GrowGuide').then(m => ({ default: m.GrowGuide })));
 const ShoppingList = React.lazy(() => import('@/components/ShoppingList').then(m => ({ default: m.ShoppingList })));
+const HarvestLogger = React.lazy(() => import('@/components/HarvestLogger').then(m => ({ default: m.HarvestLogger })));
+const PestDiseaseLog = React.lazy(() => import('@/components/PestDiseaseLog').then(m => ({ default: m.PestDiseaseLog })));
+const CropRotationPlanner = React.lazy(() => import('@/components/CropRotationPlanner').then(m => ({ default: m.CropRotationPlanner })));
 import { useGardenPlans } from '@/hooks/useGardenPlans';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { useGardenAutoSave } from '@/hooks/useGardenAutoSave';
 import { useGardenModals } from '@/hooks/useGardenModals';
+import { useFrostDates } from '@/hooks/useFrostDates';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
+import { logError } from '@/utils/errorUtils';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -79,6 +83,7 @@ const Index = () => {
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
   const [location, setLocation] = useState<LocationData | null>(null);
+  const frostDates = useFrostDates(location);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingPlantId, setPendingPlantId] = useState<string | null>(null);
@@ -87,6 +92,10 @@ const Index = () => {
   const [activeNav, setActiveNav] = useState<NavSection>('garden');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
+  // Isometric grid A/B flag — enable via ?iso=1 in URL or toggle button
+  const [useIsometric, setUseIsometric] = useState(
+    () => new URLSearchParams(window.location.search).get('iso') === '1'
+  );
 
   // Undo/Redo history
   const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
@@ -194,7 +203,9 @@ const Index = () => {
             setPlacedStructures(latest.beds || []);
           }
         })
-        .catch(console.error);
+        .catch((err) => {
+          logError(err, 'Failed to load garden plans from IndexedDB');
+        });
     }
   }, [user, plans]);
 
@@ -220,6 +231,9 @@ const Index = () => {
     showGrowGuide, setShowGrowGuide,
     showClearConfirm, setShowClearConfirm,
     showShoppingList, setShowShoppingList,
+    showHarvestLogger, setShowHarvestLogger,
+    showPestLog, setShowPestLog,
+    showRotationPlanner, setShowRotationPlanner,
   } = useGardenModals();
 
   const handleSelectForPlacement = useCallback((plantId: string, isStructure = false) => {
@@ -248,6 +262,20 @@ const Index = () => {
       toast.error(`${plantData?.name || 'Plant'} needs ${plantData?.spacingCm || 20}cm spacing`);
       return;
     }
+
+    // Frost warning: alert if placing a frost-sensitive plant within 4 weeks of last frost date
+    if (plantData && frostDates && (plantData.frostHardiness === 'tender' || plantData.frostHardiness === 'half-hardy')) {
+      const now = new Date();
+      const lastFrost = frostDates.lastFrostDate;
+      const daysToLastFrost = Math.ceil((lastFrost.getTime() - now.getTime()) / 86400000);
+      if (daysToLastFrost > 0 && daysToLastFrost <= 28) {
+        toast.warning(
+          `⚠️ Frost risk: ${plantData.name} is ${plantData.frostHardiness} — last frost expected in ~${daysToLastFrost} days. Consider waiting or using protection.`,
+          { duration: 6000 }
+        );
+      }
+    }
+
     pushUndo(placedPlants);
     setPlacedPlants(prev => [...prev, {
       id: `${plantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -529,6 +557,16 @@ const Index = () => {
         <DropdownMenuItem onClick={() => setShowJournal(true)}>
           <BookOpen className="h-4 w-4 mr-2" /> Journal
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setShowHarvestLogger(true)}>
+          <Sprout className="h-4 w-4 mr-2" /> Harvest Log
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowPestLog(true)}>
+          <Lightbulb className="h-4 w-4 mr-2" /> Pest & Disease Log
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setShowRotationPlanner(true)}>
+          <Shuffle className="h-4 w-4 mr-2" /> Rotation Planner
+        </DropdownMenuItem>
       </NavDropdown>
 
       <NavDropdown label="More" icon={HelpCircle}>
@@ -759,6 +797,17 @@ const Index = () => {
           >
             🌱 Seedling
           </Button>
+          <div className="h-5 w-px bg-border mx-1" />
+          {/* View mode toggle */}
+          <Button
+            variant={useIsometric ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setUseIsometric(v => !v)}
+            title={useIsometric ? 'Switch to flat grid' : 'Switch to isometric 3D view'}
+          >
+            {useIsometric ? '🏔️ Iso' : '🗺️ Flat'}
+          </Button>
           {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
         </div>
       </div>
@@ -788,27 +837,51 @@ const Index = () => {
             </button>
           )}
         </div>
-        <GardenGrid
-          settings={settings}
-          plants={placedPlants}
-          structures={placedStructures}
-          onPlacePlant={handlePlacePlant}
-          onRemovePlant={handleRemovePlant}
-          onMovePlant={handleMovePlant}
-          onMovePlantStart={handleMovePlantStart}
-          onSelectPlant={setSelectedPlant}
-          onPlaceStructure={handlePlaceStructure}
-          onRemoveStructure={handleRemoveStructure}
-          onResizeStructure={handleResizeStructure}
-          onMoveStructure={handleMoveStructure}
-          selectedPlantId={selectedPlant?.id ?? null}
-          onFillPlantArea={handleFillPlantArea}
-          onSmartAutoFill={handleSmartAutoFill}
-          onSettingsChange={setSettings}
-          pendingPlantId={pendingPlantId}
-          pendingIsStructure={pendingIsStructure}
-          onCancelPending={handleCancelPending}
-        />
+        {useIsometric ? (
+          <IsometricGardenGrid
+            settings={settings}
+            plants={placedPlants}
+            structures={placedStructures}
+            onPlacePlant={handlePlacePlant}
+            onRemovePlant={handleRemovePlant}
+            onMovePlant={handleMovePlant}
+            onMovePlantStart={handleMovePlantStart}
+            onSelectPlant={setSelectedPlant}
+            onPlaceStructure={handlePlaceStructure}
+            onRemoveStructure={handleRemoveStructure}
+            onResizeStructure={handleResizeStructure}
+            onMoveStructure={handleMoveStructure}
+            selectedPlantId={selectedPlant?.id ?? null}
+            onFillPlantArea={handleFillPlantArea}
+            onSmartAutoFill={handleSmartAutoFill}
+            onSettingsChange={setSettings}
+            pendingPlantId={pendingPlantId}
+            pendingIsStructure={pendingIsStructure}
+            onCancelPending={handleCancelPending}
+          />
+        ) : (
+          <GardenGrid
+            settings={settings}
+            plants={placedPlants}
+            structures={placedStructures}
+            onPlacePlant={handlePlacePlant}
+            onRemovePlant={handleRemovePlant}
+            onMovePlant={handleMovePlant}
+            onMovePlantStart={handleMovePlantStart}
+            onSelectPlant={setSelectedPlant}
+            onPlaceStructure={handlePlaceStructure}
+            onRemoveStructure={handleRemoveStructure}
+            onResizeStructure={handleResizeStructure}
+            onMoveStructure={handleMoveStructure}
+            selectedPlantId={selectedPlant?.id ?? null}
+            onFillPlantArea={handleFillPlantArea}
+            onSmartAutoFill={handleSmartAutoFill}
+            onSettingsChange={setSettings}
+            pendingPlantId={pendingPlantId}
+            pendingIsStructure={pendingIsStructure}
+            onCancelPending={handleCancelPending}
+          />
+        )}
         {selectedPlant && (
           <>
             {/* Desktop sidebar version */}
@@ -976,7 +1049,7 @@ const Index = () => {
       )}
       {showTasks && (
         <Suspense fallback={null}>
-          <GardenTasks onClose={() => setShowTasks(false)} />
+          <GardenTasks placedPlants={placedPlants} onClose={() => setShowTasks(false)} />
         </Suspense>
       )}
       {showMonthlyPlanner && (
@@ -992,6 +1065,32 @@ const Index = () => {
       {showShoppingList && (
         <Suspense fallback={null}>
           <ShoppingList placedPlants={placedPlants} onClose={() => setShowShoppingList(false)} />
+        </Suspense>
+      )}
+      {showHarvestLogger && (
+        <Suspense fallback={null}>
+          <HarvestLogger
+            placedPlants={placedPlants}
+            gardenId={currentPlanId ?? 'local'}
+            onClose={() => setShowHarvestLogger(false)}
+          />
+        </Suspense>
+      )}
+      {showPestLog && (
+        <Suspense fallback={null}>
+          <PestDiseaseLog
+            placedPlants={placedPlants}
+            gardenId={currentPlanId ?? 'local'}
+            onClose={() => setShowPestLog(false)}
+          />
+        </Suspense>
+      )}
+      {showRotationPlanner && (
+        <Suspense fallback={null}>
+          <CropRotationPlanner
+            placedPlants={placedPlants}
+            onClose={() => setShowRotationPlanner(false)}
+          />
         </Suspense>
       )}
       <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
@@ -1028,8 +1127,6 @@ const Index = () => {
       {isMobile && activeNav !== 'garden' && (
         <div className="flex-1 overflow-y-auto pb-24">
           {activeNav === 'photos' && <PhotosView plants={placedPlants} />}
-          {activeNav === 'tasks' && <TasksView plants={placedPlants} />}
-          {activeNav === 'guides' && <GuidesView />}
           {activeNav === 'more' && (
             <div className="p-4 space-y-4">
               <h2 className="text-2xl font-semibold text-foreground">⚙️ More</h2>
@@ -1070,6 +1167,24 @@ const Index = () => {
                 >
                   📚 Growing Guide
                 </button>
+                <button
+                  onClick={() => setShowHarvestLogger(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                >
+                  🌾 Harvest Log
+                </button>
+                <button
+                  onClick={() => setShowPestLog(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                >
+                  🐛 Pest & Disease Log
+                </button>
+                <button
+                  onClick={() => setShowRotationPlanner(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                >
+                  🔄 Rotation Planner
+                </button>
               </div>
             </div>
           )}
@@ -1079,7 +1194,16 @@ const Index = () => {
       {/* Bottom navigation bar for mobile */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-          <BottomNavBar active={activeNav} onNavigate={setActiveNav} />
+          <BottomNavBar
+            active={activeNav}
+            onNavigate={(section) => {
+              if (section === 'tasks') {
+                setShowTasks(true);
+              } else {
+                setActiveNav(section);
+              }
+            }}
+          />
         </div>
       )}
     </div>

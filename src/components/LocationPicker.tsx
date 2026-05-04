@@ -5,12 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Location } from '@/types/garden';
 import { getWeatherData, getFrostData, getSunData } from '@/lib/weatherByLocation';
+import { toast } from 'sonner';
 
 interface LocationData {
   name: string;
   lat: number;
   lon: number;
   region?: string;
+}
+
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  uvIndex: number;
+}
+
+interface FrostData {
+  lastSpringFrost: string;
+  firstFallFrost: string;
 }
 
 interface LocationPickerProps {
@@ -22,16 +35,16 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
   const [input, setInput] = useState('');
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
-  const [weather, setWeather] = useState<any>(null);
-  const [frostData, setFrostData] = useState<any>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [frostData, setFrostData] = useState<FrostData | null>(null);
 
   // Auto-detect on first load
   useEffect(() => {
     if (location) return;
     const stored = localStorage.getItem('ab-location');
     if (stored) {
-      try { onLocationChange(JSON.parse(stored)); return; } catch {
-        // Stored location is invalid, ignore and continue with geolocation
+      try { onLocationChange(JSON.parse(stored)); return; } catch (err) {
+        console.warn('Stored location invalid, proceeding with geolocation:', err);
       }
     }
     navigator.geolocation?.getCurrentPosition(
@@ -66,6 +79,7 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
       const postcodeMatch = q.match(/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i);
       if (postcodeMatch) {
         const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error(`Postcode API error: ${res.status}`);
         const data = await res.json();
         if (data.status === 200 && data.result) {
           const r = data.result;
@@ -84,6 +98,7 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
       }
       // Fallback to Open-Meteo geocoding
       const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en`);
+      if (!res.ok) throw new Error(`Geocoding API error: ${res.status}`);
       const data = await res.json();
       if (data.results?.[0]) {
         const r = data.results[0];
@@ -97,8 +112,9 @@ export function LocationPicker({ location, onLocationChange }: LocationPickerPro
         setOpen(false);
         setInput('');
       }
-    } catch {
-      // Geocoding failed, location remains unchanged
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      toast.error('Failed to find location. Please try again.');
     } finally {
       setSearching(false);
     }

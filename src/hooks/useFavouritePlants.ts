@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { FavouritePlantsResponseSchema } from '@/lib/schemas';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'allotment-buddy-favourite-plants';
 
@@ -17,15 +18,19 @@ function loadFromStorage(): FavouritePlant[] {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.map((f: unknown) => {
-      if (typeof f !== 'object' || f === null) return null;
-      const row = f as { plantId?: string; plant_id?: string; order?: number; quantity?: number };
-      return {
-        plantId: row.plantId || row.plant_id || '',
-        order: row.order ?? 0,
-        quantity: row.quantity ?? 0,
-      };
-    }).filter((f) => f !== null && f.plantId) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((f: unknown) => {
+        if (typeof f !== 'object' || f === null) return null;
+        const row = f as Record<string, unknown>;
+        const plantId = (typeof row.plantId === 'string' ? row.plantId : undefined) ||
+                       (typeof row.plant_id === 'string' ? row.plant_id : undefined);
+        const order = typeof row.order === 'number' ? row.order : 0;
+        const quantity = typeof row.quantity === 'number' ? row.quantity : 0;
+        if (!plantId) return null;
+        return { plantId, order, quantity };
+      })
+      .filter((f): f is FavouritePlant => f !== null);
   } catch (err) {
     console.error('Failed to parse stored favourite plants:', err);
     return [];
@@ -75,8 +80,12 @@ export function useFavouritePlants() {
                 order: f.order,
                 quantity: f.quantity,
               })))
-              .then(() => {})
-              .catch(err => console.error('Failed to migrate favourite plants:', err));
+              .then(({ error }) => {
+                if (error) {
+                  console.error('Failed to migrate favourite plants to Supabase:', error);
+                }
+              })
+              .catch(err => console.error('Unexpected error migrating favourite plants:', err));
           }
           // Local state already correct — nothing to update
         }
@@ -97,23 +106,46 @@ export function useFavouritePlants() {
   const toggleFavourite = useCallback(
     (plantId: string) => {
       setFavourites(prev => {
-        if (prev.some(f => f.plantId === plantId)) {
+        const isFav = prev.some(f => f.plantId === plantId);
+
+        if (isFav) {
+          // Remove from favourites
           if (user) {
             supabase
               .from('favourite_plants')
               .delete()
               .eq('user_id', user.id)
               .eq('plant_id', plantId)
-              .then(() => {});
+              .then(({ error }) => {
+                if (error) {
+                  console.error('Failed to remove favourite plant:', error);
+                  toast.error('Failed to remove from favourites. Try again.');
+                }
+              })
+              .catch(err => {
+                console.error('Unexpected error removing favourite plant:', err);
+                toast.error('Failed to remove from favourites. Try again.');
+              });
           }
           return prev.filter(f => f.plantId !== plantId);
         }
+
+        // Add to favourites
         const newEntry: FavouritePlant = { plantId, order: prev.length, quantity: 0 };
         if (user) {
           supabase
             .from('favourite_plants')
             .insert({ user_id: user.id, plant_id: plantId, order: prev.length, quantity: 0 })
-            .then(() => {});
+            .then(({ error }) => {
+              if (error) {
+                console.error('Failed to add favourite plant:', error);
+                toast.error('Failed to add to favourites. Try again.');
+              }
+            })
+            .catch(err => {
+              console.error('Unexpected error adding favourite plant:', err);
+              toast.error('Failed to add to favourites. Try again.');
+            });
         }
         return [...prev, newEntry];
       });
@@ -133,7 +165,16 @@ export function useFavouritePlants() {
               .update({ quantity: q })
               .eq('user_id', user.id)
               .eq('plant_id', plantId)
-              .then(() => {});
+              .then(({ error }) => {
+                if (error) {
+                  console.error('Failed to update favourite plant quantity:', error);
+                  toast.error('Failed to update quantity. Try again.');
+                }
+              })
+              .catch(err => {
+                console.error('Unexpected error updating favourite plant quantity:', err);
+                toast.error('Failed to update quantity. Try again.');
+              });
           }
           return { ...f, quantity: q };
         }),
@@ -161,9 +202,19 @@ export function useFavouritePlants() {
                 .from('favourite_plants')
                 .update({ order: f.order })
                 .eq('user_id', user.id)
-                .eq('plant_id', f.plantId),
+                .eq('plant_id', f.plantId)
+                .then(({ error }) => {
+                  if (error) throw error;
+                }),
             ),
-          ).then(() => {});
+          )
+            .then(() => {
+              // Success - order updated
+            })
+            .catch(err => {
+              console.error('Failed to update favourite plants order:', err);
+              toast.error('Failed to save order. Try again.');
+            });
         }
         return reordered;
       });
