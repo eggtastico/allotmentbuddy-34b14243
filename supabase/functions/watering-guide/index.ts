@@ -1,15 +1,51 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+interface ForecastDay {
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  precip: number;
+}
+
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  conditions: string;
+  locationName: string;
+  forecast?: ForecastDay[];
+}
+
+interface PlantData {
+  emoji: string;
+  name: string;
+  location: "indoor" | "outdoor";
+  selfWatering: boolean;
+}
+
+interface StructureData {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  canGrowInside: boolean;
+}
+
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handleCorsPreflightRequest(req);
+
+  const corsHeaders = getCorsHeaders(req);
 
   try {
-    const { weatherData, plants, structures } = await req.json();
+    const { weatherData, plants, structures } = await req.json() as {
+      weatherData: WeatherData;
+      plants: PlantData[];
+      structures: StructureData[];
+    };
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     console.log('[watering-guide] API Key loaded:', OPENROUTER_API_KEY ? 'YES' : 'NO');
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured in Supabase secrets");
@@ -56,13 +92,13 @@ WEATHER:
 - Location: ${weatherData.locationName}
 
 3-DAY FORECAST:
-${weatherData.forecast?.map((d: any) => `- ${d.date}: High ${d.tempMax}°C, Low ${d.tempMin}°C, Rain ${d.precip}mm`).join('\n') || 'No forecast available'}
+${weatherData.forecast?.map((d: ForecastDay) => `- ${d.date}: High ${d.tempMax}°C, Low ${d.tempMin}°C, Rain ${d.precip}mm`).join('\n') || 'No forecast available'}
 
 PLANTS IN GARDEN:
-${plants.map((p: any) => `- ${p.emoji} ${p.name} (${p.location}) ${p.selfWatering ? '[SELF-WATERING SYSTEM]' : ''}`).join('\n') || 'No plants placed'}
+${plants.map((p: PlantData) => `- ${p.emoji} ${p.name} (${p.location}) ${p.selfWatering ? '[SELF-WATERING SYSTEM]' : ''}`).join('\n') || 'No plants placed'}
 
 STRUCTURES:
-${structures.map((s: any) => `- ${s.name} at position (${s.x},${s.y}), size ${s.width}x${s.height} cells ${s.canGrowInside ? '(plants can grow inside)' : ''}`).join('\n') || 'No structures'}
+${structures.map((s: StructureData) => `- ${s.name} at position (${s.x},${s.y}), size ${s.width}x${s.height} cells ${s.canGrowInside ? '(plants can grow inside)' : ''}`).join('\n') || 'No structures'}
 
 Analyze this data and provide watering recommendations for each plant. Consider which plants are sheltered inside structures (won't get rain) vs exposed outdoors.`;
 
