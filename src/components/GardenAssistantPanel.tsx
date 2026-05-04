@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { PLANT_FEEDING, NO_FEED } from '@/utils/feedingGuide';
 import { toast } from 'sonner';
+import { generateAllTasks } from '@/utils/gardenTaskGeneration';
+import type { GeneratedTask } from '@/utils/gardenTaskGeneration';
 
 interface DailyTask {
   id: string;
@@ -180,6 +182,8 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
   const [visitingToday, setVisitingToday] = useState(
     () => localStorage.getItem(`allotment-visiting-${toDateStr(new Date())}`) === 'true'
   );
+  const [insights, setInsights] = useState<GeneratedTask[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
   const loadDone = useRef(false);
 
   const today = new Date();
@@ -263,6 +267,40 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
 
     setLoading(false);
   }, [user, todayStr, placedPlants]);
+
+  // Load insights
+  useEffect(() => {
+    const loadInsights = async () => {
+      if (placedPlants.length === 0) {
+        setInsights([]);
+        setInsightsLoading(false);
+        return;
+      }
+
+      try {
+        // Get location from localStorage if available
+        const locStr = localStorage.getItem('ab-location');
+        let location = null;
+        if (locStr) {
+          try {
+            location = JSON.parse(locStr);
+          } catch (e) {
+            console.warn('Failed to parse location:', e);
+          }
+        }
+
+        const tasks = await generateAllTasks(placedPlants, location);
+        setInsights(tasks);
+      } catch (error) {
+        console.error('Failed to generate insights:', error);
+        setInsights([]);
+      } finally {
+        setInsightsLoading(false);
+      }
+    };
+
+    loadInsights();
+  }, [placedPlants]);
 
   useEffect(() => {
     loadTasks();
@@ -596,21 +634,59 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                 </div>
               )}
 
-              {/* Auto-generated guidance */}
+              {/* AI Insights - Weather & Feeding & Pest Prevention */}
               {placedPlants.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-border">
+                  <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
+                    <Lightbulb className="h-3.5 w-3.5 text-yellow-600" />
+                    Smart Insights
+                  </div>
+
+                  {insightsLoading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : insights.length > 0 ? (
+                    <div className="grid gap-2">
+                      {insights.map((insight) => {
+                        const bgColors = {
+                          weather: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+                          feeding: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
+                          pest: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800',
+                          harvest: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800',
+                          general: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800',
+                        };
+
+                        return (
+                          <div
+                            key={insight.id}
+                            className={`p-3 rounded-lg border text-xs ${bgColors[insight.category]}`}
+                          >
+                            <p className="font-medium text-foreground">{insight.icon} {insight.title}</p>
+                            <p className="text-muted-foreground mt-1 leading-snug">{insight.description}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-2 text-xs text-muted-foreground italic">
+                      No current insights. Keep watching for seasonal tasks and weather alerts.
+                    </div>
+                  )}
+
+                  {/* Quick status bullets */}
                   {taskData.readyNow.length > 0 && (
-                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                       <p className="text-xs text-muted-foreground">
-                        <strong>Harvest-ready:</strong> {taskData.readyNow.map(h => h.plant.emoji).join(' ')} {taskData.readyNow.map(h => h.plant.name).join(', ')}
+                        <strong>Ready to harvest:</strong> {taskData.readyNow.map(h => h.plant.emoji).join(' ')}
                       </p>
                     </div>
                   )}
 
                   {taskData.soonThisWeek.length > 0 && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                       <p className="text-xs text-muted-foreground">
-                        <strong>Harvest soon:</strong> {taskData.soonThisWeek.slice(0, 2).map(h => `${h.plant.emoji} ${h.daysRemaining}d`).join(', ')}
+                        <strong>Harvest soon:</strong> {taskData.soonThisWeek.slice(0, 3).map(h => `${h.plant.emoji} ${h.daysRemaining}d`).join(', ')}
                       </p>
                     </div>
                   )}
