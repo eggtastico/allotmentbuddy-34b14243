@@ -2,7 +2,13 @@ import { PlacedPlant, PlotSettings } from '@/types/garden';
 import { getPlantById, rotationGroupLabels } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 
-export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlant[], planName: string) {
+export async function exportGardenPDF(
+  settings: PlotSettings,
+  plants: PlacedPlant[],
+  planName: string,
+  /** PNG data URL from the live garden canvas — when provided, page 1 shows the real visual. */
+  canvasDataUrl?: string | null,
+) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -23,118 +29,150 @@ export async function exportGardenPDF(settings: PlotSettings, plants: PlacedPlan
   doc.setFont('helvetica', 'normal');
   doc.text(`${settings.widthM}×${settings.heightM} ${settings.unit} | ${plants.length} plants | ${new Date().toLocaleDateString('en-GB')}`, pageW - margin, 12, { align: 'right' });
 
-  // Draw grid
   const gridX = margin;
   const gridY = 24;
-  const cellSizeCm = settings.cellSizeCm || 25;
-  const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
-  const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
-  const maxCellW = (pageW - 2 * margin) / cols;
-  const maxCellH = (pageH - gridY - margin - 50) / rows;
-  const cellW = Math.min(maxCellW, maxCellH);
-  const gridW = cols * cellW;
-  const gridH = rows * cellW;
 
-  // Grid background
-  doc.setFillColor(250, 250, 245);
-  doc.rect(gridX, gridY, gridW, gridH, 'F');
+  // ── WYSIWYG canvas image (preferred) ──────────────────────────────────────────
+  // When the live canvas data URL is available, embed it directly so the PDF
+  // exactly matches what the user sees — emoji, companion arcs, shade overlay, etc.
+  if (canvasDataUrl) {
+    const availH = pageH - gridY - margin - 50; // reserve space for legend below
+    const availW = pageW - 2 * margin;
 
-  // Grid lines
-  doc.setDrawColor(220, 220, 210);
-  doc.setLineWidth(0.15);
-  for (let i = 0; i <= cols; i++) doc.line(gridX + i * cellW, gridY, gridX + i * cellW, gridY + gridH);
-  for (let i = 0; i <= rows; i++) doc.line(gridX, gridY + i * cellW, gridX + gridW, gridY + i * cellW);
+    // Decode native canvas dimensions from the data URL via an Image element
+    const img = new Image();
+    await new Promise<void>(resolve => { img.onload = () => resolve(); img.src = canvasDataUrl; });
+    const aspect = img.naturalWidth / img.naturalHeight;
+    let imgW = availW;
+    let imgH = imgW / aspect;
+    if (imgH > availH) { imgH = availH; imgW = imgH * aspect; }
 
-  // Border
-  doc.setDrawColor(46, 139, 87);
-  doc.setLineWidth(0.6);
-  doc.rect(gridX, gridY, gridW, gridH);
+    doc.addImage(canvasDataUrl, 'PNG', gridX, gridY, imgW, imgH);
 
-  // Axis labels
-  doc.setFontSize(6);
-  doc.setTextColor(140, 140, 140);
-  doc.setFont('helvetica', 'normal');
-  const labelInterval = settings.unit === 'meters' ? Math.round(100 / cellSizeCm) : Math.round(30.48 / cellSizeCm);
-  for (let i = 0; i <= cols; i++) {
-    if (i % labelInterval === 0) {
-      const label = settings.unit === 'meters' ? `${Math.round(i * cellSizeCm / 100)}m` : `${Math.round(i * cellSizeCm / 30.48)}ft`;
-      doc.text(label, gridX + i * cellW, gridY - 1.5, { align: 'center' });
+    // Thin green border to match jsPDF fallback style
+    doc.setDrawColor(46, 139, 87);
+    doc.setLineWidth(0.6);
+    doc.rect(gridX, gridY, imgW, imgH);
+
+    // Legend below the image
+    const uniquePlants = [...new Set(plants.map(p => p.plantId))];
+    const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+    uniquePlants.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
+
+    const catColors: Record<string, [number, number, number]> = {
+      vegetable: [76, 175, 80], fruit: [233, 30, 99], herb: [0, 150, 136], flower: [255, 193, 7],
+    };
+    const legendY = gridY + imgH + 6;
+    doc.setTextColor(46, 139, 87);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Plant Legend', margin, legendY);
+
+    doc.setFontSize(7);
+    let cx = margin;
+    Object.entries(catColors).forEach(([cat, color]) => {
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(cx + 1.5, legendY + 5, 1.5, 'F');
+      doc.setTextColor(60, 60, 60);
+      doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, legendY + 6);
+      cx += 25;
+    });
+
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
+    const ly = legendY + 12;
+    const colWidth = (pageW - 2 * margin) / 3;
+    uniquePlants.forEach((id, i) => {
+      const plant = plantDataMap.get(id);
+      if (!plant) return;
+      const count = plants.filter(p => p.plantId === id).length;
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = margin + col * colWidth, y = ly + row * 5;
+      if (y > pageH - margin) return;
+      const cc = catColors[plant.category] || [120, 120, 120];
+      doc.setFillColor(cc[0], cc[1], cc[2]);
+      doc.circle(x + 1, y - 0.8, 0.8, 'F');
+      doc.setTextColor(50, 50, 50);
+      doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
+    });
+  } else {
+    // ── Fallback: jsPDF-drawn grid (no canvas available) ─────────────────────────
+    const cellSizeCm = settings.cellSizeCm || 25;
+    const cols = Math.round(settings.widthM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
+    const rows = Math.round(settings.heightM * (settings.unit === 'meters' ? (100 / cellSizeCm) : (30.48 / cellSizeCm)));
+    const maxCellW = (pageW - 2 * margin) / cols;
+    const maxCellH = (pageH - gridY - margin - 50) / rows;
+    const cellW = Math.min(maxCellW, maxCellH);
+    const gridW = cols * cellW;
+    const gridH = rows * cellW;
+
+    doc.setFillColor(250, 250, 245);
+    doc.rect(gridX, gridY, gridW, gridH, 'F');
+    doc.setDrawColor(220, 220, 210);
+    doc.setLineWidth(0.15);
+    for (let i = 0; i <= cols; i++) doc.line(gridX + i * cellW, gridY, gridX + i * cellW, gridY + gridH);
+    for (let i = 0; i <= rows; i++) doc.line(gridX, gridY + i * cellW, gridX + gridW, gridY + i * cellW);
+    doc.setDrawColor(46, 139, 87);
+    doc.setLineWidth(0.6);
+    doc.rect(gridX, gridY, gridW, gridH);
+
+    doc.setFontSize(6); doc.setTextColor(140, 140, 140); doc.setFont('helvetica', 'normal');
+    const labelInterval = settings.unit === 'meters' ? Math.round(100 / cellSizeCm) : Math.round(30.48 / cellSizeCm);
+    for (let i = 0; i <= cols; i++) {
+      if (i % labelInterval === 0) {
+        const label = settings.unit === 'meters' ? `${Math.round(i * cellSizeCm / 100)}m` : `${Math.round(i * cellSizeCm / 30.48)}ft`;
+        doc.text(label, gridX + i * cellW, gridY - 1.5, { align: 'center' });
+      }
     }
+
+    const catColors: Record<string, [number, number, number]> = {
+      vegetable: [76, 175, 80], fruit: [233, 30, 99], herb: [0, 150, 136], flower: [255, 193, 7],
+    };
+    const uniquePlants = [...new Set(plants.map(p => p.plantId))];
+    const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+    uniquePlants.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
+
+    doc.setFontSize(Math.min(cellW * 0.55, 7)); doc.setFont('helvetica', 'bold');
+    plants.forEach(placed => {
+      const plant = plantDataMap.get(placed.plantId);
+      if (!plant) return;
+      const x = gridX + placed.x * cellW, y = gridY + placed.y * cellW;
+      const cc = catColors[plant.category] || [120, 120, 120];
+      doc.setFillColor(cc[0], cc[1], cc[2]);
+      doc.roundedRect(x + 0.5, y + 0.5, cellW - 1, cellW - 1, 1, 1, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text(plant.name.substring(0, 2).toUpperCase(), x + cellW / 2, y + cellW / 2 + 1, { align: 'center' });
+    });
+
+    doc.setTextColor(46, 139, 87);
+    const legendY = gridY + gridH + 6;
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Plant Legend', margin, legendY);
+    doc.setFontSize(7);
+    let cx = margin;
+    Object.entries(catColors).forEach(([cat, color]) => {
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(cx + 1.5, legendY + 5, 1.5, 'F');
+      doc.setTextColor(60, 60, 60);
+      doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, legendY + 6);
+      cx += 25;
+    });
+
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
+    const ly = legendY + 12;
+    const colWidth = (pageW - 2 * margin) / 3;
+    uniquePlants.forEach((id, i) => {
+      const plant = plantDataMap.get(id);
+      if (!plant) return;
+      const count = plants.filter(p => p.plantId === id).length;
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = margin + col * colWidth, y = ly + row * 5;
+      if (y > pageH - margin) return;
+      const cc = catColors[plant.category] || [120, 120, 120];
+      doc.setFillColor(cc[0], cc[1], cc[2]);
+      doc.circle(x + 1, y - 0.8, 0.8, 'F');
+      doc.setTextColor(50, 50, 50);
+      doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
+    });
   }
-
-  // Category colors for legend
-  const catColors: Record<string, [number, number, number]> = {
-    vegetable: [76, 175, 80],
-    fruit: [233, 30, 99],
-    herb: [0, 150, 136],
-    flower: [255, 193, 7],
-  };
-
-  // Place plants
-  const uniquePlants = [...new Set(plants.map(p => p.plantId))];
-  const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
-  uniquePlants.forEach(id => {
-    const d = getPlantById(id);
-    if (d) plantDataMap.set(id, d);
-  });
-
-  doc.setFontSize(Math.min(cellW * 0.55, 7));
-  doc.setFont('helvetica', 'bold');
-  plants.forEach(placed => {
-    const plant = plantDataMap.get(placed.plantId);
-    if (!plant) return;
-    const x = gridX + placed.x * cellW;
-    const y = gridY + placed.y * cellW;
-    const cc = catColors[plant.category] || [120, 120, 120];
-    doc.setFillColor(cc[0], cc[1], cc[2]);
-    doc.roundedRect(x + 0.5, y + 0.5, cellW - 1, cellW - 1, 1, 1, 'F');
-    doc.setTextColor(255, 255, 255);
-    const initials = plant.name.substring(0, 2).toUpperCase();
-    doc.text(initials, x + cellW / 2, y + cellW / 2 + 1, { align: 'center' });
-  });
-
-  // ── Legend section below grid ──
-  doc.setTextColor(46, 139, 87);
-  const legendY = gridY + gridH + 6;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Plant Legend', margin, legendY);
-
-  // Category legend
-  doc.setFontSize(7);
-  let cx = margin;
-  Object.entries(catColors).forEach(([cat, color]) => {
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.circle(cx + 1.5, legendY + 5, 1.5, 'F');
-    doc.setTextColor(60, 60, 60);
-    doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, legendY + 6);
-    cx += 25;
-  });
-
-  // Plant list with quantities and spacing
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(50, 50, 50);
-  let ly = legendY + 12;
-  let lx = margin;
-  const colWidth = (pageW - 2 * margin) / 3;
-
-  uniquePlants.forEach((id, i) => {
-    const plant = plantDataMap.get(id);
-    if (!plant) return;
-    const count = plants.filter(p => p.plantId === id).length;
-    const col = i % 3;
-    const row = Math.floor(i / 3);
-    const x = margin + col * colWidth;
-    const y = ly + row * 5;
-    if (y > pageH - margin) return;
-
-    const cc = catColors[plant.category] || [120, 120, 120];
-    doc.setFillColor(cc[0], cc[1], cc[2]);
-    doc.circle(x + 1, y - 0.8, 0.8, 'F');
-    doc.setTextColor(50, 50, 50);
-    doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
-  });
 
   // ── Page 2: Shopping List & Spacing Notes ──
   doc.addPage();

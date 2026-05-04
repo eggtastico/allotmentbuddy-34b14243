@@ -1,6 +1,9 @@
 import { PlacedStructure, PlotSettings } from '@/types/garden';
 import { getStructureById } from '@/data/structures';
 
+// Set to true to enable detailed sun calculation logging
+const DEBUG_SUN = false;
+
 /**
  * Calculate which grid cells are in shade based on structures and the sun direction.
  * Sun comes from the south direction, so structures cast shadows in the opposite direction.
@@ -14,7 +17,7 @@ export function calculateShadeZones(
 ): Set<string> {
   const shaded = new Set<string>();
   const southDeg = settings.southDirection;
-  
+
   // Sun comes from south, so shadow is cast opposite to south (toward north)
   // Convert to grid direction: southDirection=180 means south is at bottom,
   // shadow goes upward (negative y)
@@ -22,12 +25,30 @@ export function calculateShadeZones(
   const shadowDx = Math.round(Math.sin(shadowAngleRad));
   const shadowDy = -Math.round(Math.cos(shadowAngleRad)); // negative because y increases downward
 
+  if (DEBUG_SUN) {
+    console.log(`Shadow direction: angle=${shadowAngleRad.toFixed(2)} rad, dx=${shadowDx}, dy=${shadowDy}`);
+  }
+
+  let processedCount = 0;
+  let skippedCount = 0;
+
   for (const struct of structures) {
     const data = getStructureById(struct.structureId);
-    if (!data) continue;
-    // Only non-transparent structures cast meaningful shadows
-    if (data.canGrowInside && data.id !== 'shed') continue;
+    if (!data) {
+      continue;
+    }
+    // Only structures that actually block sunlight should cast shadows:
+    // - Sheds, fences (solid, tall structures)
+    // - Greenhouses, polytunnels, cold frames (semi-transparent but still block significant light)
+    // Skip: beds, containers, paths (ground-level, don't block sun)
+    const shadowCastingStructures = ['shed', 'fence', 'greenhouse', 'polytunnel', 'cold-frame'];
+    if (!shadowCastingStructures.includes(data.id)) {
+      skippedCount++;
+      continue;
+    }
+    processedCount++;
 
+    let cellsFromThisStruct = 0;
     // For each cell of the structure, project shadow in shadow direction
     for (let dx = 0; dx < struct.widthCells; dx++) {
       for (let dy = 0; dy < struct.heightCells; dy++) {
@@ -39,12 +60,16 @@ export function calculateShadeZones(
           const sy = baseY + shadowDy * dist;
           if (sx >= 0 && sx < cols && sy >= 0 && sy < rows) {
             shaded.add(`${sx},${sy}`);
+            cellsFromThisStruct++;
           }
         }
       }
     }
   }
 
+  if (DEBUG_SUN) {
+    console.log(`calculateShadeZones: ${shaded.size} shaded cells (${processedCount} structures, ${skippedCount} skipped)`);
+  }
   return shaded;
 }
 

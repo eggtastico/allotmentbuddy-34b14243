@@ -103,13 +103,13 @@ describe('frostDateCalculator', () => {
     it('should return a readable frost date string', () => {
       const frostDates = getFrostDates(50);
       const formatted = formatFrostDates(frostDates);
-      expect(formatted).toMatch(/\w+ \d+ to \w+ \d+ \(\-?\d+ days\)/);
+      expect(formatted).toMatch(/\w+ \d+ to \w+ \d+ \(-?\d+ days\)/);
     });
 
     it('should include frost-free days count', () => {
       const frostDates = getFrostDates(50);
       const formatted = formatFrostDates(frostDates);
-      expect(formatted).toMatch(/\-?\d+ days/);
+      expect(formatted).toMatch(/-?\d+ days/);
     });
   });
 });
