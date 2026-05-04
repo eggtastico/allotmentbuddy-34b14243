@@ -1,10 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { PlacedPlant } from '@/types/garden';
 import { plants as plantDB } from '@/data/plants';
 import { getSuccessionTasks } from '@/utils/bedPlantSuggestions';
-import { ChevronDown, ChevronUp, Droplets, Sprout, Scissors, Lightbulb } from 'lucide-react';
+import { ChevronDown, ChevronUp, Droplets, Sprout, Scissors, Lightbulb, CheckSquare, Plus, X, Loader2, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
+import { PLANT_FEEDING, NO_FEED } from '@/utils/feedingGuide';
+import { toast } from 'sonner';
+
+interface DailyTask {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  completed: boolean;
+  plant_name: string | null;
+}
 
 interface GardenAssistantPanelProps {
   placedPlants: PlacedPlant[];
@@ -12,6 +28,123 @@ interface GardenAssistantPanelProps {
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const LOCAL_DAILY_KEY = 'allotment-daily-store-v2';
+
+interface LocalDailyStore {
+  date: string;
+  completedAutoTitles: string[];
+  customTasks: DailyTask[];
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+function loadLocalStore(): LocalDailyStore {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_DAILY_KEY) || 'null') ?? {
+      date: '', completedAutoTitles: [], customTasks: [],
+    };
+  } catch {
+    return { date: '', completedAutoTitles: [], customTasks: [] };
+  }
+}
+
+function saveLocalStore(store: LocalDailyStore) {
+  localStorage.setItem(LOCAL_DAILY_KEY, JSON.stringify(store));
+}
+
+function buildDailyPayloads(
+  userId: string,
+  today: string,
+  placedPlants: PlacedPlant[],
+  skipTitles: Set<string>,
+) {
+  const now = new Date();
+  const payloads: Array<{
+    user_id: string;
+    title: string;
+    description: string;
+    period: string;
+    due_date: string;
+    completed: boolean;
+    plant_name?: string;
+  }> = [];
+
+  if (!skipTitles.has('Water the plants 💧')) {
+    payloads.push({
+      user_id: userId,
+      title: 'Water the plants 💧',
+      description: `${placedPlants.length} plant${placedPlants.length !== 1 ? 's' : ''} to check`,
+      period: 'daily',
+      due_date: today,
+      completed: false,
+    });
+  }
+
+  for (const pp of placedPlants) {
+    if (pp.stage === 'established') continue;
+    const plant = plantDB.find((p) => p.id === pp.plantId);
+    if (!plant?.daysToHarvest) continue;
+    const daysElapsed = Math.floor(
+      (now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000
+    );
+    const daysRemaining = plant.daysToHarvest - daysElapsed;
+    if (daysRemaining >= 0 && daysRemaining <= 7) {
+      const title = `Check ${plant.name} for harvest 🌾`;
+      if (!skipTitles.has(title)) {
+        payloads.push({
+          user_id: userId,
+          title,
+          description:
+            daysRemaining === 0
+              ? 'Ready to harvest today!'
+              : `About ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} until ready`,
+          period: 'daily',
+          due_date: today,
+          completed: false,
+          plant_name: plant.name,
+        });
+      }
+    }
+  }
+
+  const seenFeedPlants = new Set<string>();
+  for (const pp of placedPlants) {
+    if (seenFeedPlants.has(pp.plantId)) continue;
+    if (NO_FEED.has(pp.plantId)) continue;
+    const feedInfo = PLANT_FEEDING[pp.plantId];
+    if (!feedInfo) continue;
+    const plant = plantDB.find((p) => p.id === pp.plantId);
+    if (!plant) continue;
+    seenFeedPlants.add(pp.plantId);
+    const title = `Feed ${plant.name} 🌿`;
+    if (!skipTitles.has(title)) {
+      payloads.push({
+        user_id: userId,
+        title,
+        description: `${feedInfo.feedType} · ${feedInfo.frequency}`,
+        period: 'daily',
+        due_date: today,
+        completed: false,
+        plant_name: plant.name,
+      });
+    }
+  }
+
+  if (!skipTitles.has('Check for weeds 🌿')) {
+    payloads.push({
+      user_id: userId,
+      title: 'Check for weeds 🌿',
+      description: 'Remove any weeds before they go to seed',
+      period: 'daily',
+      due_date: today,
+      completed: false,
+    });
+  }
+
+  return payloads;
+}
 
 function monthMatchesCurrent(rangeStr: string | undefined): boolean {
   if (!rangeStr) return false;
@@ -37,11 +170,184 @@ function monthMatchesCurrent(rangeStr: string | undefined): boolean {
 }
 
 export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssistantPanelProps) {
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
+  const [tasks, setTasks] = useState<DailyTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [visitingToday, setVisitingToday] = useState(
+    () => localStorage.getItem(`allotment-visiting-${toDateStr(new Date())}`) === 'true'
+  );
+  const loadDone = useRef(false);
+
   const today = new Date();
+  const todayStr = toDateStr(today);
   const currentMonth = MONTH_NAMES[today.getMonth()];
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = `${dayName}, ${today.getDate()} ${currentMonth} ${today.getFullYear()}`;
+
+  // Load tasks
+  const loadTasks = useCallback(async () => {
+    if (loadDone.current) return;
+    loadDone.current = true;
+
+    if (!user) {
+      const store = loadLocalStore();
+      const isNewDay = store.date !== todayStr;
+
+      const completedSet = isNewDay ? new Set<string>() : new Set(store.completedAutoTitles);
+      const generated = buildDailyPayloads('local', todayStr, placedPlants, new Set());
+      const autoTasks: DailyTask[] = generated.map((p, i) => ({
+        id: `auto-${i}`,
+        title: p.title,
+        description: p.description,
+        due_date: todayStr,
+        completed: completedSet.has(p.title),
+        plant_name: p.plant_name ?? null,
+      }));
+
+      const customTasks = store.customTasks ?? [];
+      setTasks([...autoTasks, ...customTasks]);
+
+      if (isNewDay) {
+        saveLocalStore({ date: todayStr, completedAutoTitles: [], customTasks });
+      }
+      setLoading(false);
+      return;
+    }
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+
+    const { data, error } = await supabase
+      .from('garden_tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('period', 'daily')
+      .gte('due_date', toDateStr(cutoff))
+      .order('due_date', { ascending: true });
+
+    if (error) {
+      setLoading(false);
+      return;
+    }
+
+    const all = (data ?? []) as DailyTask[];
+    const hasTodayTasks = all.some((t) => t.due_date === todayStr);
+
+    if (!hasTodayTasks && placedPlants.length > 0) {
+      const skipTitles = new Set(
+        all.filter((t) => !t.completed).map((t) => t.title)
+      );
+      const payloads = buildDailyPayloads(user.id, todayStr, placedPlants, skipTitles);
+
+      if (payloads.length > 0) {
+        await supabase.from('garden_tasks').insert(payloads);
+        const { data: data2 } = await supabase
+          .from('garden_tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('period', 'daily')
+          .gte('due_date', toDateStr(cutoff))
+          .order('due_date', { ascending: true });
+        const all2 = (data2 ?? []) as DailyTask[];
+        setTasks(all2.filter((t) => !t.completed || t.due_date === todayStr));
+      } else {
+        setTasks(all.filter((t) => !t.completed || t.due_date === todayStr));
+      }
+    } else {
+      setTasks(all.filter((t) => !t.completed || t.due_date === todayStr));
+    }
+
+    setLoading(false);
+  }, [user, todayStr, placedPlants]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
+
+  const toggleComplete = async (task: DailyTask) => {
+    const next = !task.completed;
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, completed: next } : t)));
+    if (user) {
+      await supabase.from('garden_tasks').update({ completed: next }).eq('id', task.id);
+    } else {
+      const store = loadLocalStore();
+      if (task.id.startsWith('auto-')) {
+        const titles = new Set(store.completedAutoTitles);
+        if (next) titles.add(task.title);
+        else titles.delete(task.title);
+        saveLocalStore({ ...store, completedAutoTitles: [...titles] });
+      } else {
+        const customTasks = store.customTasks.map(t =>
+          t.id === task.id ? { ...t, completed: next } : t
+        );
+        saveLocalStore({ ...store, customTasks });
+      }
+    }
+    if (next && visitingToday) toast.success('Task done! ✅');
+  };
+
+  const deleteTask = async (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    if (user) {
+      await supabase.from('garden_tasks').delete().eq('id', id);
+    } else {
+      const store = loadLocalStore();
+      saveLocalStore({ ...store, customTasks: store.customTasks.filter(t => t.id !== id) });
+    }
+  };
+
+  const addTask = async () => {
+    if (!newTitle.trim()) return;
+    setSaving(true);
+    if (user) {
+      const { data, error } = await supabase
+        .from('garden_tasks')
+        .insert({
+          user_id: user.id,
+          title: newTitle.trim(),
+          period: 'daily',
+          due_date: todayStr,
+          completed: false,
+        })
+        .select('*')
+        .single();
+      setSaving(false);
+      if (error || !data) {
+        toast.error('Failed to add task');
+        return;
+      }
+      setTasks((prev) => [...prev, data as DailyTask]);
+    } else {
+      const task: DailyTask = {
+        id: `custom-${Date.now()}`,
+        title: newTitle.trim(),
+        description: null,
+        due_date: null,
+        completed: false,
+        plant_name: null,
+      };
+      setTasks((prev) => [...prev, task]);
+      const store = loadLocalStore();
+      saveLocalStore({ ...store, customTasks: [...store.customTasks, task] });
+      setSaving(false);
+    }
+    setNewTitle('');
+    setAdding(false);
+  };
+
+  const toggleVisiting = () => {
+    const next = !visitingToday;
+    setVisitingToday(next);
+    localStorage.setItem(`allotment-visiting-${todayStr}`, String(next));
+    if (next) toast.success('Happy gardening! 🌱');
+  };
+
+  const todayTasks = tasks.filter((t) => t.due_date === todayStr);
+  const incompleteCount = tasks.filter((t) => !t.completed).length;
 
   const taskData = useMemo(() => {
     const now = new Date();
@@ -124,18 +430,23 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
         <span className="text-sm font-semibold">📅 {dateStr}</span>
 
         {/* Quick summary badges */}
+        {incompleteCount > 0 && (
+          <Badge className="bg-orange-500 text-white hover:bg-orange-600">
+            ✓ {incompleteCount} tasks
+          </Badge>
+        )}
         {taskData.readyNow.length > 0 && (
           <Badge className="bg-green-500 text-white hover:bg-green-600">
-            🔴 {taskData.readyNow.length} harvest now
+            🔴 {taskData.readyNow.length} ready
           </Badge>
         )}
         {taskData.toSow.length > 0 && (
           <Badge className="bg-blue-400 text-white hover:bg-blue-500">
-            🌱 {taskData.toSow.length} to sow
+            🌱 {taskData.toSow.length} sow
           </Badge>
         )}
-        {taskData.readyNow.length === 0 && taskData.toSow.length === 0 && taskData.totalPlanted > 0 && (
-          <span className="text-xs text-blue-100">All on track</span>
+        {incompleteCount === 0 && taskData.readyNow.length === 0 && taskData.totalPlanted > 0 && (
+          <span className="text-xs text-blue-100">All tasks done!</span>
         )}
 
         <span className="ml-auto">
@@ -175,66 +486,134 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
               </TabsTrigger>
             </TabsList>
 
-            {/* TODAY */}
+            {/* TODAY - Task Management */}
             <TabsContent value="today" className="p-4 space-y-4">
-              {taskData.readyNow.length > 0 && (
+              {/* Visiting toggle */}
+              <div className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg">
+                <span className="text-xs text-muted-foreground">At the allotment today?</span>
+                <button
+                  onClick={toggleVisiting}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${
+                    visitingToday
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                  }`}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {visitingToday ? 'Visiting today ✓' : 'Mark as visiting'}
+                </button>
+              </div>
+
+              {/* Task list */}
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Scissors className="h-4 w-4 text-green-600" />
-                    Ready to Harvest Now
-                  </div>
-                  <div className="grid gap-2">
-                    {taskData.readyNow.map(h => (
-                      <div key={h.plantId} className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xl">{h.plant.emoji}</span>
-                          <span className="font-medium text-sm">{h.plant.name}</span>
-                          {h.count > 1 && <span className="text-xs text-muted-foreground">×{h.count}</span>}
+                  {todayTasks.length > 0 ? (
+                    <>
+                      {todayTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
+                            task.completed
+                              ? 'bg-muted/20 opacity-60'
+                              : visitingToday
+                              ? 'bg-primary/10 border border-primary/30'
+                              : 'bg-card border border-border'
+                          }`}
+                        >
+                          <Checkbox
+                            checked={task.completed}
+                            onCheckedChange={() => toggleComplete(task)}
+                            className="flex-shrink-0 mt-0.5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-xs font-medium ${
+                                task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                              }`}
+                            >
+                              {task.title}
+                            </p>
+                            {task.description && !task.completed && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{task.description}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">{h.plant.tips?.split('.')[0] || 'Ready to harvest — don\'t wait too long!'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      ))}
 
-              {taskData.justPlanted.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Sprout className="h-4 w-4 text-blue-600" />
-                    Just Planted
-                  </div>
-                  <div className="grid gap-2">
-                    {taskData.justPlanted.map(h => (
-                      <div key={h.plantId} className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xl">{h.plant.emoji}</span>
-                          <span className="font-medium text-sm">{h.plant.name}</span>
-                          {h.count > 1 && <span className="text-xs text-muted-foreground">×{h.count}</span>}
+                      {/* Add task input */}
+                      {adding ? (
+                        <div className="flex gap-1.5">
+                          <Input
+                            autoFocus
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') addTask();
+                              if (e.key === 'Escape') setAdding(false);
+                            }}
+                            placeholder="New task…"
+                            className="h-8 text-xs flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs px-2"
+                            disabled={saving || !newTitle.trim()}
+                            onClick={addTask}
+                          >
+                            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Add'}
+                          </Button>
+                          <button
+                            onClick={() => setAdding(false)}
+                            className="p-1.5 rounded hover:bg-muted text-muted-foreground"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">Keep soil moist, protect from slugs and birds.</p>
-                      </div>
-                    ))}
-                  </div>
+                      ) : (
+                        <button
+                          onClick={() => setAdding(true)}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Plus className="h-3 w-3" /> Add task
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-3 bg-muted rounded-lg text-center">
+                      <p className="text-xs text-muted-foreground">No tasks yet — add one below to get started!</p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {taskData.totalPlanted > 0 && (
-                <div className="p-3 bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800 rounded-lg flex items-center gap-2">
-                  <Droplets className="h-4 w-4 text-cyan-600 flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground"><strong>Water regularly</strong> — check soil moisture before watering.</span>
-                </div>
-              )}
+              {/* Auto-generated guidance */}
+              {placedPlants.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  {taskData.readyNow.length > 0 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Harvest-ready:</strong> {taskData.readyNow.map(h => h.plant.emoji).join(' ')} {taskData.readyNow.map(h => h.plant.name).join(', ')}
+                      </p>
+                    </div>
+                  )}
 
-              {taskData.readyNow.length === 0 && taskData.justPlanted.length === 0 && taskData.totalPlanted > 0 && (
-                <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <p className="text-xs text-muted-foreground">✨ Everything looking good! No urgent tasks today.</p>
-                </div>
-              )}
-
-              {taskData.totalPlanted === 0 && (
-                <div className="p-3 bg-muted rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">No plants planted yet. Add some plants to get started!</p>
+                  {taskData.soonThisWeek.length > 0 && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Harvest soon:</strong> {taskData.soonThisWeek.slice(0, 2).map(h => `${h.plant.emoji} ${h.daysRemaining}d`).join(', ')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
