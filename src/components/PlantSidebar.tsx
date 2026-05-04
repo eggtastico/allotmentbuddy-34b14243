@@ -1,18 +1,19 @@
 import { useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { plants } from '@/data/plants';
 import { structures } from '@/data/structures';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight, Star, GripVertical, Minus, Plus } from 'lucide-react';
+import { Search, Leaf, Building2, Filter, ChevronDown, ChevronRight, Star, GripVertical, Minus, Plus, X, Sprout } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { Plant } from '@/types/garden';
 import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
 import { getPlantById } from '@/data/plants';
 import { categoryOrder, categoryLabels, difficultyColors, hardinessLabels, sunLabels, familyEmojis } from '@/components/constants/PlantSidebar';
+import { getSowingStatus, getMonthName } from '@/utils/seasonalSowing';
 
 type GroupMode = 'category' | 'family';
 
@@ -20,6 +21,7 @@ interface PlantSidebarProps {
   onDragStart: (plantId: string) => void;
   pendingPlantId?: string | null;
   onSelectPlant?: (plantId: string, isStructure?: boolean) => void;
+  onStructureModeChange?: (mode: boolean) => void;
 }
 
 function PlantHoverInfo({ plant }: { plant: Plant }) {
@@ -104,13 +106,14 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
   );
 }
 
-function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPending, onSelectPlant }: {
+function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPending, onSelectPlant, sowLabel }: {
   plant: Plant;
   onDragStart: (id: string) => void;
   isFavourite: boolean;
   onToggleFavourite: (id: string) => void;
   isPending?: boolean;
   onSelectPlant?: (id: string) => void;
+  sowLabel?: string;
 }) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
@@ -121,7 +124,10 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPendi
             e.dataTransfer.setData('plantId', plant.id);
             onDragStart(plant.id);
           }}
-          onClick={() => onSelectPlant?.(plant.id)}
+          onClick={() => {
+            onSelectPlant?.(plant.id);
+            onStructureModeChange?.(false);
+          }}
           className={`flex items-center gap-2 sm:p-2 p-3 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[36px] sm:min-h-[36px] min-h-[48px] ${isPending ? 'ring-2 ring-primary bg-primary/10' : ''}`}
           title={plant.name}
         >
@@ -245,7 +251,7 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite, ge
     </div>
   );
 }
-export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: PlantSidebarProps) {
+export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStructureModeChange }: PlantSidebarProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [tab, setTab] = useState<'plants' | 'favourites' | 'structures'>('plants');
@@ -312,6 +318,32 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
     });
   };
 
+  // Flatten grouped plants into virtual rows: group headers + 2-column plant rows
+  type VItem =
+    | { kind: 'header'; groupKey: string; label: string; count: number }
+    | { kind: 'row'; rowPlants: Plant[] };
+
+  const flatPlantItems = useMemo<VItem[]>(() => {
+    const items: VItem[] = [];
+    for (const group of grouped) {
+      items.push({ kind: 'header', groupKey: group.key, label: group.label, count: group.items.length });
+      if (!collapsedGroups.has(group.key)) {
+        for (let i = 0; i < group.items.length; i += 2) {
+          items.push({ kind: 'row', rowPlants: group.items.slice(i, i + 2) });
+        }
+      }
+    }
+    return items;
+  }, [grouped, collapsedGroups]);
+
+  const plantScrollRef = useRef<HTMLDivElement>(null);
+  const plantVirtualizer = useVirtualizer({
+    count: flatPlantItems.length,
+    getScrollElement: () => plantScrollRef.current,
+    estimateSize: (i) => (flatPlantItems[i]?.kind === 'header' ? 34 : 46),
+    overscan: 4,
+  });
+
   const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
@@ -324,7 +356,10 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
         {/* Tabs */}
         <div className="flex gap-1">
           <button
-            onClick={() => setTab('plants')}
+            onClick={() => {
+              setTab('plants');
+              onStructureModeChange?.(false);
+            }}
             className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${tab === 'plants' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
             <Leaf className="h-3.5 w-3.5" /> Plants
@@ -339,7 +374,10 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
             )}
           </button>
           <button
-            onClick={() => setTab('structures')}
+            onClick={() => {
+              setTab('structures');
+              onStructureModeChange?.(true);
+            }}
             className={`flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl font-semibold transition-colors min-h-[36px] ${tab === 'structures' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
             <Building2 className="h-3.5 w-3.5" /> Structures
@@ -472,53 +510,19 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
-        {tab === 'favourites' ? (
-          <FavouritesTab
-            onDragStart={onDragStart}
-            favouriteIds={favouriteIds}
-            reorder={reorder}
-            toggleFavourite={toggleFavourite}
-            getQuantity={getQuantity}
-            setQuantity={setQuantity}
-          />
-        ) : tab === 'plants' ? (
-          <>
-            {filtered.length > 0 && filtered.length !== plants.length && (
-              <p className="text-[10px] text-muted-foreground px-1 font-semibold">{filtered.length} plants</p>
-            )}
-            {grouped.map(({ key, label, items }) => (
-              <Collapsible key={key} open={!collapsedGroups.has(key)} onOpenChange={() => toggleGroup(key)}>
-                <CollapsibleTrigger className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors group/trigger">
-                  {collapsedGroups.has(key)
-                    ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                  }
-                  <span className="text-xs font-bold text-foreground">{label}</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{items.length}</span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="grid grid-cols-2 gap-1 mt-0.5 mb-1.5">
-                    {items.map(plant => (
-                      <PlantItem
-                        key={plant.id}
-                        plant={plant}
-                        onDragStart={onDragStart}
-                        isFavourite={isFavourite(plant.id)}
-                        onToggleFavourite={toggleFavourite}
-                        isPending={pendingPlantId === plant.id}
-                        onSelectPlant={onSelectPlant}
-                      />
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
-            {filtered.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-8">No plants found</p>
-            )}
-          </>
-        ) : (
+      {/* Favourites + Structures tabs: normal scroll */}
+      {tab !== 'plants' && (
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
+          {tab === 'favourites' ? (
+            <FavouritesTab
+              onDragStart={onDragStart}
+              favouriteIds={favouriteIds}
+              reorder={reorder}
+              toggleFavourite={toggleFavourite}
+              getQuantity={getQuantity}
+              setQuantity={setQuantity}
+            />
+          ) : (
           <>
             <p className="text-xs text-muted-foreground px-1 hidden sm:block">Drag structures onto your plot.</p>
             <p className="text-xs text-muted-foreground px-1 sm:hidden">Tap a structure to select it, then tap the grid to place it.</p>
@@ -531,7 +535,10 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
                     e.dataTransfer.setData('structureId', structure.id);
                     onDragStart(structure.id);
                   }}
-                  onClick={() => onSelectPlant?.(structure.id, true)}
+                  onClick={() => {
+                    onSelectPlant?.(structure.id, true);
+                    onStructureModeChange?.(true);
+                  }}
                   className={`flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px] ${pendingPlantId === structure.id ? 'ring-2 ring-primary bg-primary/10' : ''}`}
                   title={structure.description}
                 >
@@ -554,6 +561,77 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant }: Pla
           </>
         )}
       </div>
+      )}
+
+      {/* Plants tab — virtualised flat list */}
+      {tab === 'plants' && (
+        <>
+          {filtered.length > 0 && filtered.length !== plants.length && (
+            <p className="text-[10px] text-muted-foreground px-3 pt-2 font-semibold">{filtered.length} plants</p>
+          )}
+          {filtered.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-8">No plants found</p>
+          )}
+          <div
+            ref={plantScrollRef}
+            className="flex-1 overflow-y-auto scrollbar-thin"
+          >
+            <div
+              style={{
+                height: plantVirtualizer.getTotalSize(),
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {plantVirtualizer.getVirtualItems().map(virtualItem => {
+                const item = flatPlantItems[virtualItem.index];
+                if (!item) return null;
+                return (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute',
+                      top: virtualItem.start,
+                      left: 0,
+                      right: 0,
+                      height: virtualItem.size,
+                      padding: '0 6px',
+                    }}
+                  >
+                    {item.kind === 'header' ? (
+                      <button
+                        onClick={() => toggleGroup(item.groupKey)}
+                        className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors text-left"
+                      >
+                        {collapsedGroups.has(item.groupKey)
+                          ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        }
+                        <span className="text-xs font-bold text-foreground">{item.label}</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{item.count}</span>
+                      </button>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-1 mb-0.5">
+                        {item.rowPlants.map(plant => (
+                          <PlantItem
+                            key={plant.id}
+                            plant={plant}
+                            onDragStart={onDragStart}
+                            isFavourite={isFavourite(plant.id)}
+                            onToggleFavourite={toggleFavourite}
+                            isPending={pendingPlantId === plant.id}
+                            onSelectPlant={onSelectPlant}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

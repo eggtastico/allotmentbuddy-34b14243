@@ -24,10 +24,10 @@ interface PlantInfoPanelProps {
 }
 
 export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask, onUpdatePlaced, modal }: PlantInfoPanelProps) {
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
   const plant = getPlantById(placed.plantId);
   if (!plant) return null;
-
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const handlePhotoCapture = async (photoDataUrl: string) => {
     // Note: In a full implementation, we'd pass the gardenId
@@ -129,19 +129,54 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         )}
       </div>
 
+      {/* Quantity */}
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1.5 flex-1">
+          <span className="text-muted-foreground">🌱 Plants:</span>
+          {onUpdatePlaced ? (
+            <input
+              type="number"
+              min="1"
+              max="999"
+              value={placed.quantity ?? 1}
+              onChange={e => {
+                const val = Math.max(1, parseInt(e.target.value) || 1);
+                onUpdatePlaced({ ...placed, quantity: val });
+              }}
+              className="font-medium text-foreground bg-transparent border-0 outline-none w-14 cursor-pointer hover:text-primary transition-colors"
+              title="How many plants in this planting"
+            />
+          ) : (
+            <span className="font-medium text-foreground">{placed.quantity ?? 1}</span>
+          )}
+          <span className="text-muted-foreground">planted</span>
+        </div>
+      </div>
+
       {/* Planted date & stage */}
       <div className="mb-3 flex flex-wrap gap-2 text-xs">
-        {placed.plantedAt && (
-          <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
-            <span className="text-muted-foreground">📅 Planted:</span>
-            <span className="font-medium text-foreground">{new Date(placed.plantedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-          </div>
-        )}
-        <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
-          <span>{placed.stage === 'seedling' ? '🌱' : '🌰'}</span>
-          <span className="font-medium text-foreground capitalize">{placed.stage || 'seed'}</span>
+        <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1.5">
+          <span className="text-muted-foreground">📅 Planted:</span>
+          {onUpdatePlaced ? (
+            <input
+              type="date"
+              value={placed.plantedAt ? placed.plantedAt.slice(0, 10) : ''}
+              onChange={e => {
+                const val = e.target.value;
+                onUpdatePlaced({ ...placed, plantedAt: val ? `${val}T00:00:00.000Z` : placed.plantedAt });
+              }}
+              className="font-medium text-foreground bg-transparent border-0 outline-none cursor-pointer hover:text-primary transition-colors"
+              title="Change planting date"
+            />
+          ) : placed.plantedAt ? (
+            <span className="font-medium text-foreground">
+              {new Date(placed.plantedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          ) : (
+            <span className="text-muted-foreground italic">not set</span>
+          )}
         </div>
-        {placed.plantedAt && plant.daysToHarvest && (
+        {placed.plantedAt && plant.daysToHarvest && placed.stage !== 'established' && (
           <div className="bg-muted rounded-md px-2 py-1.5 flex items-center gap-1">
             <span className="text-muted-foreground">🌾 Est. harvest:</span>
             <span className="font-medium text-foreground">
@@ -149,7 +184,87 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
             </span>
           </div>
         )}
+        {placed.stage === 'established' && (
+          <div className="bg-primary/10 rounded-md px-2 py-1.5 flex items-center gap-1">
+            <span>🌳</span>
+            <span className="font-medium text-primary">Established — perennial</span>
+          </div>
+        )}
       </div>
+
+      {/* "Days until next action" countdown pills */}
+      {placed.plantedAt && placed.stage !== 'established' && (() => {
+        const now = new Date();
+        const plantedDate = new Date(placed.plantedAt);
+        const daysElapsed = Math.floor((now.getTime() - plantedDate.getTime()) / 86400000);
+        const pills: Array<{ label: string; days: number | null; icon: string }> = [];
+
+        // Days until harvest
+        if (plant.daysToHarvest) {
+          const daysToHarvest = plant.daysToHarvest - daysElapsed;
+          pills.push({ label: 'harvest', days: daysToHarvest, icon: '🌾' });
+        }
+
+        // Next feeding (every 3 weeks after 3 weeks)
+        if (daysElapsed >= 21) {
+          const weeksSincePlanting = Math.floor(daysElapsed / 7);
+          const nextFeedWeek = (Math.floor(weeksSincePlanting / 3) + 1) * 3;
+          const daysToFeed = (nextFeedWeek * 7) - daysElapsed;
+          pills.push({ label: 'feed', days: daysToFeed, icon: '🌿' });
+        } else if (daysElapsed >= 0) {
+          const daysToFeed = 21 - daysElapsed;
+          pills.push({ label: 'first feed', days: daysToFeed, icon: '🌿' });
+        }
+
+        if (pills.length === 0) return null;
+
+        function pillColor(days: number | null): string {
+          if (days === null) return 'bg-muted text-muted-foreground';
+          if (days <= 0) return 'bg-green-500/20 text-green-700 dark:text-green-400';
+          if (days <= 2) return 'bg-red-500/15 text-red-700 dark:text-red-400';
+          if (days <= 7) return 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
+          return 'bg-muted/80 text-muted-foreground';
+        }
+
+        return (
+          <div className="mb-3">
+            <p className="text-xs text-muted-foreground mb-1.5">Next actions</p>
+            <div className="flex flex-wrap gap-1.5">
+              {pills.map(({ label, days, icon }) => (
+                <span key={label} className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${pillColor(days)}`}>
+                  {icon}
+                  {days === null ? label
+                    : days <= 0 ? `${label} now!`
+                    : `${label} in ${days}d`}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Stage toggle */}
+      {onUpdatePlaced && (
+        <div className="mb-3">
+          <p className="text-xs text-muted-foreground mb-1.5">Stage</p>
+          <div className="flex gap-1.5">
+            {(['seed', 'seedling', 'established'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => onUpdatePlaced({ ...placed, stage: s })}
+                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
+                  placed.stage === s
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                {s === 'seed' ? '🌰' : s === 'seedling' ? '🌱' : '🌳'}
+                {s === 'seed' ? 'Seed' : s === 'seedling' ? 'Seedling' : 'Established'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
         {plant.spacingCm && (

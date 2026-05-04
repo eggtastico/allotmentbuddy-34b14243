@@ -42,6 +42,20 @@ interface WateringData {
   forecast: string;
 }
 
+interface WeatherInfoData {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  conditions: string;
+  locationName: string;
+  forecast: Array<{
+    date: string;
+    tempMax: number;
+    tempMin: number;
+    precip: number;
+  }>;
+}
+
 const STATUS_CONFIG = {
   water: { label: 'Water Today', icon: '💧', textColor: 'text-blue-400' },
   skip: { label: 'Skip Watering', icon: '✅', textColor: 'text-emerald-400' },
@@ -61,7 +75,7 @@ export function WateringGuide({ plants, structures, location: loc, onClose }: Wa
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [data, setData] = useState<WateringData | null>(null);
   const [selfWateringPlants, setSelfWateringPlants] = useState<Set<string>>(new Set());
-  const [weatherInfo, setWeatherInfo] = useState<any>(null);
+  const [weatherInfo, setWeatherInfo] = useState<WeatherInfoData | null>(null);
 
   const getPlantLocation = useCallback((plant: PlacedPlant): 'indoor' | 'outdoor' => {
     for (const struct of structures) {
@@ -208,6 +222,37 @@ export function WateringGuide({ plants, structures, location: loc, onClose }: Wa
               Set your location in the header first
             </div>
           )}
+
+          {/* Weather → Watering banner */}
+          {!weatherLoading && weatherInfo && (() => {
+            const rainNext3Days = weatherInfo.forecast.slice(0, 3).reduce((sum, d) => sum + (d.precip ?? 0), 0);
+            const dryDays = weatherInfo.forecast.filter(d => (d.precip ?? 0) < 1).length;
+            if (rainNext3Days >= 5) {
+              return (
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-sm">
+                  <Umbrella className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-semibold">Rain forecast</span>
+                    <span className="text-xs ml-1.5">({rainNext3Days.toFixed(1)}mm in next 3 days)</span>
+                    <p className="text-xs opacity-80 mt-0.5">You can likely skip watering today — let the rain do the work.</p>
+                  </div>
+                </div>
+              );
+            }
+            if (dryDays >= 3) {
+              return (
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-sm">
+                  <Sun className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-semibold">Dry spell ahead</span>
+                    <span className="text-xs ml-1.5">({dryDays} dry days forecast)</span>
+                    <p className="text-xs opacity-80 mt-0.5">Consider watering more frequently and mulching to retain moisture.</p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Current weather summary */}
           {weatherLoading ? (

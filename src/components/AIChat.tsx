@@ -41,7 +41,11 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
     .map(id => { const plant = getPlantById(id); return plant ? `${plant.emoji} ${plant.name} (x${plants.filter(pp => pp.plantId === id).length})` : ''; })
     .filter(Boolean).join(', ');
 
-  const locationStr = location ? `Location: ${location.name} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${location.region}` : ''}.` : '';
+  // JSON.stringify the user-influenced location values so they cannot break out of
+  // the prompt string (prevents prompt injection via crafted location names).
+  const locationStr = location
+    ? `Location: ${JSON.stringify(location.name)} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${JSON.stringify(location.region)}` : ''}.`
+    : '';
 
   // Build rich context about the current layout
   const rotationAnalysis = analyzeRotation(plants);

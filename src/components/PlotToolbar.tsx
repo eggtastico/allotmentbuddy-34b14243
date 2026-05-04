@@ -8,6 +8,10 @@ interface PlotToolbarProps {
   onSettingsChange: (s: PlotSettings) => void;
   plantCount: number;
   onClear: () => void;
+  showSunOverlay?: boolean;
+  onShowSunOverlayChange?: (show: boolean) => void;
+  structureMode?: boolean;
+  onStructureModeChange?: (mode: boolean) => void;
 }
 
 const gridSizeOptions = [
@@ -28,18 +32,18 @@ const compassOptions = [
   { value: 315, label: '↖ NW' },
 ];
 
-export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }: PlotToolbarProps) {
+export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear, showSunOverlay, onShowSunOverlayChange, structureMode, onStructureModeChange }: PlotToolbarProps) {
   const label = settings.unit === 'meters' ? 'm' : 'ft';
 
   return (
-    <div className="h-12 bg-card px-4 flex items-center gap-4 text-sm flex-wrap">
+    <div className="h-8 bg-card px-4 flex items-center gap-3 text-sm flex-wrap">
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Plot:</span>
         <Input
           type="number"
           value={settings.widthM}
           onChange={e => onSettingsChange({ ...settings, widthM: Math.max(1, Number(e.target.value)) })}
-          className="w-14 h-7 text-xs text-center"
+          className="w-12 h-6 text-xs text-center"
           min={1}
           max={50}
         />
@@ -48,7 +52,7 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
           type="number"
           value={settings.heightM}
           onChange={e => onSettingsChange({ ...settings, heightM: Math.max(1, Number(e.target.value)) })}
-          className="w-14 h-7 text-xs text-center"
+          className="w-12 h-6 text-xs text-center"
           min={1}
           max={50}
         />
@@ -67,7 +71,7 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
         <select
           value={settings.cellSizeCm}
           onChange={e => onSettingsChange({ ...settings, cellSizeCm: Number(e.target.value) })}
-          className="h-7 text-xs rounded border border-input bg-background px-2 text-foreground"
+          className="h-6 text-xs rounded border border-input bg-background px-1.5 text-foreground"
         >
           {gridSizeOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -83,7 +87,7 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
         <select
           value={settings.southDirection}
           onChange={e => onSettingsChange({ ...settings, southDirection: Number(e.target.value) })}
-          className="h-7 text-xs rounded border border-input bg-background px-2 text-foreground"
+          className="h-6 text-xs rounded border border-input bg-background px-1.5 text-foreground"
         >
           {compassOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -95,11 +99,11 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
 
       <div className="flex items-center gap-1">
         <span className="text-muted-foreground text-xs">Zoom:</span>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onSettingsChange({ ...settings, cellSizePx: Math.max(16, settings.cellSizePx - 4) })}>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onSettingsChange({ ...settings, cellSizePx: Math.max(16, settings.cellSizePx - 4) })}>
           <Minus className="h-3 w-3" />
         </Button>
         <span className="text-xs w-8 text-center text-foreground">{settings.cellSizePx}px</span>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onSettingsChange({ ...settings, cellSizePx: Math.min(64, settings.cellSizePx + 4) })}>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onSettingsChange({ ...settings, cellSizePx: Math.min(64, settings.cellSizePx + 4) })}>
           <Plus className="h-3 w-3" />
         </Button>
       </div>
@@ -122,6 +126,30 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear }:
         <Grid3X3 className="h-3 w-3" />
         Snap
       </button>
+
+      {onShowSunOverlayChange && (
+        <button
+          onClick={() => onShowSunOverlayChange(!showSunOverlay)}
+          className={`text-xs px-2 py-1 rounded font-medium transition-colors ${showSunOverlay ? 'bg-amber-500/20 text-amber-600' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+          title="Toggle sun/shade overlay"
+        >
+          {showSunOverlay ? '☀️ Sun' : '☀️ Off'}
+        </button>
+      )}
+
+      {onStructureModeChange && (
+        <button
+          onClick={() => onStructureModeChange(!structureMode)}
+          className={`text-xs px-2 py-1 rounded font-medium transition-colors whitespace-nowrap ${
+            structureMode
+              ? 'bg-blue-500/20 text-blue-600'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+          title="Toggle structure mode (plants are inactive in structure mode)"
+        >
+          {structureMode ? '🏗️ Structures' : '🌱 Plants'}
+        </button>
+      )}
 
       <div className="ml-auto">
         <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onClear}>

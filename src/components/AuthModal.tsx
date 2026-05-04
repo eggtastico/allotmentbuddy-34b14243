@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
       } else {
         await signIn(email, password);
         toast.success('Welcome back! 🌱');
+        console.log('Sign in successful, closing modal');
         onClose();
       }
     } catch (err) {
@@ -40,10 +41,14 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: `${window.location.origin}/allotment/`,
+          queryParams: { prompt: 'select_account' },
+        },
       });
       if (error) throw error;
-      // Browser redirects to Google — loading state stays until redirect
+      // Close modal immediately since OAuth will redirect
+      onClose();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed';
       toast.error(errorMessage);

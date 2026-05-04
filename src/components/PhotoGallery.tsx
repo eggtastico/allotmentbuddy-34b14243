@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, ZoomIn } from 'lucide-react';
+import { Trash2, ZoomIn, HardDrive } from 'lucide-react';
 import { PlantPhoto } from '@/types/garden';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -55,6 +55,10 @@ export function PhotoGallery({
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <HardDrive className="h-3 w-3 shrink-0" />
+        <span>Photos are stored on this device only and not backed up to the cloud.</span>
+      </div>
       <div className="grid grid-cols-3 gap-2">
         {photoArray.map((photo, index) => {
           const isPhotoObj = 'dataUrl' in photo;

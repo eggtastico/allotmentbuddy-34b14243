@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Lightbulb, Loader2, Package, Calendar } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { plants } from '@/data/plants';
 import { monthNames, seasonMap } from '@/components/constants/PlantingSuggestions';
