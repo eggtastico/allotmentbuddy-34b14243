@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { PlacedPlant, GardenBed, PlotSettings, GardenPlan } from '@/types/garden';
 import { GardenPlansResponseSchema, type GardenPlanRow } from '@/lib/schemas';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,8 @@ export function useGardenPlans() {
       const { data, error } = await supabase
         .from('garden_plans')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: true })
+        .limit(5);
       if (error) throw error;
       try {
         return GardenPlansResponseSchema.parse(data ?? []);
@@ -34,28 +35,31 @@ export function useGardenPlans() {
       id?: string; name: string; settings: PlotSettings; plants: PlacedPlant[]; beds: GardenBed[];
     }) => {
       if (!user) throw new Error('Not logged in');
+      const now = new Date().toISOString();
+      // Strip photos from plants before sending to Supabase — photos are large
+      // base64 blobs that live in IndexedDB only; storing them in JSONB causes JSON errors
+      const plantsForCloud = plants.map(({ photos: _photos, ...rest }) => rest);
       const payload = {
         user_id: user.id,
         name,
         plot_settings: settings,
-        plants,
+        plants: plantsForCloud,
         beds,
+        updated_at: now,
       };
       if (id) {
-        const { error } = await supabase.from('garden_plans').update(payload).eq('id', id);
+        const { data, error } = await supabase.from('garden_plans').update(payload).eq('id', id).select('updated_at').single();
         if (error) throw error;
-        return { id };
+        return { id, updated_at: data?.updated_at ?? now };
       } else {
-        const { data, error } = await supabase.from('garden_plans').insert(payload).select('id').single();
+        const { data, error } = await supabase.from('garden_plans').insert(payload).select('id, updated_at').single();
         if (error) throw error;
-        return data as { id: string };
+        return { id: (data as { id: string; updated_at: string }).id, updated_at: (data as { id: string; updated_at: string }).updated_at };
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['garden-plans'] });
-      toast.success('Garden saved! 🌿');
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({

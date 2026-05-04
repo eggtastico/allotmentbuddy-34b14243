@@ -9,28 +9,44 @@ export interface Structure {
   description: string;
   shape?: 'rectangle' | 'circle';
   isContainer?: boolean; // pots, baskets etc — user can edit size
+  showCells?: boolean; // show internal grow squares
 }
 
 export const structures: Structure[] = [
-  { id: 'polytunnel', name: 'Polytunnel', emoji: '🏕️', widthCells: 8, heightCells: 4, canGrowInside: true, color: 'hsl(142 55% 75% / 0.5)', description: 'Extends growing season. Great for tomatoes, peppers & cucumbers.' },
+  // Vegetable Growing
+  { id: 'raised-bed', name: 'Raised Bed', emoji: '🟫', widthCells: 4, heightCells: 2, canGrowInside: false, color: 'hsl(30 60% 50% / 0.45)', description: 'Better drainage and soil control. Great for root veg.', showCells: true },
+  { id: 'growing-bed', name: 'Growing Bed', emoji: '🌱', widthCells: 6, heightCells: 3, canGrowInside: false, color: 'hsl(30 50% 45% / 0.4)', description: 'Outdoor growing bed for vegetables and crops.', showCells: true },
+
+  // Flowers & Herbs
+  { id: 'flower-bed', name: 'Flower Bed', emoji: '🌸', widthCells: 4, heightCells: 2, canGrowInside: false, color: 'hsl(330 65% 65% / 0.4)', description: 'Decorative flower bed for companion flowers.', showCells: true },
+  { id: 'herb-bed', name: 'Herb Bed', emoji: '🌿', widthCells: 3, heightCells: 2, canGrowInside: false, color: 'hsl(120 55% 50% / 0.4)', description: 'Dedicated herb growing area.', showCells: true },
+  { id: 'border', name: 'Border', emoji: '🌺', widthCells: 8, heightCells: 1, canGrowInside: false, color: 'hsl(45 65% 55% / 0.4)', description: 'Garden border for mixed planting.', showCells: true },
+  { id: 'fruit-cage', name: 'Fruit Cage', emoji: '🫐', widthCells: 4, heightCells: 4, canGrowInside: false, color: 'hsl(280 55% 60% / 0.4)', description: 'Netted cage to protect soft fruit from birds.', showCells: true },
+
+  // Covered Growing
   { id: 'greenhouse', name: 'Greenhouse', emoji: '🏠', widthCells: 6, heightCells: 4, canGrowInside: true, color: 'hsl(200 70% 75% / 0.5)', description: 'Year-round growing. Ideal for tender crops and seedlings.' },
+  { id: 'polytunnel', name: 'Polytunnel', emoji: '🏕️', widthCells: 8, heightCells: 4, canGrowInside: true, color: 'hsl(142 55% 75% / 0.5)', description: 'Extends growing season. Great for tomatoes, peppers & cucumbers.' },
   { id: 'cold-frame', name: 'Cold Frame', emoji: '🪟', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(50 70% 75% / 0.45)', description: 'Harden off seedlings and grow hardy salads over winter.' },
-  { id: 'raised-bed', name: 'Raised Bed', emoji: '🟫', widthCells: 4, heightCells: 2, canGrowInside: true, color: 'hsl(30 60% 50% / 0.45)', description: 'Better drainage and soil control. Great for root veg.' },
+
+  // Storage & Utilities
   { id: 'shed', name: 'Shed', emoji: '🏚️', widthCells: 4, heightCells: 3, canGrowInside: false, color: 'hsl(25 40% 45% / 0.5)', description: 'Tool storage. Cannot grow plants inside.' },
   { id: 'compost-bin', name: 'Compost Bin', emoji: '♻️', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(80 50% 45% / 0.5)', description: 'Composting area for garden waste.' },
   { id: 'water-butt', name: 'Water Butt', emoji: '🪣', widthCells: 1, heightCells: 1, canGrowInside: false, color: 'hsl(210 65% 55% / 0.45)', description: 'Rainwater collection.' },
+
+  // Containers
+  { id: 'pot-round', name: 'Round Pot', emoji: '🪴', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(15 65% 50% / 0.5)', description: 'Round container pot for herbs & small plants.', shape: 'circle', isContainer: true },
+  { id: 'pot-rect', name: 'Rectangular Pot', emoji: '🪴', widthCells: 3, heightCells: 2, canGrowInside: false, color: 'hsl(15 60% 48% / 0.5)', description: 'Rectangular planter for patios and balconies.', shape: 'rectangle', isContainer: true },
+  { id: 'basket-round', name: 'Hanging Basket', emoji: '🧺', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(40 60% 50% / 0.5)', description: 'Round hanging basket for trailing plants & strawberries.', shape: 'circle', isContainer: true },
+  { id: 'basket-rect', name: 'Window Box', emoji: '🌻', widthCells: 4, heightCells: 1, canGrowInside: false, color: 'hsl(40 55% 48% / 0.5)', description: 'Rectangular window box for herbs and flowers.', shape: 'rectangle', isContainer: true },
+  { id: 'grow-bag', name: 'Grow Bag', emoji: '🛍️', widthCells: 3, heightCells: 1, canGrowInside: false, color: 'hsl(0 0% 35% / 0.45)', description: 'Grow bag for tomatoes, potatoes and courgettes.', shape: 'rectangle', isContainer: true },
+
+  // Trees
+  { id: 'fruit-tree', name: 'Fruit Tree', emoji: '🍎', widthCells: 3, heightCells: 3, canGrowInside: false, color: 'hsl(120 45% 40% / 0.5)', description: 'Apple, pear, plum or cherry tree. Provides shade and fruit.', shape: 'circle' },
+  { id: 'tree', name: 'Tree', emoji: '🌳', widthCells: 3, heightCells: 3, canGrowInside: false, color: 'hsl(140 40% 35% / 0.5)', description: 'Existing tree. Creates shade — plan planting around it.', shape: 'circle' },
+
+  // Access & Features
   { id: 'path', name: 'Path', emoji: '🧱', widthCells: 1, heightCells: 4, canGrowInside: false, color: 'hsl(30 25% 60% / 0.55)', description: 'Walking path between beds.' },
   { id: 'fence', name: 'Fence', emoji: '🪵', widthCells: 8, heightCells: 1, canGrowInside: false, color: 'hsl(30 40% 38% / 0.45)', description: 'Garden boundary or windbreak.' },
-  { id: 'growing-bed', name: 'Growing Bed', emoji: '🌱', widthCells: 6, heightCells: 3, canGrowInside: true, color: 'hsl(30 50% 45% / 0.4)', description: 'Outdoor growing bed for vegetables and crops.' },
-  { id: 'flower-bed', name: 'Flower Bed', emoji: '🌸', widthCells: 4, heightCells: 2, canGrowInside: true, color: 'hsl(330 65% 65% / 0.4)', description: 'Decorative flower bed for companion flowers.' },
-  { id: 'herb-bed', name: 'Herb Bed', emoji: '🌿', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(120 55% 50% / 0.4)', description: 'Dedicated herb growing area.' },
-  { id: 'fruit-cage', name: 'Fruit Cage', emoji: '🫐', widthCells: 4, heightCells: 4, canGrowInside: true, color: 'hsl(280 55% 60% / 0.4)', description: 'Netted cage to protect soft fruit from birds.' },
-  { id: 'border', name: 'Border', emoji: '🌺', widthCells: 8, heightCells: 1, canGrowInside: true, color: 'hsl(45 65% 55% / 0.4)', description: 'Garden border for mixed planting.' },
-  { id: 'pot-round', name: 'Round Pot', emoji: '🪴', widthCells: 2, heightCells: 2, canGrowInside: true, color: 'hsl(15 65% 50% / 0.5)', description: 'Round container pot for herbs & small plants.', shape: 'circle', isContainer: true },
-  { id: 'pot-rect', name: 'Rectangular Pot', emoji: '🪴', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(15 60% 48% / 0.5)', description: 'Rectangular planter for patios and balconies.', shape: 'rectangle', isContainer: true },
-  { id: 'basket-round', name: 'Hanging Basket', emoji: '🧺', widthCells: 2, heightCells: 2, canGrowInside: true, color: 'hsl(40 60% 50% / 0.5)', description: 'Round hanging basket for trailing plants & strawberries.', shape: 'circle', isContainer: true },
-  { id: 'basket-rect', name: 'Window Box', emoji: '🌻', widthCells: 4, heightCells: 1, canGrowInside: true, color: 'hsl(40 55% 48% / 0.5)', description: 'Rectangular window box for herbs and flowers.', shape: 'rectangle', isContainer: true },
-  { id: 'grow-bag', name: 'Grow Bag', emoji: '🛍️', widthCells: 3, heightCells: 1, canGrowInside: true, color: 'hsl(0 0% 35% / 0.45)', description: 'Grow bag for tomatoes, potatoes and courgettes.', shape: 'rectangle', isContainer: true },
 ];
 
 export function getStructureById(id: string): Structure | undefined {

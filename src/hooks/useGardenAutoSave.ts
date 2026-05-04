@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { PlacedPlant, PlacedStructure, PlotSettings, GardenPlan } from '@/types/garden';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { useGardenPlans } from '@/hooks/useGardenPlans';
-import { saveLocalGarden, queueSyncItem } from '@/lib/db';
+import { saveLocalGarden, queueSyncItem, markAsSynced, updateSyncStatus } from '@/lib/db';
 import { generateId } from '@/lib/uuid';
 
 /**
@@ -30,12 +30,14 @@ export function useGardenAutoSave(
     if (localSaveTimer.current) clearTimeout(localSaveTimer.current);
 
     localSaveTimer.current = setTimeout(() => {
+      const now = new Date().toISOString();
       const gardenPlan: GardenPlan = {
         id: currentPlanId || generateId(),
         name: planName,
         settings,
         plants: placedPlants,
         beds: placedStructures,
+        updated_at: now,
       };
 
       saveLocalGarden(gardenPlan)
@@ -51,36 +53,49 @@ export function useGardenAutoSave(
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
 
     autoSaveTimer.current = setTimeout(() => {
+      const now = new Date().toISOString();
       const gardenPlan: GardenPlan = {
         id: currentPlanId ?? generateId(),
         name: planName,
         settings,
         plants: placedPlants,
         beds: placedStructures,
+        updated_at: now,
       };
 
-      // Queue the sync
+      // Queue the sync item, then attempt a direct Supabase save
       queueSyncItem({
         action: currentPlanId ? 'update' : 'create',
         entityType: 'garden',
         entityId: gardenPlan.id,
         data: gardenPlan,
       })
-        .then(() => {
-          // Try to save to Supabase
+        .then((queueId) => {
           return save({
             id: currentPlanId ?? undefined,
             name: planName,
             settings,
             plants: placedPlants,
             beds: placedStructures
-          });
+          }).then((result: { id: string; updated_at?: string }) => ({ result, queueId }));
         })
-        .then((result: { id: string }) => {
+        .then(({ result, queueId }) => {
+          // Direct save succeeded — remove the queue item so it isn't double-synced
+          markAsSynced(queueId).catch(console.error);
           if (!currentPlanId && result?.id) onPlanIdChange(result.id);
+          // Sync local updated_at with the server timestamp
+          if (result?.updated_at) {
+            saveLocalGarden({
+              ...gardenPlan,
+              id: result.id || gardenPlan.id,
+              updated_at: result.updated_at,
+            }).catch(console.error);
+          }
         })
-        .catch(() => {
-          // Save is queued, will retry when online
+        .catch((err) => {
+          // Direct save failed — item stays queued for retry. Surface the error in the UI.
+          const msg = err instanceof Error ? err.message : 'Cloud save failed';
+          updateSyncStatus({ lastError: msg }).catch(console.error);
         });
     }, 3000);
 

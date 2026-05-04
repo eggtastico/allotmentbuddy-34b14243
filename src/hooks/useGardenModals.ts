@@ -23,6 +23,10 @@ export function useGardenModals() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showHarvestLogger, setShowHarvestLogger] = useState(false);
+  const [showPestLog, setShowPestLog] = useState(false);
+  const [showRotationPlanner, setShowRotationPlanner] = useState(false);
 
   return {
     showCalendar,
@@ -61,5 +65,13 @@ export function useGardenModals() {
     setShowWelcome,
     showShoppingList,
     setShowShoppingList,
+    showTemplatePicker,
+    setShowTemplatePicker,
+    showHarvestLogger,
+    setShowHarvestLogger,
+    showPestLog,
+    setShowPestLog,
+    showRotationPlanner,
+    setShowRotationPlanner,
   };
 }

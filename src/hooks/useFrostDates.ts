@@ -15,5 +15,5 @@ export function useFrostDates(location: LocationData | null): FrostDates | null 
   return useMemo(() => {
     if (!location) return null;
     return getFrostDates(location.lat, location.lon);
-  }, [location?.lat, location?.lon]);
+  }, [location]);
 }

@@ -127,7 +127,11 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/allotment/');
+            // Only fallback to /allotment/ if the request is for an allotment path
+            if (url.pathname.startsWith('/allotment/')) {
+              return cachedResponse || caches.match('/allotment/');
+            }
+            return cachedResponse || new Response('Offline', { status: 503 });
           });
         })
     );
@@ -139,5 +143,10 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  // Clear cached API/auth responses on logout so a shared-device user
+  // cannot retrieve another user's data from the cache.
+  if (event.data && event.data.type === 'CLEAR_AUTH_CACHE') {
+    caches.delete(CACHE_NAME);
   }
 });
