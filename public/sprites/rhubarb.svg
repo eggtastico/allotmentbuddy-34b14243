@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <!-- Three thick crimson stalks fanning from bottom -->
+  <line x1="30" y1="70" x2="10" y2="28" stroke="#C62828" stroke-width="5" stroke-linecap="round"/>
+  <line x1="36" y1="70" x2="36" y2="16" stroke="#D32F2F" stroke-width="5.5" stroke-linecap="round"/>
+  <line x1="42" y1="70" x2="62" y2="28" stroke="#C62828" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Left leaf -->
+  <ellipse cx="7" cy="21" rx="10" ry="7" fill="#2E7D32" transform="rotate(-40 7 21)"/>
+  <line x1="10" y1="27" x2="5" y2="15" stroke="#1B5E20" stroke-width="1" opacity="0.55"/>
+
+  <!-- Centre leaf (biggest) -->
+  <ellipse cx="36" cy="9" rx="13" ry="9" fill="#388E3C"/>
+  <line x1="36" y1="2" x2="36" y2="18" stroke="#1B5E20" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Right leaf -->
+  <ellipse cx="65" cy="21" rx="10" ry="7" fill="#2E7D32" transform="rotate(40 65 21)"/>
+  <line x1="62" y1="27" x2="67" y2="15" stroke="#1B5E20" stroke-width="1" opacity="0.55"/>
+</svg>

@@ -1,0 +1,594 @@
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { PlotSettings, GardenPlan } from '@/types/garden';
+import { GardenPlanRow, LocalGardenPlanSchema } from '@/lib/schemas';
+import { initializeSyncStatus, getLocalGardens } from '@/lib/db';
+import { SetupWizard, type WizardSettings } from '@/components/SetupWizard';
+import { SeasonalTasks } from '@/components/SeasonalTasks';
+import { ActionRequired } from '@/components/ActionRequired';
+import { DailyTodoList } from '@/components/DailyTodoList';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import { WelcomeModal } from '@/components/WelcomeModal';
+import { SyncStatusBar } from '@/components/SyncStatusBar';
+import { PlotToolbar } from '@/components/PlotToolbar';
+import { GardenHeader } from '@/components/GardenHeader';
+import { GardenLayoutDesktop } from '@/components/GardenLayoutDesktop';
+import { GardenLayoutMobile } from '@/components/GardenLayoutMobile';
+import { ModalContainer } from '@/components/ModalContainer';
+import { useFavouritePlants } from '@/hooks/useFavouritePlants';
+import { useGardenPlans } from '@/hooks/useGardenPlans';
+import { useAuth } from '@/hooks/use-auth';
+import { useGardenAutoSave } from '@/hooks/useGardenAutoSave';
+import { useGardenModals } from '@/hooks/useGardenModals';
+import { useGardenState } from '@/hooks/useGardenState';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { usePlantPlacement } from '@/hooks/usePlantPlacement';
+import { useStructureManagement } from '@/hooks/useStructureManagement';
+import { exportGardenPDF } from '@/utils/exportPDF';
+import { optimizeRotation } from '@/utils/rotationOptimizer';
+import { GardenExportData } from '@/utils/gardenExportImport';
+import { GardenTemplate } from '@/data/gardenTemplates';
+import { Undo2, Redo2, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+import type { NavSection } from '@/components/AppShell';
+
+const Index = () => {
+  // Core hooks
+  const { user, loading, signOut } = useAuth();
+  const { plans, isSaving } = useGardenPlans();
+  const { getFavouritesWithQuantity } = useFavouritePlants();
+
+  // Garden state (all in one hook)
+  const [gardenState, gardenActions] = useGardenState();
+  const { settings, placedPlants, selectedPlant, placedStructures, currentPlanId, planName, location, defaultStage } = gardenState;
+  const { setSettings, setPlacedPlants, setSelectedPlant, setPlacedStructures, setCurrentPlanId, setPlanName, setLocation, setDefaultStage, loadPlan, clearAll } = gardenActions;
+
+  // Undo/Redo
+  const { undoStack, redoStack, canUndo, canRedo, pushUndo, handleUndo, handleRedo } = useUndoRedo();
+
+  // Plant placement
+  const [plantPlacementState, plantPlacementActions] = usePlantPlacement(gardenState, gardenActions, pushUndo, {
+    getFavourites: getFavouritesWithQuantity,
+  });
+  const { pendingPlantId, pendingIsStructure, dragging } = plantPlacementState;
+  const { selectForPlacement, cancelPending, placePlant, fillPlantArea, smartAutoFill, removePlant, moveStart, movePlant, setDragging } = plantPlacementActions;
+
+  // Structure management
+  const structureActions = useStructureManagement(gardenState, gardenActions, pushUndo);
+  const { placeStructure, removeStructure, resizeStructure, moveStructure } = structureActions;
+
+  // UI state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState<NavSection>('garden');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [showSunOverlay, setShowSunOverlay] = useState(true);
+  const [structureMode, setStructureMode] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Modal state
+  const {
+    showCalendar, setShowCalendar,
+    showAI, setShowAI,
+    showAuth, setShowAuth,
+    showSaveLoad, setShowSaveLoad,
+    showRotation, setShowRotation,
+    showWeather, setShowWeather,
+    showWatering, setShowWatering,
+    showPlotMap, setShowPlotMap,
+    showJournal, setShowJournal,
+    showDocs, setShowDocs,
+    showSeedInventory, setShowSeedInventory,
+    showPlantingSuggestions, setShowPlantingSuggestions,
+    showTasks, setShowTasks,
+    showMonthlyPlanner, setShowMonthlyPlanner,
+    showGrowGuide, setShowGrowGuide,
+    showShoppingList, setShowShoppingList,
+    showTemplatePicker, setShowTemplatePicker,
+  } = useGardenModals();
+
+  // Initialize IndexedDB
+  useEffect(() => {
+    initializeSyncStatus().catch(console.error);
+  }, []);
+
+  // Window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Ref for the garden canvas — assigned by GardenGrid, read by PDF export.
+  const canvasExportRef = useRef<((scale?: number) => Promise<string | null>) | null>(null);
+
+  // Setup wizard
+  useEffect(() => {
+    const setupComplete = localStorage.getItem('allotment-setup-complete');
+    if (!setupComplete && !user) {
+      setTimeout(() => setShowSetupWizard(true), 500);
+    }
+  }, [user]);
+
+  // Auto-load most recent plan with conflict detection
+  const autoLoaded = useRef(false);
+  const [syncConflict, setSyncConflict] = useState<{ local: GardenPlan; remote: GardenPlanRow } | null>(null);
+
+  const loadRemotePlan = useCallback((plan: GardenPlanRow) => {
+    setCurrentPlanId(plan.id);
+    setPlanName(plan.name);
+    setSettings(plan.plot_settings);
+    setPlacedPlants(plan.plants || []);
+    setPlacedStructures(plan.beds || []);
+  }, [setCurrentPlanId, setPlanName, setSettings, setPlacedPlants, setPlacedStructures]);
+
+  const loadLocalPlan = useCallback((plan: GardenPlan) => {
+    setCurrentPlanId(plan.id);
+    setPlanName(plan.name);
+    setSettings(plan.settings);
+    setPlacedPlants(plan.plants || []);
+    setPlacedStructures(plan.beds || []);
+  }, [setCurrentPlanId, setPlanName, setSettings, setPlacedPlants, setPlacedStructures]);
+
+  useEffect(() => {
+    if (autoLoaded.current) return;
+    if (user && plans.length > 0) {
+      autoLoaded.current = true;
+      const remote = plans[0];
+      // Check for local version and compare timestamps
+      getLocalGardens()
+        .then((localPlans) => {
+          const local = localPlans.find(lp => lp.id === remote.id);
+          if (local && local.updated_at && remote.updated_at) {
+            const localTime = new Date(local.updated_at).getTime();
+            const remoteTime = new Date(remote.updated_at).getTime();
+            // If timestamps differ by more than 5 seconds and local is newer, show conflict
+            if (Math.abs(localTime - remoteTime) > 5000 && localTime > remoteTime) {
+              setSyncConflict({ local, remote });
+              // Local is newer — load it by default so the user doesn't lose unsaved work
+              loadLocalPlan(local);
+              return;
+            }
+          }
+          loadRemotePlan(remote);
+        })
+        .catch(() => {
+          loadRemotePlan(remote);
+        });
+    } else if (!user || (plans.length === 0 && user)) {
+      getLocalGardens()
+        .then((localPlans) => {
+          if (localPlans.length > 0) {
+            autoLoaded.current = true;
+            const latest = localPlans[localPlans.length - 1];
+            loadLocalPlan(latest);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user, plans, loadRemotePlan, loadLocalPlan]);
+
+  // Auto-save
+  useGardenAutoSave(placedPlants, placedStructures, settings, currentPlanId, planName, setCurrentPlanId);
+
+  // Handle undo/redo with proper state updates
+  const performUndo = useCallback(() => {
+    const prev = handleUndo(placedPlants, placedStructures);
+    if (prev) {
+      setPlacedPlants(prev.plants);
+      setPlacedStructures(prev.structures);
+      setSelectedPlant(null);
+    }
+  }, [handleUndo, placedPlants, placedStructures, setPlacedPlants, setPlacedStructures, setSelectedPlant]);
+
+  const performRedo = useCallback(() => {
+    const next = handleRedo(placedPlants, placedStructures);
+    if (next) {
+      setPlacedPlants(next.plants);
+      setPlacedStructures(next.structures);
+      setSelectedPlant(null);
+    }
+  }, [handleRedo, placedPlants, placedStructures, setPlacedPlants, setPlacedStructures, setSelectedPlant]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        performUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        performRedo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [performUndo, performRedo]);
+
+  // Wrapper for selectForPlacement to handle structureMode
+  const handleSelectForPlacement = useCallback((plantId: string, isStructure = false) => {
+    setStructureMode(isStructure);
+    selectForPlacement(plantId, isStructure);
+    if (mobileSidebarOpen) setMobileSidebarOpen(false);
+  }, [selectForPlacement, setStructureMode, mobileSidebarOpen]);
+
+  // Plan management
+  const handleLoadPlan = useCallback((plan: GardenPlanRow) => {
+    loadPlan(plan);
+    toast.success(`Loaded "${plan.name}" 🌿`);
+  }, [loadPlan]);
+
+  const handleNewPlan = useCallback(() => {
+    clearAll();
+  }, [clearAll]);
+
+  const confirmClear = useCallback(() => {
+    clearAll();
+    setShowClearConfirm(false);
+  }, [clearAll]);
+
+  const handleOptimizeRotation = useCallback(() => {
+    const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+    const optimizedCols = Math.round(settings.widthM * cellsPerUnit);
+    const optimizedRows = Math.round(settings.heightM * cellsPerUnit);
+    const optimized = optimizeRotation(placedPlants, optimizedCols, optimizedRows);
+    setPlacedPlants(optimized);
+    setSelectedPlant(null);
+    toast.success('Garden rotation optimized! 🔄');
+  }, [placedPlants, settings, setPlacedPlants, setSelectedPlant]);
+
+  const handleExportPDF = async () => {
+    try {
+      // scale=3 renders a 3× OffscreenCanvas for ~300dpi print quality in the PDF. (#10)
+      const canvasDataUrl = await canvasExportRef.current?.(3) ?? null;
+      await exportGardenPDF(settings, placedPlants, planName, canvasDataUrl);
+      toast.success('PDF exported! 📄');
+    } catch {
+      toast.error('Failed to export PDF');
+    }
+  };
+
+  const handleImport = useCallback((data: GardenExportData) => {
+    setSettings(data.settings);
+    setPlacedPlants(data.plants);
+    setPlacedStructures(data.structures);
+    setPlanName(data.name);
+    setCurrentPlanId(null);
+  }, [setSettings, setPlacedPlants, setPlacedStructures, setPlanName, setCurrentPlanId]);
+
+  const handleLoadTemplate = useCallback((template: GardenTemplate) => {
+    setSettings(template.settings);
+    setPlacedPlants(template.plants);
+    setPlacedStructures(template.structures);
+    setPlanName(template.name);
+    setCurrentPlanId(null);
+    setShowTemplatePicker(false);
+    toast.success(`Loaded "${template.name}" template`);
+  }, [setSettings, setPlacedPlants, setPlacedStructures, setPlanName, setCurrentPlanId, setShowTemplatePicker]);
+
+  // Update a single placed plant in-place (used for stage changes, photo updates, etc.)
+  const handleUpdatePlant = useCallback((updated: PlacedPlant) => {
+    setPlacedPlants(prev => prev.map(p => p.id === updated.id ? updated : p));
+    if (selectedPlant?.id === updated.id) setSelectedPlant(updated);
+  }, [setPlacedPlants, selectedPlant, setSelectedPlant]);
+
+  // When cellSizeCm changes, rescale all placed plant and structure positions so
+  // items stay at the same physical (cm) location on the grid.
+  const handleSettingsChange = useCallback((newSettings: PlotSettings) => {
+    if (newSettings.cellSizeCm !== settings.cellSizeCm) {
+      const scale = settings.cellSizeCm / newSettings.cellSizeCm;
+      setPlacedPlants(prev =>
+        prev.map(p => ({
+          ...p,
+          x: Math.round(p.x * scale * 10) / 10,
+          y: Math.round(p.y * scale * 10) / 10,
+        }))
+      );
+      setPlacedStructures(prev =>
+        prev.map(s => ({
+          ...s,
+          x: Math.round(s.x * scale),
+          y: Math.round(s.y * scale),
+          widthCells: Math.max(1, Math.round(s.widthCells * scale)),
+          heightCells: Math.max(1, Math.round(s.heightCells * scale)),
+        }))
+      );
+    }
+    setSettings(newSettings);
+  }, [settings, setSettings, setPlacedPlants, setPlacedStructures]);
+
+  const handleWizardComplete = (wizardSettings: WizardSettings) => {
+    setSettings({
+      widthM: wizardSettings.widthM,
+      heightM: wizardSettings.heightM,
+      unit: wizardSettings.unit,
+      cellSizePx: 32,
+      cellSizeCm: 20,
+      southDirection: 180,
+      snapToGrid: true,
+    });
+    if (wizardSettings.location) {
+      setLocation({
+        name: wizardSettings.location.name,
+        lat: wizardSettings.location.lat,
+        lon: wizardSettings.location.lon,
+      });
+    }
+    setShowSetupWizard(false);
+  };
+
+  // Show loading screen while authentication is being checked
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-background sm:pb-0 pb-14 touch-manipulation overscroll-none" style={{ overscrollBehavior: 'none' }}>
+      <WelcomeModal />
+      <SetupWizard isOpen={showSetupWizard} onComplete={handleWizardComplete} onSkip={() => setShowSetupWizard(false)} />
+
+      {/* Combined header + toolbar strip */}
+      <div className="border-b border-border shrink-0">
+        <GardenHeader
+          user={user}
+          location={location}
+          mobileMenuOpen={mobileMenuOpen}
+          onLocationChange={setLocation}
+          onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onMobileSidebarToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          onSignOut={signOut}
+          onShowCalendar={() => setShowCalendar(true)}
+          onShowMonthlyPlanner={() => setShowMonthlyPlanner(true)}
+          onShowRotation={() => setShowRotation(true)}
+          onShowPlotMap={() => setShowPlotMap(true)}
+          onShowGrowGuide={() => setShowGrowGuide(true)}
+          onShowAI={() => setShowAI(true)}
+          onShowPlantingSuggestions={() => setShowPlantingSuggestions(true)}
+          onShowWeather={() => setShowWeather(true)}
+          onShowWatering={() => setShowWatering(true)}
+          onShowTasks={() => setShowTasks(true)}
+          onShowSeedInventory={() => setShowSeedInventory(true)}
+          onShowJournal={() => setShowJournal(true)}
+          onShowDocs={() => setShowDocs(true)}
+          onShowSaveLoad={() => setShowSaveLoad(true)}
+          onShowAuth={() => setShowAuth(true)}
+          onExportPDF={handleExportPDF}
+          onShowTemplatePicker={() => setShowTemplatePicker(true)}
+        />
+
+        {/* Desktop only sections */}
+        {!isMobile && (
+          <>
+            <SeasonalTasks placedPlantIds={placedPlants.map(p => p.plantId)} />
+            <div className="px-4 py-1 bg-card border-t border-border/50">
+              <InstallPrompt />
+            </div>
+
+            {/* Toolbar row */}
+            <div className="flex items-center bg-card border-t border-border/50 flex-wrap">
+              <div className="flex-1">
+                <PlotToolbar settings={settings} onSettingsChange={handleSettingsChange} plantCount={placedPlants.length} onClear={() => setShowClearConfirm(true)} showSunOverlay={showSunOverlay} onShowSunOverlayChange={setShowSunOverlay} structureMode={structureMode} onStructureModeChange={setStructureMode} />
+              </div>
+              <div className="flex items-center gap-1 px-3 shrink-0">
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={performUndo} disabled={!canUndo} title="Undo">
+                  <Undo2 className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={performRedo} disabled={!canRedo} title="Redo">
+                  <Redo2 className="h-3 w-3" />
+                </Button>
+                <div className="h-4 w-px bg-border mx-1" />
+                <span className="text-xs text-muted-foreground mr-1">Plant as:</span>
+                <Button variant={defaultStage === 'seed' ? 'default' : 'outline'} size="sm" className="h-6 text-xs px-2" onClick={() => setDefaultStage('seed')}>🌰</Button>
+                <Button variant={defaultStage === 'seedling' ? 'default' : 'outline'} size="sm" className="h-6 text-xs px-2" onClick={() => setDefaultStage('seedling')}>🌱</Button>
+                <Button variant={defaultStage === 'established' ? 'default' : 'outline'} size="sm" className="h-6 text-xs px-2" onClick={() => setDefaultStage('established')}>🌳</Button>
+                {isSaving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-1" />}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Layout + Crop Progress */}
+      <div className="flex-1 flex flex-col min-h-0">
+      {isMobile ? (
+        <GardenLayoutMobile
+          settings={settings}
+          placedPlants={placedPlants}
+          placedStructures={placedStructures}
+          selectedPlant={selectedPlant}
+          pendingPlantId={pendingPlantId}
+          pendingIsStructure={pendingIsStructure}
+          dragging={dragging}
+          showSunOverlay={showSunOverlay}
+          structureMode={structureMode}
+          mobileSidebarOpen={mobileSidebarOpen}
+          activeNav={activeNav}
+          user={user}
+          onShowCalendar={() => setShowCalendar(true)}
+          onShowAI={() => setShowAI(true)}
+          onShowJournal={() => setShowJournal(true)}
+          onShowPlotMap={() => setShowPlotMap(true)}
+          onShowWeather={() => setShowWeather(true)}
+          onShowRotation={() => setShowRotation(true)}
+          onShowDocs={() => setShowDocs(true)}
+          onShowShoppingList={() => setShowShoppingList(true)}
+          onSelectPlant={setSelectedPlant}
+          onPlacePlant={placePlant}
+          onRemovePlant={removePlant}
+          onMovePlant={movePlant}
+          onMovePlantStart={moveStart}
+          onFillPlantArea={fillPlantArea}
+          onSmartAutoFill={smartAutoFill}
+          onSelectForPlacement={handleSelectForPlacement}
+          onCancelPending={cancelPending}
+          onPlaceStructure={placeStructure}
+          onRemoveStructure={removeStructure}
+          onResizeStructure={resizeStructure}
+          onMoveStructure={moveStructure}
+          onSettingsChange={handleSettingsChange}
+          onShowSunOverlayChange={setShowSunOverlay}
+          onMobileSidebarOpenChange={setMobileSidebarOpen}
+          onActiveNavChange={setActiveNav}
+          onDragStart={setDragging}
+          onStructureModeChange={setStructureMode}
+          onUpdatePlant={handleUpdatePlant}
+        />
+      ) : (
+        <GardenLayoutDesktop
+          settings={settings}
+          placedPlants={placedPlants}
+          placedStructures={placedStructures}
+          selectedPlant={selectedPlant}
+          pendingPlantId={pendingPlantId}
+          pendingIsStructure={pendingIsStructure}
+          dragging={dragging}
+          showSunOverlay={showSunOverlay}
+          structureMode={structureMode}
+          mobileSidebarOpen={mobileSidebarOpen}
+          user={user}
+          onSelectPlant={setSelectedPlant}
+          onPlacePlant={placePlant}
+          onRemovePlant={removePlant}
+          onMovePlant={movePlant}
+          onMovePlantStart={moveStart}
+          onFillPlantArea={fillPlantArea}
+          onSmartAutoFill={smartAutoFill}
+          onSelectForPlacement={handleSelectForPlacement}
+          onCancelPending={cancelPending}
+          onPlaceStructure={placeStructure}
+          onRemoveStructure={removeStructure}
+          onResizeStructure={resizeStructure}
+          onMoveStructure={moveStructure}
+          onSettingsChange={handleSettingsChange}
+          onShowSunOverlayChange={setShowSunOverlay}
+          onMobileSidebarOpenChange={setMobileSidebarOpen}
+          onDragStart={setDragging}
+          onStructureModeChange={setStructureMode}
+          onUpdatePlant={handleUpdatePlant}
+          canvasExportRef={canvasExportRef}
+        />
+      )}
+
+      {/* Crop Progress — collapsible strip below the garden */}
+      {!isMobile && <ActionRequired placedPlants={placedPlants} />}
+      {/* Daily Tasks — collapsible strip below crop progress */}
+      {!isMobile && <DailyTodoList placedPlants={placedPlants} />}
+      </div>
+
+      {/* Mobile pending plant indicator */}
+      {pendingPlantId && isMobile && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 flex justify-center pointer-events-none">
+          <div className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-full shadow-lg">
+            {pendingIsStructure ? '🏗️ Tap the grid to place' : `Tap the grid to place · tap again to cancel`}
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ModalContainer
+        showCalendar={showCalendar}
+        setShowCalendar={setShowCalendar}
+        showAI={showAI}
+        setShowAI={setShowAI}
+        showAuth={showAuth}
+        setShowAuth={setShowAuth}
+        showSaveLoad={showSaveLoad}
+        setShowSaveLoad={setShowSaveLoad}
+        showRotation={showRotation}
+        setShowRotation={setShowRotation}
+        showWeather={showWeather}
+        setShowWeather={setShowWeather}
+        showWatering={showWatering}
+        setShowWatering={setShowWatering}
+        showPlotMap={showPlotMap}
+        setShowPlotMap={setShowPlotMap}
+        showJournal={showJournal}
+        setShowJournal={setShowJournal}
+        showDocs={showDocs}
+        setShowDocs={setShowDocs}
+        showSeedInventory={showSeedInventory}
+        setShowSeedInventory={setShowSeedInventory}
+        showPlantingSuggestions={showPlantingSuggestions}
+        setShowPlantingSuggestions={setShowPlantingSuggestions}
+        showTasks={showTasks}
+        setShowTasks={setShowTasks}
+        showMonthlyPlanner={showMonthlyPlanner}
+        setShowMonthlyPlanner={setShowMonthlyPlanner}
+        showGrowGuide={showGrowGuide}
+        setShowGrowGuide={setShowGrowGuide}
+        showShoppingList={showShoppingList}
+        setShowShoppingList={setShowShoppingList}
+        showTemplatePicker={showTemplatePicker}
+        setShowTemplatePicker={setShowTemplatePicker}
+        placedPlants={placedPlants}
+        placedStructures={placedStructures}
+        settings={settings}
+        location={location}
+        currentPlanId={currentPlanId}
+        planName={planName}
+        plans={plans}
+        user={user}
+        onLoadPlan={handleLoadPlan}
+        onNewPlan={handleNewPlan}
+        onOptimizeRotation={handleOptimizeRotation}
+        onExportPDF={handleExportPDF}
+        onImport={handleImport}
+        onLoadTemplate={handleLoadTemplate}
+      />
+
+      {/* Clear confirmation */}
+      <AlertDialog open={!!syncConflict} onOpenChange={(open) => { if (!open) setSyncConflict(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sync Conflict Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your local version of this garden is newer than the cloud version. This can happen when editing offline on another device.
+              {syncConflict && (
+                <>
+                  <br /><br />
+                  <strong>Local:</strong> {new Date(syncConflict.local.updated_at!).toLocaleString()}<br />
+                  <strong>Cloud:</strong> {new Date(syncConflict.remote.updated_at).toLocaleString()}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl" onClick={() => {
+              if (syncConflict) loadRemotePlan(syncConflict.remote);
+              setSyncConflict(null);
+            }}>Use Cloud Version</AlertDialogCancel>
+            <AlertDialogAction className="rounded-xl" onClick={() => setSyncConflict(null)}>Keep Local Version</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear this garden plan?</AlertDialogTitle>
+            <AlertDialogDescription>This will remove all placed plants and structures from your current layout.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmClear}>Delete plan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Sync status indicator */}
+      <SyncStatusBar />
+    </div>
+  );
+};
+
+export default Index;
