@@ -49,6 +49,7 @@ function getCachedEmoji(emoji: string, size: number): OffscreenCanvas {
 // ── Context reset helper — ctx.reset() clears the canvas AND resets all state in one
 // GPU op. Universally supported: Chrome 99+, Firefox 113+, Safari 17.4+. (#9)
 function resetCtx(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (ctx as any).reset();
 }
 
@@ -61,6 +62,7 @@ function scheduleFrame(fn: FrameRequestCallback): FrameId {
 }
 function cancelFrame(id: FrameId): void {
   const w = window as typeof window & { cancelVideoFrameCallback?: (id: number) => void };
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   w.cancelVideoFrameCallback ? w.cancelVideoFrameCallback(id) : cancelAnimationFrame(id);
 }
 
@@ -1637,6 +1639,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       const ro = new ResizeObserver(() => setLayoutVersion(v => v + 1));
       ro.observe(containerRef.current);
       // Store disconnect for cleanup — use a closure ref trick
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (containerRef.current as any).__roDisconnect = () => ro.disconnect();
     }
     // DPR tracking: re-register media query each time DPR changes (e.g. moving monitors).
@@ -1650,9 +1653,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     register();
     return () => {
       mq?.removeEventListener('change', onChange);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (containerRef.current as any)?.__roDisconnect?.();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Wire up canvas export fn. (#10)
   // scale=1 (default): fast path — toDataURL on the live display canvas.

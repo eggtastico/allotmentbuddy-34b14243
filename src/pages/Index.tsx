@@ -284,6 +284,7 @@ const Index = () => {
       stage: defaultStage,
     }]);
     setDragging(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placedPlants, defaultStage, pushUndo, settings.cellSizeCm]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
@@ -316,7 +317,7 @@ const Index = () => {
       }
       return [...prev, ...newPlants];
     });
-  }, [placedPlants, pushUndo, settings.cellSizeCm, defaultStage, getFavouritesWithQuantity]);
+  }, [placedPlants, pushUndo, settings.cellSizeCm, defaultStage]);
 
   const handleSmartAutoFill = useCallback((originX: number, originY: number, w: number, h: number, isContainer: boolean) => {
     pushUndo(placedPlants);

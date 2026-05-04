@@ -230,8 +230,10 @@ async function render(state: RenderState): Promise<ImageBitmap> {
       shadeMaskZones = shadeZonesArr;
     }
     const blurPx = Math.max(Math.round(cellSize * 0.55), 3);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ctx as any).filter = `blur(${blurPx}px)`;
     ctx.drawImage(shadeMask, 0, 0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ctx as any).filter = 'none';
   }
 
