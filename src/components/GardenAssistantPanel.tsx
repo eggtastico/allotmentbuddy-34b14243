@@ -499,11 +499,6 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
             🌿 {feedingPlantIds.size} to feed
           </Badge>
         )}
-        {taskData.toSow.length > 0 && (
-          <Badge className="bg-blue-400 text-white hover:bg-blue-500">
-            🌱 {taskData.toSow.length} sow
-          </Badge>
-        )}
         {incompleteCount === 0 && taskData.readyNow.length === 0 && taskData.totalPlanted > 0 && (
           <span className="text-xs text-blue-100">All tasks done!</span>
         )}
