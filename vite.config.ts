@@ -8,9 +8,18 @@ export default defineConfig(({ mode }) => ({
   base: "/allotment/",
   server: {
     host: "::",
-    port: 8080,
-    hmr: {
-      overlay: false,
+    port: 5173,
+    hmr: false,
+    middlewareMode: false,
+    fs: {
+      allow: ['..'],
+    },
+    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1'],
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
     },
   },
   plugins: [
@@ -19,6 +28,9 @@ export default defineConfig(({ mode }) => ({
     // VitePWA disabled - using manual service worker registration instead
     // The service worker is registered in src/main.tsx
   ].filter(Boolean),
+  preview: {
+    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
