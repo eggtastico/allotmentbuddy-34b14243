@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { PLANT_FEEDING, NO_FEED } from '@/utils/feedingGuide';
 import { toast } from 'sonner';
-import { generateAllTasks } from '@/utils/gardenTaskGeneration';
+import { generateAllTasks, generateWeeklyFeedingSchedule, generateMonthlyFeedingSchedule } from '@/utils/gardenTaskGeneration';
 import type { GeneratedTask } from '@/utils/gardenTaskGeneration';
 
 interface DailyTask {
@@ -184,6 +184,8 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
   );
   const [insights, setInsights] = useState<GeneratedTask[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [weeklyFeeding, setWeeklyFeeding] = useState<GeneratedTask[]>([]);
+  const [monthlyFeeding, setMonthlyFeeding] = useState<GeneratedTask[]>([]);
   const loadDone = useRef(false);
 
   const today = new Date();
@@ -290,10 +292,16 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
         }
 
         const tasks = await generateAllTasks(placedPlants, location);
+        const weekFeeding = generateWeeklyFeedingSchedule(placedPlants);
+        const monthFeeding = generateMonthlyFeedingSchedule(placedPlants);
         setInsights(tasks);
+        setWeeklyFeeding(weekFeeding);
+        setMonthlyFeeding(monthFeeding);
       } catch (error) {
         console.error('Failed to generate insights:', error);
         setInsights([]);
+        setWeeklyFeeding([]);
+        setMonthlyFeeding([]);
       } finally {
         setInsightsLoading(false);
       }
@@ -720,6 +728,23 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                 </div>
               )}
 
+              {weeklyFeeding.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Sprout className="h-4 w-4 text-green-600" />
+                    Feeding Schedule This Week
+                  </div>
+                  <div className="grid gap-2">
+                    {weeklyFeeding.map(task => (
+                      <div key={task.id} className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <p className="font-medium text-sm text-foreground">{task.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {taskData.successionAlerts.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold">
@@ -739,7 +764,7 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                 </div>
               )}
 
-              {taskData.soonThisWeek.length === 0 && taskData.successionAlerts.length === 0 && (
+              {taskData.soonThisWeek.length === 0 && weeklyFeeding.length === 0 && taskData.successionAlerts.length === 0 && (
                 <div className="p-3 bg-muted rounded-lg text-center">
                   <p className="text-xs text-muted-foreground">No urgent actions this week. Good timing!</p>
                 </div>
@@ -780,6 +805,23 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                           </Badge>
                         ))}
                         {taskData.toHarvest.length > 8 && <Badge variant="outline">{taskData.toHarvest.length - 8}+ more</Badge>}
+                      </div>
+                    </div>
+                  )}
+
+                  {monthlyFeeding.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Sprout className="h-4 w-4 text-green-600" />
+                        Feeding Schedule This Month
+                      </div>
+                      <div className="grid gap-2">
+                        {monthlyFeeding.map(task => (
+                          <div key={task.id} className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <p className="font-medium text-sm text-foreground">{task.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

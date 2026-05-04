@@ -297,6 +297,100 @@ function isPlantInFeedingPeriod(whenStr: string, currentMonth: string): boolean 
 }
 
 /**
+ * Generate feeding schedule for this week (next 7 days)
+ */
+export function generateWeeklyFeedingSchedule(
+  placedPlants: PlacedPlant[],
+  now: Date = new Date(),
+): GeneratedTask[] {
+  const tasks: GeneratedTask[] = [];
+  const seen = new Set<string>();
+  const currentMonth = MONTH_NAMES[now.getMonth()];
+  const weekFromNow = new Date(now);
+  weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+  for (const pp of placedPlants) {
+    if (seen.has(pp.plantId)) continue;
+    if (NO_FEED.has(pp.plantId)) continue;
+
+    const plant = plantDB.find(p => p.id === pp.plantId);
+    const feeding = PLANT_FEEDING[pp.plantId];
+
+    if (!plant || !feeding) continue;
+
+    // Check if in feeding season
+    const feedThisMonth = isPlantInFeedingPeriod(feeding.when, currentMonth);
+    if (!feedThisMonth) continue;
+
+    seen.add(pp.plantId);
+
+    // Calculate when next feeding is due
+    const daysElapsed = Math.floor((now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000);
+    if (daysElapsed < 21 && pp.stage !== 'established') continue;
+
+    const daysSincePlanting = daysElapsed % feeding.intervalDays;
+    const daysUntilNextFeeding = feeding.intervalDays - daysSincePlanting;
+
+    // Show if feeding due within 7 days
+    if (daysUntilNextFeeding <= 7) {
+      tasks.push({
+        id: `feed-week-${pp.plantId}`,
+        title: `🌿 ${plant.emoji} Feed ${plant.name}`,
+        description: `Due in ${daysUntilNextFeeding} day${daysUntilNextFeeding !== 1 ? 's' : ''}. ${feeding.frequency}. ${feeding.feedType}${feeding.products ? ` — ${feeding.products}` : ''}.`,
+        priority: daysUntilNextFeeding <= 2 ? 'high' : 'medium',
+        category: 'feeding',
+        icon: plant.emoji,
+      });
+    }
+  }
+
+  return tasks;
+}
+
+/**
+ * Generate monthly feeding schedule for all plants in season
+ */
+export function generateMonthlyFeedingSchedule(
+  placedPlants: PlacedPlant[],
+  now: Date = new Date(),
+): GeneratedTask[] {
+  const tasks: GeneratedTask[] = [];
+  const seen = new Set<string>();
+  const currentMonth = MONTH_NAMES[now.getMonth()];
+
+  for (const pp of placedPlants) {
+    if (seen.has(pp.plantId)) continue;
+    if (NO_FEED.has(pp.plantId)) continue;
+
+    const plant = plantDB.find(p => p.id === pp.plantId);
+    const feeding = PLANT_FEEDING[pp.plantId];
+
+    if (!plant || !feeding) continue;
+
+    // Check if in feeding season
+    const feedThisMonth = isPlantInFeedingPeriod(feeding.when, currentMonth);
+    if (!feedThisMonth) continue;
+
+    seen.add(pp.plantId);
+
+    // Calculate days elapsed
+    const daysElapsed = Math.floor((now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000);
+    if (daysElapsed < 21 && pp.stage !== 'established') continue;
+
+    tasks.push({
+      id: `feed-month-${pp.plantId}`,
+      title: `🌿 ${plant.emoji} ${plant.name}`,
+      description: `${feeding.frequency}. ${feeding.feedType}${feeding.products ? ` — ${feeding.products}` : ''}.`,
+      priority: feeding.frequency.toLowerCase().includes('weekly') ? 'high' : 'medium',
+      category: 'feeding',
+      icon: plant.emoji,
+    });
+  }
+
+  return tasks;
+}
+
+/**
  * Combine all generated tasks and deduplicate
  */
 export async function generateAllTasks(
@@ -320,3 +414,4 @@ export async function generateAllTasks(
     return true;
   });
 }
+
