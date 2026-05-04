@@ -2,6 +2,8 @@ export interface Plant {
   id: string;
   name: string;
   emoji: string;
+  /** Optional path (relative to BASE_URL) to a custom sprite image used instead of the emoji. */
+  sprite?: string;
   category: 'vegetable' | 'fruit' | 'herb' | 'flower';
   variety?: string;
   spacingCm: number;
@@ -23,7 +25,7 @@ export interface Plant {
   seedPackData?: Record<string, unknown>;
 }
 
-export type PlantStage = 'seed' | 'seedling';
+export type PlantStage = 'seed' | 'seedling' | 'established';
 
 export interface PlantPhoto {
   id: string;
@@ -40,6 +42,9 @@ export interface PlacedPlant {
   y: number;
   plantedAt: string; // ISO date string
   stage: PlantStage;
+  quantity?: number; // number of plants in this planting (defaults to 1 if absent)
+  areaW?: number; // width in grid cells when filling an area (defaults to 1)
+  areaH?: number; // height in grid cells when filling an area (defaults to 1)
   photos?: PlantPhoto[];
 }
 
@@ -87,4 +92,31 @@ export interface GardenPlan {
   plants: PlacedPlant[];
   beds: PlacedStructure[];
   location?: Location;
+  updated_at?: string; // ISO timestamp for conflict resolution
+}
+
+export interface HarvestLog {
+  id: string;
+  gardenId: string;
+  plantId: string;          // plant type id (from plants DB)
+  placedPlantId: string;    // specific placed instance id
+  harvestDate: string;      // ISO date string
+  quantityHarvested?: number;
+  weightGrams?: number;
+  qualityRating?: 1 | 2 | 3 | 4 | 5;
+  notes?: string;
+}
+
+export type PestSeverity = 'low' | 'medium' | 'high';
+
+export interface PestLog {
+  id: string;
+  gardenId: string;
+  plantId?: string;         // optional – log may cover whole garden
+  logDate: string;          // ISO date string
+  pestOrDisease: string;
+  severity: PestSeverity;
+  treatment?: string;
+  resolved: boolean;
+  notes?: string;
 }
