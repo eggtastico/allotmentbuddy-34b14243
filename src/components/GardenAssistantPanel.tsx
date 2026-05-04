@@ -395,6 +395,12 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
   const todayTasks = tasks.filter((t) => t.due_date === todayStr);
   const incompleteCount = tasks.filter((t) => !t.completed).length;
 
+  // Count unique plants needing feeding
+  const feedingPlantIds = new Set(weeklyFeeding.map(t => {
+    const match = t.id.match(/feed-week-(\w+)/);
+    return match ? match[1] : null;
+  }).filter(Boolean));
+
   const taskData = useMemo(() => {
     const now = new Date();
 
@@ -473,7 +479,9 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
         onClick={() => setCollapsed(!collapsed)}
         className="w-full px-4 py-3 flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
       >
-        <span className="text-sm font-semibold">📅 {dateStr}</span>
+        <span className="text-sm font-semibold">🌾 Allotment Tasks Assistant</span>
+        <span className="text-xs text-blue-100">•</span>
+        <span className="text-xs text-blue-100">{dateStr}</span>
 
         {/* Quick summary badges */}
         {incompleteCount > 0 && (
@@ -484,6 +492,11 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
         {taskData.readyNow.length > 0 && (
           <Badge className="bg-green-500 text-white hover:bg-green-600">
             🔴 {taskData.readyNow.length} ready
+          </Badge>
+        )}
+        {feedingPlantIds.size > 0 && (
+          <Badge className="bg-emerald-400 text-white hover:bg-emerald-500">
+            🌿 {feedingPlantIds.size} to feed
           </Badge>
         )}
         {taskData.toSow.length > 0 && (
