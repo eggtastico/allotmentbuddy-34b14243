@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PlotSettings, PlacedPlant, PlacedStructure } from '@/types/garden';
+import { PlotSettings, PlacedPlant, PlacedStructure, RotationYearEntry } from '@/types/garden';
 
 // Base type schemas for validation
 export const PlotSettingsSchema = z.object({
@@ -11,6 +11,11 @@ export const PlotSettingsSchema = z.object({
   southDirection: z.number().min(0).max(360),
   snapToGrid: z.boolean().optional(),
 }) satisfies z.ZodType<PlotSettings>;
+
+export const RotationYearEntrySchema = z.object({
+  year: z.number(),
+  group: z.string(),
+}) satisfies z.ZodType<RotationYearEntry>;
 
 export const PlantPhotoSchema = z.object({
   id: z.string(),
@@ -37,6 +42,8 @@ export const PlacedStructureSchema = z.object({
   y: z.number(),
   widthCells: z.number().positive(),
   heightCells: z.number().positive(),
+  name: z.string().optional(),
+  rotationHistory: z.array(RotationYearEntrySchema).optional(),
 }) satisfies z.ZodType<PlacedStructure>;
 
 // Location data schema for validated location objects
@@ -77,6 +84,8 @@ const RawStructureSchema = z.object({
   heightCells: z.number().optional(),
   width: z.number().optional(),
   height: z.number().optional(),
+  name: z.string().optional(),
+  rotationHistory: z.array(RotationYearEntrySchema).optional(),
 }).passthrough().transform((s): PlacedStructure => ({
   id: s.id,
   structureId: s.structureId || s.type || 'raised-bed',
@@ -84,6 +93,8 @@ const RawStructureSchema = z.object({
   y: s.y,
   widthCells: s.widthCells ?? s.width ?? 4,
   heightCells: s.heightCells ?? s.height ?? 2,
+  ...(s.name !== undefined && { name: s.name }),
+  ...(s.rotationHistory !== undefined && { rotationHistory: s.rotationHistory }),
 }));
 
 // Supabase response schemas

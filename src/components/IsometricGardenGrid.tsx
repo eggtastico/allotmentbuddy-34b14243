@@ -55,6 +55,8 @@ interface IsometricGardenGridProps {
   isMobile?: boolean;
   controlsPortalRef?: { current: HTMLElement | null };
   canvasExportRef?: React.MutableRefObject<((scale?: number) => Promise<string | null>) | null>;
+  viewMonth?: number | null;
+  onSelectBed?: (bed: PlacedStructure | null) => void;
 }
 
 // ─── constants ───────────────────────────────────────────────────────────────

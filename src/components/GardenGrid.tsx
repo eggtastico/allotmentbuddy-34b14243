@@ -12,6 +12,15 @@ import { GardenMinimap } from './GardenMinimap';
 import { Input } from '@/components/ui/input';
 import { suggestPlantsForBed } from '@/utils/bedPlantSuggestions';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
+import { buildCompanionHeatmap } from '@/utils/companionHeatmap';
+import { getPlantSeasonStatus, type PlantSeasonStatus } from '@/utils/seasonalSowing';
+import {
+  getPlantsInBed,
+  getDominantRotationGroup,
+  getRotationWarnings,
+  getBedDisplayName,
+  getRotationStatus,
+} from '@/utils/bedRotationUtils';
 
 // Canvas helper: draw a rounded rectangle path
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -266,6 +275,10 @@ interface GardenGridProps {
    * Defaults to the display-resolution canvas when scale is omitted or 1.
    */
   canvasExportRef?: React.MutableRefObject<((scale?: number) => Promise<string | null>) | null>;
+  /** viewMonth: 0-11, used for seasonal tinting. null = live rendering (no seasonal effects). */
+  viewMonth?: number | null;
+  /** Called when a bed is selected for viewing/editing. */
+  onSelectBed?: (bed: PlacedStructure | null) => void;
 }
 
 interface DragTooltip {
@@ -276,7 +289,7 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange, pendingPlantId, pendingIsStructure, onCancelPending, structureMode: propStructureMode, showSunOverlay: propShowSunOverlay, onShowSunOverlayChange, isMobile, controlsPortalRef, canvasExportRef }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange, pendingPlantId, pendingIsStructure, onCancelPending, structureMode: propStructureMode, showSunOverlay: propShowSunOverlay, onShowSunOverlayChange, isMobile, controlsPortalRef, canvasExportRef, viewMonth, onSelectBed }: GardenGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   // Static layer cache: background + grid lines (only redrawn when geometry/theme changes)
@@ -412,6 +425,13 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const spacingConflicts = spacingConflictsRef.current;
   const spatialBuckets   = spatialBucketsRef.current;
   const occupiedCells    = occupiedCellsRef.current;
+
+  // Companion heatmap — computed when a plant is being dragged or pending
+  const activeDragPlantId = pendingPlantId ?? dragTooltip?.plantId ?? null;
+  const companionHeatmap = useMemo(() => {
+    if (!activeDragPlantId || pendingIsStructure) return null;
+    return buildCompanionHeatmap(activeDragPlantId, plants, cols, rows);
+  }, [activeDragPlantId, pendingIsStructure, plants, cols, rows]);
 
   // Singleton compute worker — created once, reused for every plants/settings change.
   const computeWorkerRef = useRef<Worker | null>(null);
@@ -900,6 +920,8 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           companionMapEntries: [...companionMapRef.current.entries()],
           spacingConflictsEntries: [...spacingConflictsRef.current.entries()],
           spatialBucketsEntries: [...spatialBucketsRef.current.entries()],
+          companionHeatmapCompanion: companionHeatmap?.companion ?? null,
+          companionHeatmapEnemy: companionHeatmap?.enemy ?? null,
           baseUrl: import.meta.env.BASE_URL,
           vpLeft, vpTop, vpRight, vpBottom,
         });
@@ -1108,6 +1130,29 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       }
     }
 
+    // 6.5 Companion placement heatmap — shows friendly/unfriendly zones when dragging
+    if (companionHeatmap) {
+      for (let cy = vpTop; cy < vpBottom; cy++) {
+        for (let cx = vpLeft; cx < vpRight; cx++) {
+          const idx = cy * cols + cx;
+          if (occupiedCells[idx] !== 0) continue; // skip already-placed plants
+
+          const cScore = companionHeatmap.companion[idx];
+          const eScore = companionHeatmap.enemy[idx];
+
+          if (eScore > 0 && eScore >= cScore) {
+            ctx.fillStyle = `rgba(239,68,68,${Math.min(0.35, eScore * 0.12)})`;
+          } else if (cScore > 0) {
+            ctx.fillStyle = `rgba(34,197,94,${Math.min(0.35, cScore * 0.12)})`;
+          } else {
+            continue;
+          }
+
+          ctx.fillRect(cx * cellSize, cy * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
     // 7. Plant tiles — multi-pass batched rendering (#5)
     //    Pass A: normal tile fills (no shadow) — batch by bg colour → one fill() per colour group
     //    Pass B: highlighted tile fills (shadow) — individual save/restore
@@ -1135,6 +1180,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       growthPct: number;
       emojiSize: number;
       emojiOffsetY: number;
+      seasonStatus: PlantSeasonStatus;
     }
     const tileMetas: TileMeta[] = [];
     for (const placed of sortedPlants) {
@@ -1165,16 +1211,25 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         ? Math.max(Math.min(pw, ph) * 0.82, 20)
         : Math.max(cellSize * (0.88 + Math.min(0.1, growthPct * 0.1)), 20);
       const emojiOffsetY = aw > 1 || ah > 1 ? 0 : (hasLabel ? -3 : 0);
-      tileMetas.push({ placed, plantData, px, py, pw, ph, tileBg, hasHighlight, relations, spacingIssues, growthPct, emojiSize, emojiOffsetY });
+      const seasonStatus: PlantSeasonStatus = viewMonth != null
+        ? getPlantSeasonStatus(plantData, placed.plantedAt, viewMonth)
+        : 'active';
+      tileMetas.push({ placed, plantData, px, py, pw, ph, tileBg, hasHighlight, relations, spacingIssues, growthPct, emojiSize, emojiOffsetY, seasonStatus });
     }
 
     // Pass A: normal (no-shadow) tile fills — group by bg colour for minimal fillStyle changes
     const normalByBg = new Map<string, TileMeta[]>();
+    const dormantNormal: TileMeta[] = [];
     for (const m of tileMetas) {
       if (m.hasHighlight) continue;
-      if (!normalByBg.has(m.tileBg)) normalByBg.set(m.tileBg, []);
-      normalByBg.get(m.tileBg)!.push(m);
+      if (m.seasonStatus === 'dormant') {
+        dormantNormal.push(m);
+      } else {
+        if (!normalByBg.has(m.tileBg)) normalByBg.set(m.tileBg, []);
+        normalByBg.get(m.tileBg)!.push(m);
+      }
     }
+    // Render active plants
     for (const [bg, group] of normalByBg) {
       ctx.fillStyle = bg;
       ctx.shadowColor = 'rgba(0,0,0,0.10)'; ctx.shadowBlur = 2;
@@ -1183,26 +1238,38 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       ctx.fill();
       ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
     }
+    // Render dormant plants with greyed color
+    if (dormantNormal.length > 0) {
+      const dormantBg = isDark ? 'hsl(0 0% 15%)' : 'hsl(0 0% 92%)';
+      ctx.fillStyle = dormantBg;
+      ctx.shadowColor = 'rgba(0,0,0,0.10)'; ctx.shadowBlur = 2;
+      ctx.beginPath();
+      for (const { px, py, pw, ph } of dormantNormal) roundRect(ctx, px + 1, py + 1, pw - 2, ph - 2, 5);
+      ctx.fill();
+      ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+    }
 
     // Pass B: highlighted tile fills (enemy/companion/spacing) — shadow requires per-tile save/restore
-    for (const { px, py, pw, ph, tileBg, relations, spacingIssues } of tileMetas) {
+    for (const { px, py, pw, ph, tileBg, relations, spacingIssues, seasonStatus } of tileMetas) {
       if (!relations?.hasEnemy && !relations?.hasCompanion && !spacingIssues?.length) continue;
       ctx.save();
       ctx.translate(px + 1, py + 1);
       if (relations?.hasEnemy) { ctx.shadowColor = 'rgba(239,68,68,0.35)'; ctx.shadowBlur = 8; }
       else if (relations?.hasCompanion) { ctx.shadowColor = 'rgba(34,197,94,0.3)'; ctx.shadowBlur = 8; }
       else { ctx.shadowColor = 'rgba(245,158,11,0.4)'; ctx.shadowBlur = 8; }
-      ctx.fillStyle = tileBg;
+      const finalBg = seasonStatus === 'dormant' ? (isDark ? 'hsl(0 0% 15%)' : 'hsl(0 0% 92%)') : tileBg;
+      ctx.fillStyle = finalBg;
       ctx.fill(pw === cellSize && ph === cellSize ? tilePath : getCachedPath2D(pw - 2, ph - 2, 5));
       ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
       ctx.restore();
     }
 
     // Pass C: emoji / custom sprites — centred in the full area
-    for (const { plantData, px, py, pw, ph, emojiSize, emojiOffsetY } of tileMetas) {
+    for (const { plantData, px, py, pw, ph, emojiSize, emojiOffsetY, seasonStatus } of tileMetas) {
       const customBm = plantData!.sprite ? customSpriteCache.get(plantData!.sprite) : undefined;
       const twBm = !customBm ? twemojiCache.get(plantData!.emoji) : undefined;
       const cx = px + pw / 2, cy = py + ph / 2;
+      if (seasonStatus === 'dormant') ctx.globalAlpha = 0.35;
       if (customBm || twBm) {
         const s = Math.round(emojiSize);
         ctx.drawImage((customBm ?? twBm)!, cx - s / 2, cy + emojiOffsetY - s / 2, s, s);
@@ -1210,6 +1277,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         const emojiImg = getCachedEmoji(plantData!.emoji, emojiSize);
         ctx.drawImage(emojiImg, cx - emojiImg.width / 2, cy + emojiOffsetY - emojiImg.height / 2);
       }
+      if (seasonStatus === 'dormant') ctx.globalAlpha = 1;
     }
 
     // Pass D: name labels — centred at bottom of area
@@ -1252,10 +1320,12 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
     // Pass F: bottom badges — centred at bottom of area
     if (cellSize >= 20) {
-      for (const { plantData, px, py, pw, ph, relations, spacingIssues } of tileMetas) {
+      for (const { plantData, px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
         let badgeText = '';
         let badgeBg = '';
-        if (spacingIssues?.length && !relations?.hasEnemy) { badgeText = '↔ Too close'; badgeBg = 'hsl(38 92% 50%)'; }
+        // Harvest-ready badge takes priority over other badges
+        if (seasonStatus === 'harvest-ready') { badgeText = '🌾 Ready'; badgeBg = 'hsl(38 92% 50%)'; }
+        else if (spacingIssues?.length && !relations?.hasEnemy) { badgeText = '↔ Too close'; badgeBg = 'hsl(38 92% 50%)'; }
         else if (relations?.hasEnemy && relations.enemyNames.length > 0) { badgeText = `❌ ${relations.enemyNames[0]}`; badgeBg = 'hsl(0 84% 60%)'; }
         else if (relations?.hasCompanion && !relations.hasEnemy && relations.companionNames.length > 0 && cellSize >= 24) { badgeText = `✅ ${relations.companionNames[0]}`; badgeBg = primaryColor; }
         if (!badgeText) continue;
@@ -1360,7 +1430,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         mainRafPendingRef.current = false;
       }
     };
-  }, [gridW, gridH, cols, rows, cellSize, isDark, plants, shadeZones, showSunOverlay, showRotationOverlay, showColorCoding, settings.cellSizeCm, structures, themeColors, spriteVersion, layoutVersion, panOffset]);
+  }, [gridW, gridH, cols, rows, cellSize, isDark, plants, shadeZones, showSunOverlay, showRotationOverlay, showColorCoding, settings.cellSizeCm, structures, themeColors, spriteVersion, layoutVersion, panOffset, companionHeatmap]);
 
   // ─── Overlay canvas: hover highlight, pending-plant ghost, resize preview ───
   useEffect(() => {
@@ -2053,11 +2123,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                   borderColor: 'hsl(var(--primary))',
                   zIndex: moving?.id === struct.id ? 10 : 1,
                 }}
-                title={`${data.name} — drag to move`}
+                title={`${getBedDisplayName(struct, structures)} — drag to move`}
                 onPointerDown={e => handleMoveStart(e, struct.id, struct.x, struct.y)}
               >
                 <span className="text-lg">{data.emoji}</span>
-                <span className="text-[10px] font-medium text-foreground/80">{data.name}</span>
+                <span className="text-[10px] font-medium text-foreground/80">{getBedDisplayName(struct, structures)}</span>
                 {data.canGrowInside && !data.isContainer && (
                   <span className="text-[8px] text-primary font-medium">🌱 Grow inside</span>
                 )}
@@ -2083,6 +2153,31 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
                     ✎
                   </button>
                 )}
+                {/* Bed info button */}
+                <button
+                  onClick={e => { e.stopPropagation(); onSelectBed?.(struct); }}
+                  className="absolute -bottom-2 -left-2 h-5 w-5 rounded-full bg-primary/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-bold"
+                  title="Bed info & rotation"
+                  data-no-plant-move="true"
+                >
+                  ℹ
+                </button>
+                {/* Rotation status badge */}
+                {struct.rotationHistory && struct.rotationHistory.length > 0 && (() => {
+                  const bedsInBed = getPlantsInBed(struct, plants);
+                  const currentGroup = getDominantRotationGroup(bedsInBed);
+                  const currentYear = new Date().getFullYear();
+                  const warnings = getRotationWarnings(struct.rotationHistory, currentYear, currentGroup);
+                  const status = getRotationStatus(warnings);
+                  return (
+                    <div
+                      className="absolute top-1 left-1/2 -translate-x-1/2 text-sm font-medium"
+                      title={status === 'warning' ? 'Rotation issue — click ℹ for details' : 'Rotation OK'}
+                    >
+                      {status === 'good' ? '✅' : '⚠️'}
+                    </div>
+                  );
+                })()}
                 {/* Standalone auto-fill button */}
                 {data.canGrowInside && onSmartAutoFill && (
                   <button

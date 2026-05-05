@@ -58,6 +58,11 @@ export interface GardenBed {
   label?: string;
 }
 
+export interface RotationYearEntry {
+  year: number;
+  group: string; // one of the rotationGroup values
+}
+
 export interface PlacedStructure {
   id: string;
   structureId: string;
@@ -65,6 +70,8 @@ export interface PlacedStructure {
   y: number;
   widthCells: number;
   heightCells: number;
+  name?: string; // Custom bed name
+  rotationHistory?: RotationYearEntry[]; // Historical rotation data per year
 }
 
 export interface PlotSettings {

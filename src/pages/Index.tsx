@@ -12,6 +12,7 @@ import { PlantSidebar } from '@/components/PlantSidebar';
 import { GardenGrid } from '@/components/GardenGrid';
 import { IsometricGardenGrid } from '@/components/IsometricGardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
+import { BedInfoPanel } from '@/components/BedInfoPanel';
 import { getStructureById } from '@/data/structures';
 import { getPlantById, plants as allPlantsList } from '@/data/plants';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
@@ -22,6 +23,7 @@ import { LocationPicker } from '@/components/LocationPicker';
 import { RainWidget } from '@/components/RainWidget';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { SocialShare } from '@/components/SocialShare';
+import { SuccessionSlider } from '@/components/SuccessionSlider';
 
 // Lazy-loaded modal components
 const PlantingCalendar = React.lazy(() => import('@/components/PlantingCalendar').then(m => ({ default: m.PlantingCalendar })));
@@ -77,6 +79,7 @@ const Index = () => {
   });
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
+  const [selectedBed, setSelectedBed] = useState<PlacedStructure | null>(null);
   const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
   const [dragging, setDragging] = useState<string | null>(null); // used only for drag-and-drop dataTransfer
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
@@ -95,6 +98,9 @@ const Index = () => {
   const [useIsometric, setUseIsometric] = useState(
     () => new URLSearchParams(window.location.search).get('iso') === '1'
   );
+  // Succession planting slider — month view and visibility
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [showSuccessionSlider, setShowSuccessionSlider] = useState(false);
 
   // Undo/Redo history
   const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
@@ -445,6 +451,11 @@ const Index = () => {
     setPlacedStructures(prev => prev.map(s => s.id === id ? { ...s, x, y } : s));
   }, []);
 
+  const handleUpdateStructure = useCallback((updated: PlacedStructure) => {
+    setPlacedStructures(prev => prev.map(s => s.id === updated.id ? updated : s));
+    setSelectedBed(prev => prev?.id === updated.id ? updated : prev);
+  }, []);
+
   const handleLoadPlan = useCallback((plan: GardenPlanRow) => {
     setCurrentPlanId(plan.id);
     setPlanName(plan.name);
@@ -461,8 +472,11 @@ const Index = () => {
       y: s.y ?? 0,
       widthCells: s.widthCells ?? s.width ?? 4,
       heightCells: s.heightCells ?? s.height ?? 2,
+      name: s.name,
+      rotationHistory: s.rotationHistory,
     })));
     setSelectedPlant(null);
+    setSelectedBed(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
 
@@ -473,6 +487,7 @@ const Index = () => {
     setPlacedPlants([]);
     setPlacedStructures([]);
     setSelectedPlant(null);
+    setSelectedBed(null);
   }, []);
 
   const handleExportPDF = async () => {
@@ -857,6 +872,11 @@ const Index = () => {
             pendingPlantId={pendingPlantId}
             pendingIsStructure={pendingIsStructure}
             onCancelPending={handleCancelPending}
+            viewMonth={showSuccessionSlider ? viewMonth : null}
+            onSelectBed={bed => {
+              setSelectedBed(bed);
+              setSelectedPlant(null);
+            }}
           />
         ) : (
           <GardenGrid
@@ -879,6 +899,11 @@ const Index = () => {
             pendingPlantId={pendingPlantId}
             pendingIsStructure={pendingIsStructure}
             onCancelPending={handleCancelPending}
+            viewMonth={showSuccessionSlider ? viewMonth : null}
+            onSelectBed={bed => {
+              setSelectedBed(bed);
+              setSelectedPlant(null);
+            }}
           />
         )}
         {selectedPlant && (
@@ -948,7 +973,39 @@ const Index = () => {
             />
           </>
         )}
+        {selectedBed && (
+          <>
+            {/* Desktop sidebar version */}
+            <BedInfoPanel
+              bed={selectedBed}
+              allBeds={placedStructures}
+              allPlants={placedPlants}
+              onClose={() => setSelectedBed(null)}
+              onUpdateBed={handleUpdateStructure}
+              onRemoveBed={handleRemoveStructure}
+            />
+            {/* Tablet/Mobile modal version */}
+            <BedInfoPanel
+              bed={selectedBed}
+              allBeds={placedStructures}
+              allPlants={placedPlants}
+              onClose={() => setSelectedBed(null)}
+              onUpdateBed={handleUpdateStructure}
+              onRemoveBed={handleRemoveStructure}
+              modal={true}
+            />
+          </>
+        )}
       </div>
+
+      {/* Succession Slider - Bottom Bar */}
+      <SuccessionSlider
+        viewMonth={viewMonth}
+        onChange={setViewMonth}
+        placedPlants={placedPlants}
+        visible={showSuccessionSlider}
+        onToggle={() => setShowSuccessionSlider(v => !v)}
+      />
 
       {/* Mobile tap-to-place indicator */}
       {pendingPlantId && (
