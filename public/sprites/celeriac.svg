@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Soil mound -->
+  <ellipse cx="32" cy="54" rx="18" ry="6" fill="#8B6914"/>
+  <ellipse cx="32" cy="53" rx="16" ry="5" fill="#A0782C"/>
+
+  <!-- Celeriac knobby pale root -->
+  <ellipse cx="32" cy="52" rx="9" ry="8" fill="#D7CCC8"/>
+  <ellipse cx="32" cy="51" rx="8" ry="7" fill="#EFEBE9"/>
+  <!-- Knobby texture -->
+  <circle cx="27" cy="52" r="2" fill="#BCAAA4" opacity="0.5"/>
+  <circle cx="37" cy="53" r="2.5" fill="#BCAAA4" opacity="0.4"/>
+  <circle cx="32" cy="56" r="2" fill="#BCAAA4" opacity="0.5"/>
+  <circle cx="29" cy="48" r="1.5" fill="#BCAAA4" opacity="0.4"/>
+
+  <!-- Celery-like green tops - left stalk -->
+  <path d="M26 44 L24 28 L22 24" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M22 24 Q18 18 16 14 Q20 16 22 18 Q20 12 18 8 Q22 14 24 20 Q24 14 22 10 Q26 16 24 24" fill="#2E7D32"/>
+
+  <!-- Celery-like green tops - center stalk -->
+  <path d="M32 44 L32 26 L32 22" stroke="#43A047" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M30 22 Q28 14 28 8 Q30 12 32 10 Q32 6 34 10 Q34 12 36 8 Q36 14 34 22 Z" fill="#388E3C"/>
+
+  <!-- Celery-like green tops - right stalk -->
+  <path d="M38 44 L40 28 L42 24" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M42 24 Q46 18 48 14 Q44 16 42 18 Q44 12 46 8 Q42 14 40 20 Q40 14 42 10 Q38 16 40 24" fill="#43A047"/>
+</svg>

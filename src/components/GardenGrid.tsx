@@ -631,12 +631,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   }, [plantResize, cellSize, cols, rows, onFillPlantArea, onRemovePlant]);
 
   const handleMoveStart = useCallback((e: React.PointerEvent, structId: string, origX: number, origY: number) => {
-    // Only allow moving structures when in structure mode
-    if (!propStructureMode) return;
+    // Allow moving structures
     e.preventDefault();
     e.stopPropagation();
     setMoving({ id: structId, startX: e.clientX, startY: e.clientY, origX, origY });
-  }, [propStructureMode]);
+  }, []);
 
   useEffect(() => {
     if (!moving) return;

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 180">
+  <!-- Left wall glass panel - tall (depth 42) -->
+  <polygon points="4,34 64,64 64,114 4,84" fill="#B0D4E8" opacity="0.65"/>
+  <!-- Right wall glass panel -->
+  <polygon points="64,64 124,34 124,84 64,114" fill="#8ABFD8" opacity="0.7"/>
+  <!-- Left wall frame lines -->
+  <polyline points="4,34 4,84 64,114 64,64" stroke="#D0D8E0" stroke-width="2" fill="none" stroke-linejoin="round"/>
+  <line x1="22" y1="51" x2="38" y2="75" stroke="#D0D8E0" stroke-width="1.2"/>
+  <line x1="40" y1="57" x2="56" y2="81" stroke="#D0D8E0" stroke-width="1.2"/>
+  <line x1="10" y1="50" x2="10" y2="74" stroke="#D0D8E0" stroke-width="1.5" opacity="0.7"/>
+  <line x1="28" y1="59" x2="28" y2="83" stroke="#D0D8E0" stroke-width="1.5" opacity="0.7"/>
+  <line x1="46" y1="69" x2="46" y2="93" stroke="#D0D8E0" stroke-width="1.5" opacity="0.7"/>
+  <!-- Right wall frame lines -->
+  <polyline points="64,64 124,34 124,84 64,114" stroke="#C0C8D0" stroke-width="2" fill="none" stroke-linejoin="round"/>
+  <line x1="94" y1="51" x2="110" y2="75" stroke="#C0C8D0" stroke-width="1.2"/>
+  <line x1="100" y1="50" x2="100" y2="74" stroke="#C0C8D0" stroke-width="1.5" opacity="0.7"/>
+  <!-- Roof left face -->
+  <polygon points="4,34 64,4 64,14 4,44" fill="#9BC4DA" opacity="0.75"/>
+  <!-- Roof right face -->
+  <polygon points="64,4 124,34 124,44 64,14" fill="#7AACCA" opacity="0.8"/>
+  <!-- Roof ridge and edges -->
+  <polyline points="4,34 64,4 124,34" stroke="#C8D8E0" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+  <!-- Roof frame divisions -->
+  <line x1="34" y1="19" x2="64" y2="4" stroke="#C0C8D0" stroke-width="1"/>
+  <line x1="94" y1="19" x2="64" y2="4" stroke="#C0C8D0" stroke-width="1"/>
+  <!-- Door/entrance -->
+  <rect x="30" y="80" width="20" height="24" fill="none" stroke="#7A9AB0" stroke-width="1.5"/>
+  <line x1="40" y1="80" x2="40" y2="104" stroke="#7A9AB0" stroke-width="1"/>
+  <!-- Door handle -->
+  <circle cx="48" cy="92" r="1.5" fill="#A0A8B0"/>
+  <!-- Vegetation hint inside -->
+  <ellipse cx="32" cy="92" rx="6" ry="2.5" fill="#4CAF50" opacity="0.25"/>
+  <ellipse cx="92" cy="72" rx="8" ry="3" fill="#388E3C" opacity="0.3"/>
+  <ellipse cx="50" cy="100" rx="7" ry="2" fill="#4CAF50" opacity="0.2"/>
+</svg>

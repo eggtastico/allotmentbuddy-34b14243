@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <line x1="32" y1="36" x2="32" y2="56" stroke="#388E3C" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="32" cy="36" rx="16" ry="8" fill="#4CAF50"/>
+  <ellipse cx="22" cy="34" rx="8" ry="6" fill="#388E3C"/>
+  <ellipse cx="42" cy="34" rx="8" ry="6" fill="#388E3C"/>
+  <g transform="translate(26,20)">
+    <ellipse cx="0" cy="-5" rx="3" ry="5" fill="#FF5722"/>
+    <ellipse cx="5" cy="0" rx="3" ry="5" fill="#FF7043" transform="rotate(72)"/>
+    <ellipse cx="3" cy="5" rx="3" ry="5" fill="#FF5722" transform="rotate(144)"/>
+    <ellipse cx="-3" cy="5" rx="3" ry="5" fill="#FF7043" transform="rotate(216)"/>
+    <ellipse cx="-5" cy="0" rx="3" ry="5" fill="#FF5722" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="2.5" fill="#FFC107"/>
+  </g>
+  <g transform="translate(40,22) scale(0.8)">
+    <ellipse cx="0" cy="-5" rx="3" ry="5" fill="#FFA000"/>
+    <ellipse cx="5" cy="0" rx="3" ry="5" fill="#FFB300" transform="rotate(72)"/>
+    <ellipse cx="3" cy="5" rx="3" ry="5" fill="#FFA000" transform="rotate(144)"/>
+    <ellipse cx="-3" cy="5" rx="3" ry="5" fill="#FFB300" transform="rotate(216)"/>
+    <ellipse cx="-5" cy="0" rx="3" ry="5" fill="#FFA000" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="2" fill="#FFC107"/>
+  </g>
+</svg>

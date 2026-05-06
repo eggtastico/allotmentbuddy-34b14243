@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 136">
+  <!-- Canopy foliage - layered circles for depth -->
+  <circle cx="40" cy="28" r="22" fill="#2E7D32"/>
+  <circle cx="72" cy="32" r="24" fill="#388E3C"/>
+  <circle cx="56" cy="20" r="20" fill="#4CAF50"/>
+  <!-- Trunk - tall to match depth=30 -->
+  <rect x="58" y="52" width="5" height="38" fill="#795548" rx="2"/>
+  <rect x="59" y="52" width="2" height="38" fill="#8B6F47" opacity="0.5" rx="1"/>
+  <!-- Fruit/apples on left side -->
+  <circle cx="35" cy="32" r="4" fill="#D32F2F"/>
+  <circle cx="33" cy="30" r="3.5" fill="#E53935" opacity="0.8"/>
+  <path d="M 35 27 L 35 25" stroke="#388E3C" stroke-width="1" stroke-linecap="round"/>
+  <!-- Fruit center -->
+  <circle cx="54" cy="18" r="4.5" fill="#E53935"/>
+  <circle cx="52" cy="16" r="4" fill="#EF5350" opacity="0.8"/>
+  <path d="M 54 13 L 54 11" stroke="#388E3C" stroke-width="1" stroke-linecap="round"/>
+  <!-- Fruit right side -->
+  <circle cx="78" cy="26" r="4" fill="#D32F2F"/>
+  <circle cx="80" cy="24" r="3.5" fill="#E53935" opacity="0.8"/>
+  <path d="M 78 22 L 78 20" stroke="#388E3C" stroke-width="1" stroke-linecap="round"/>
+  <!-- Fruit far right -->
+  <circle cx="85" cy="38" r="3.5" fill="#C62828"/>
+  <circle cx="87" cy="36" r="3" fill="#D32F2F" opacity="0.7"/>
+  <path d="M 85 33 L 85 31" stroke="#388E3C" stroke-width="0.8" stroke-linecap="round"/>
+  <!-- Canopy shadow -->
+  <ellipse cx="48" cy="66" rx="28" ry="6" fill="#1A0F00" opacity="0.15"/>
+  <!-- Fruit highlights -->
+  <ellipse cx="33" cy="29" rx="2" ry="1.5" fill="#FF5252" opacity="0.6"/>
+  <ellipse cx="52" cy="15" rx="2" ry="1.5" fill="#FF5252" opacity="0.6"/>
+</svg>

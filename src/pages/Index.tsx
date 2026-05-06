@@ -17,11 +17,12 @@ import { getStructureById } from '@/data/structures';
 import { getPlantById, plants as allPlantsList } from '@/data/plants';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
 import { PlotToolbar } from '@/components/PlotToolbar';
+import { MobilePlantTray } from '@/components/MobilePlantTray';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import { LocationPicker } from '@/components/LocationPicker';
 import { RainWidget } from '@/components/RainWidget';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { GardenAssistantPanel } from '@/components/GardenAssistantPanel';
 import { SocialShare } from '@/components/SocialShare';
 import { SuccessionSlider } from '@/components/SuccessionSlider';
 
@@ -49,12 +50,12 @@ import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/use-auth';
 import { useGardenAutoSave } from '@/hooks/useGardenAutoSave';
 import { useGardenModals } from '@/hooks/useGardenModals';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useFrostDates } from '@/hooks/useFrostDates';
 import { exportGardenPDF } from '@/utils/exportPDF';
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { logError } from '@/utils/errorUtils';
-import { GardenAssistantPanel } from '@/components/GardenAssistantPanel';
 import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -92,7 +93,7 @@ const Index = () => {
   const [pendingIsStructure, setPendingIsStructure] = useState(false);
   const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
   const [activeNav, setActiveNav] = useState<NavSection>('garden');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const isMobile = useIsMobile();
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   // Isometric grid A/B flag — enable via ?iso=1 in URL or toggle button
   const [useIsometric, setUseIsometric] = useState(
@@ -158,16 +159,6 @@ const Index = () => {
   // Initialize IndexedDB on mount
   useEffect(() => {
     initializeSyncStatus().catch(console.error);
-  }, []);
-
-  // Handle window resize for mobile detection
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Check if setup wizard has been completed
@@ -672,7 +663,7 @@ const Index = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-background sm:pb-0 pb-14 touch-manipulation overscroll-none" style={{ overscrollBehavior: 'none' }}>
+    <div className="h-screen flex flex-col bg-background lg:pb-0 pb-16 touch-manipulation overscroll-none" style={{ overscrollBehavior: 'none' }}>
       <WelcomeModal />
 
       {/* Setup Wizard */}
@@ -733,9 +724,6 @@ const Index = () => {
           {mobileNavItems}
         </div>
       )}
-
-      {/* Garden Assistant Panel */}
-      <GardenAssistantPanel placedPlants={placedPlants} frostDates={frostDates} />
 
       {/* Install prompt */}
       <div className="px-4 py-2 bg-card border-b border-border">
@@ -827,7 +815,7 @@ const Index = () => {
       </div>
 
       {/* Main area */}
-      <div className={`${isMobile && activeNav !== 'garden' ? 'hidden' : 'flex-1 flex'} overflow-hidden relative`}>
+      <div className={`${isMobile && activeNav !== 'garden' && activeNav !== 'crops' ? 'hidden' : 'flex-1 flex'} overflow-hidden relative`}>
         {/* Backdrop for mobile sidebar */}
         {mobileSidebarOpen && (
           <div
@@ -873,6 +861,7 @@ const Index = () => {
             pendingIsStructure={pendingIsStructure}
             onCancelPending={handleCancelPending}
             viewMonth={showSuccessionSlider ? viewMonth : null}
+            isMobile={isMobile}
             onSelectBed={bed => {
               setSelectedBed(bed);
               setSelectedPlant(null);
@@ -900,13 +889,14 @@ const Index = () => {
             pendingIsStructure={pendingIsStructure}
             onCancelPending={handleCancelPending}
             viewMonth={showSuccessionSlider ? viewMonth : null}
+            isMobile={isMobile}
             onSelectBed={bed => {
               setSelectedBed(bed);
               setSelectedPlant(null);
             }}
           />
         )}
-        {selectedPlant && (
+        {selectedPlant && !isMobile && (
           <>
             {/* Desktop sidebar version */}
             <PlantInfoPanel
@@ -914,38 +904,6 @@ const Index = () => {
               allPlaced={placedPlants}
               onClose={() => setSelectedPlant(null)}
               onRemove={handleRemovePlant}
-              sunExposure={(() => {
-                const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
-                const c = Math.round(settings.widthM * cellsPerUnit);
-                const r = Math.round(settings.heightM * cellsPerUnit);
-                const zones = calculateShadeZones(placedStructures, settings, c, r);
-                return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
-              })()}
-              onAddSuccessionTask={async (title, description) => {
-                if (!user) {
-                  toast.error('Sign in to add tasks');
-                  return;
-                }
-                const { error } = await supabase.from('garden_tasks').insert({
-                  user_id: user.id,
-                  title,
-                  description,
-                  period: 'monthly',
-                });
-                if (error) {
-                  toast.error('Failed to add task');
-                } else {
-                  toast.success('Succession task added! 📋');
-                }
-              }}
-            />
-            {/* Tablet/Mobile modal version */}
-            <PlantInfoPanel
-              placed={selectedPlant}
-              allPlaced={placedPlants}
-              onClose={() => setSelectedPlant(null)}
-              onRemove={handleRemovePlant}
-              modal={true}
               sunExposure={(() => {
                 const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
                 const c = Math.round(settings.widthM * cellsPerUnit);
@@ -973,7 +931,40 @@ const Index = () => {
             />
           </>
         )}
-        {selectedBed && (
+        {isMobile && selectedPlant && (
+          <PlantInfoPanel
+            placed={selectedPlant}
+            allPlaced={placedPlants}
+            onClose={() => setSelectedPlant(null)}
+            onRemove={handleRemovePlant}
+            modal={true}
+            sunExposure={(() => {
+              const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
+              const c = Math.round(settings.widthM * cellsPerUnit);
+              const r = Math.round(settings.heightM * cellsPerUnit);
+              const zones = calculateShadeZones(placedStructures, settings, c, r);
+              return getSunExposure(selectedPlant.x, selectedPlant.y, zones);
+            })()}
+            onAddSuccessionTask={async (title, description) => {
+              if (!user) {
+                toast.error('Sign in to add tasks');
+                return;
+              }
+              const { error } = await supabase.from('garden_tasks').insert({
+                user_id: user.id,
+                title,
+                description,
+                period: 'monthly',
+              });
+              if (error) {
+                toast.error('Failed to add task');
+              } else {
+                toast.success('Succession task added! 📋');
+              }
+            }}
+          />
+        )}
+        {selectedBed && !isMobile && (
           <>
             {/* Desktop sidebar version */}
             <BedInfoPanel
@@ -984,17 +975,18 @@ const Index = () => {
               onUpdateBed={handleUpdateStructure}
               onRemoveBed={handleRemoveStructure}
             />
-            {/* Tablet/Mobile modal version */}
-            <BedInfoPanel
-              bed={selectedBed}
-              allBeds={placedStructures}
-              allPlants={placedPlants}
-              onClose={() => setSelectedBed(null)}
-              onUpdateBed={handleUpdateStructure}
-              onRemoveBed={handleRemoveStructure}
-              modal={true}
-            />
           </>
+        )}
+        {isMobile && selectedBed && (
+          <BedInfoPanel
+            bed={selectedBed}
+            allBeds={placedStructures}
+            allPlants={placedPlants}
+            onClose={() => setSelectedBed(null)}
+            onUpdateBed={handleUpdateStructure}
+            onRemoveBed={handleRemoveStructure}
+            modal={true}
+          />
         )}
       </div>
 
@@ -1007,9 +999,17 @@ const Index = () => {
         onToggle={() => setShowSuccessionSlider(v => !v)}
       />
 
+      {/* Mobile plant tray */}
+      {isMobile && (activeNav === 'garden' || activeNav === 'crops') && (
+        <MobilePlantTray
+          pendingPlantId={pendingPlantId}
+          onSelectPlant={handleSelectForPlacement}
+        />
+      )}
+
       {/* Mobile tap-to-place indicator */}
       {pendingPlantId && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 flex justify-center sm:hidden pointer-events-none">
+        <div className="fixed bottom-20 left-0 right-0 z-40 flex justify-center lg:hidden pointer-events-none">
           <div className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
             {pendingIsStructure
               ? '🏗️ Tap the grid to place'
@@ -1022,6 +1022,17 @@ const Index = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Mobile floating action button for bed placement */}
+      {isMobile && activeNav === 'garden' && !pendingPlantId && (
+        <button
+          onClick={() => handleSelectForPlacement('raised-bed', true)}
+          className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl lg:hidden hover:bg-primary/90 transition-colors"
+          title="Add a bed"
+        >
+          +
+        </button>
       )}
 
       {/* Modals (lazy-loaded with Suspense) */}
@@ -1166,81 +1177,226 @@ const Index = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Mobile bottom nav */}
-      {!isMobile && (
-        <MobileBottomNav
-          onToggleSidebar={() => setMobileSidebarOpen(prev => !prev)}
-          onShowCalendar={() => setShowCalendar(true)}
-          onShowAI={() => setShowAI(true)}
-          onShowJournal={() => setShowJournal(true)}
-          onShowPlotMap={() => setShowPlotMap(true)}
-          onShowWeather={() => setShowWeather(true)}
-          onShowShoppingList={() => setShowShoppingList(true)}
-        />
+      {/* Alternative views for mobile navigation */}
+      {isMobile && activeNav === 'crops' && (
+        <div className="flex-1 overflow-y-auto pb-24 lg:hidden">
+          <PlantSidebar
+            onDragStart={setDragging}
+            pendingPlantId={pendingPlantId}
+            onSelectPlant={handleSelectForPlacement}
+          />
+        </div>
       )}
 
-      {/* Alternative views for mobile navigation */}
-      {isMobile && activeNav !== 'garden' && (
+      {isMobile && activeNav === 'tasks' && (
+        <div className="flex-1 overflow-y-auto pb-24 lg:hidden">
+          <Suspense fallback={null}>
+            <GardenTasks placedPlants={placedPlants} onClose={() => setActiveNav('garden')} inline={true} frostDates={frostDates} />
+          </Suspense>
+        </div>
+      )}
+
+      {isMobile && activeNav !== 'garden' && activeNav !== 'crops' && activeNav !== 'tasks' && (
         <div className="flex-1 overflow-y-auto pb-24">
-          {activeNav === 'photos' && <PhotosView plants={placedPlants} />}
-          {activeNav === 'more' && (
-            <div className="p-4 space-y-4">
-              <h2 className="text-2xl font-semibold text-foreground">⚙️ More</h2>
-              <div className="space-y-2">
+          {activeNav === 'plan' && (
+            <div className="p-4 space-y-3">
+              <h2 className="text-2xl font-semibold text-foreground">📅 Plan</h2>
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowCalendar(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
                 >
-                  📅 Planting Calendar
+                  <span className="text-lg">📅</span> Calendar
                 </button>
                 <button
-                  onClick={() => setShowAI(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                  onClick={() => setShowMonthlyPlanner(true)}
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
                 >
-                  🤖 AI Assistant
-                </button>
-                <button
-                  onClick={() => setShowWeather(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
-                >
-                  ☀️ Weather & Yield
+                  <span className="text-lg">📆</span> Monthly
                 </button>
                 <button
                   onClick={() => setShowRotation(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
                 >
-                  🔄 Crop Rotation
+                  <span className="text-lg">🔄</span> Rotation
                 </button>
                 <button
-                  onClick={() => setShowJournal(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                  onClick={() => setShowPlotMap(true)}
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
                 >
-                  📔 Garden Journal
-                </button>
-                <button
-                  onClick={() => setShowDocs(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
-                >
-                  📚 Growing Guide
-                </button>
-                <button
-                  onClick={() => setShowHarvestLogger(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
-                >
-                  🌾 Harvest Log
-                </button>
-                <button
-                  onClick={() => setShowPestLog(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
-                >
-                  🐛 Pest & Disease Log
+                  <span className="text-lg">🗺️</span> Plot Map
                 </button>
                 <button
                   onClick={() => setShowRotationPlanner(true)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border"
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
                 >
-                  🔄 Rotation Planner
+                  <span className="text-lg">🔄</span> Planner
                 </button>
+                <button
+                  onClick={() => setShowShoppingList(true)}
+                  className="p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm font-medium flex flex-col items-center gap-1"
+                >
+                  <span className="text-lg">🛒</span> Shopping
+                </button>
+              </div>
+            </div>
+          )}
+          {activeNav === 'more' && (
+            <div className="p-4 space-y-4">
+              <h2 className="text-2xl font-semibold text-foreground">⚙️ More</h2>
+
+              {/* Grow */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Grow</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowGrowGuide(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    ✨ Grow Guide
+                  </button>
+                  <button
+                    onClick={() => setShowAI(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🤖 AI Assistant
+                  </button>
+                  <button
+                    onClick={() => setShowPlantingSuggestions(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    💡 Suggestions
+                  </button>
+                  <button
+                    onClick={() => setShowWeather(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🌤️ Weather & Yield
+                  </button>
+                  <button
+                    onClick={() => setShowWatering(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    💧 Watering Guide
+                  </button>
+                </div>
+              </div>
+
+              {/* Track */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Track</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowJournal(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📔 Garden Journal
+                  </button>
+                  <button
+                    onClick={() => setShowSeedInventory(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📦 Seed Inventory
+                  </button>
+                  <button
+                    onClick={() => setShowHarvestLogger(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🌾 Harvest Log
+                  </button>
+                  <button
+                    onClick={() => setShowPestLog(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🐛 Pest & Disease Log
+                  </button>
+                </div>
+              </div>
+
+              {/* Plan */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Plan</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowCalendar(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📅 Planting Calendar
+                  </button>
+                  <button
+                    onClick={() => setShowMonthlyPlanner(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📆 Monthly Planner
+                  </button>
+                  <button
+                    onClick={() => setShowRotation(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🔄 Crop Rotation
+                  </button>
+                  <button
+                    onClick={() => setShowRotationPlanner(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🔄 Rotation Planner
+                  </button>
+                  <button
+                    onClick={() => setShowPlotMap(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🗺️ Plot Map
+                  </button>
+                  <button
+                    onClick={() => setShowShoppingList(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    🛒 Shopping List
+                  </button>
+                </div>
+              </div>
+
+              {/* Settings */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Settings</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowDocs(true)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📚 Guide & Docs
+                  </button>
+                  <button
+                    onClick={() => handleExportPDF()}
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                  >
+                    📥 Export PDF
+                  </button>
+                  {user && (
+                    <button
+                      onClick={() => setShowSaveLoad(true)}
+                      className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                    >
+                      📁 My Gardens
+                    </button>
+                  )}
+                  {!user && (
+                    <button
+                      onClick={() => setShowAuth(true)}
+                      className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                    >
+                      👤 Sign In
+                    </button>
+                  )}
+                  {user && (
+                    <button
+                      onClick={() => signOut()}
+                      className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm"
+                    >
+                      🚪 Sign Out
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1249,16 +1405,10 @@ const Index = () => {
 
       {/* Bottom navigation bar for mobile */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-inset-bottom">
           <BottomNavBar
             active={activeNav}
-            onNavigate={(section) => {
-              if (section === 'tasks') {
-                setShowTasks(true);
-              } else {
-                setActiveNav(section);
-              }
-            }}
+            onNavigate={setActiveNav}
           />
         </div>
       )}

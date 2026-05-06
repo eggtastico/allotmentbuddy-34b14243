@@ -153,8 +153,8 @@ export function generateFeedingTasks(
     // Calculate days elapsed to see if enough time has passed
     const daysElapsed = Math.floor((now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000);
 
-    // Don't feed before 3 weeks (unless established)
-    if (daysElapsed < 21 && pp.stage !== 'established') continue;
+    // Don't feed before 7 days (when plant is established enough)
+    if (daysElapsed < 7 && pp.stage !== 'established') continue;
 
     // Check if it's a feeding day (based on interval)
     const daysSincePlanting = daysElapsed % feeding.intervalDays;
@@ -326,22 +326,21 @@ export function generateWeeklyFeedingSchedule(
 
     // Calculate when next feeding is due
     const daysElapsed = Math.floor((now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000);
-    if (daysElapsed < 21 && pp.stage !== 'established') continue;
+    // Show feeding after 7 days (when plant is established enough), not 21
+    if (daysElapsed < 7 && pp.stage !== 'established') continue;
 
     const daysSincePlanting = daysElapsed % feeding.intervalDays;
     const daysUntilNextFeeding = feeding.intervalDays - daysSincePlanting;
 
-    // Show if feeding due within 7 days
-    if (daysUntilNextFeeding <= 7) {
-      tasks.push({
-        id: `feed-week-${pp.plantId}`,
-        title: `🌿 ${plant.emoji} Feed ${plant.name}`,
-        description: `Due in ${daysUntilNextFeeding} day${daysUntilNextFeeding !== 1 ? 's' : ''}. ${feeding.frequency}. ${feeding.feedType}${feeding.products ? ` — ${feeding.products}` : ''}.`,
-        priority: daysUntilNextFeeding <= 2 ? 'high' : 'medium',
-        category: 'feeding',
-        icon: plant.emoji,
-      });
-    }
+    // Show all plants in feeding season this week, not just those with feeding due within 7 days
+    tasks.push({
+      id: `feed-week-${pp.plantId}`,
+      title: `🌿 ${plant.emoji} Feed ${plant.name}`,
+      description: `Due in ${daysUntilNextFeeding} day${daysUntilNextFeeding !== 1 ? 's' : ''}. ${feeding.frequency}. ${feeding.feedType}${feeding.products ? ` — ${feeding.products}` : ''}.`,
+      priority: daysUntilNextFeeding <= 2 ? 'high' : daysUntilNextFeeding <= 7 ? 'medium' : 'low',
+      category: 'feeding',
+      icon: plant.emoji,
+    });
   }
 
   return tasks;
@@ -375,7 +374,8 @@ export function generateMonthlyFeedingSchedule(
 
     // Calculate days elapsed
     const daysElapsed = Math.floor((now.getTime() - new Date(pp.plantedAt).getTime()) / 86400000);
-    if (daysElapsed < 21 && pp.stage !== 'established') continue;
+    // Show feeding after 7 days (when plant is established enough), not 21
+    if (daysElapsed < 7 && pp.stage !== 'established') continue;
 
     tasks.push({
       id: `feed-month-${pp.plantId}`,

@@ -193,6 +193,9 @@
   .safe-area-inset-right {
     padding-right: env(safe-area-inset-right);
   }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   .garden-grid-pattern {
     background-color: hsl(var(--card));
   }

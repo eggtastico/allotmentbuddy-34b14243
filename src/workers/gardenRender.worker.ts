@@ -15,6 +15,7 @@ import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { getSunExposure } from '@/utils/sunCalculator';
 import { categoryColors, categoryColorsDark, getCompanionReason } from '@/data/companionReasons';
+import { getPlantSeasonStatus, type PlantSeasonStatus } from '@/utils/seasonalSowing';
 import type { PlacedPlant, PlacedStructure } from '@/types/garden';
 import type { CompanionInfo } from './gardenCompute.worker';
 
@@ -132,6 +133,9 @@ export type RenderState = {
   companionMapEntries: [string, CompanionInfo][];
   spacingConflictsEntries: [string, string[]][];
   spatialBucketsEntries: [string, PlacedPlant[]][];
+  companionHeatmapCompanion: Float32Array | null;
+  companionHeatmapEnemy: Float32Array | null;
+  viewMonth: number | null;
   baseUrl: string;
   // Viewport culling hints from main thread
   vpLeft: number; vpTop: number; vpRight: number; vpBottom: number;
@@ -142,6 +146,8 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     gridW, gridH, cols, rows, cellSize, isDark, themeColors,
     plants, structures, shadeZonesArr, showSunOverlay, showRotationOverlay,
     showColorCoding, companionMapEntries, spacingConflictsEntries, spatialBucketsEntries,
+    companionHeatmapCompanion, companionHeatmapEnemy,
+    viewMonth,
     vpLeft, vpTop, vpRight, vpBottom, baseUrl,
   } = state;
 
@@ -262,6 +268,37 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     }
   }
 
+  // Companion placement heatmap — shows friendly/unfriendly zones when dragging
+  if (companionHeatmapCompanion || companionHeatmapEnemy) {
+    const heatmap = { companion: companionHeatmapCompanion, enemy: companionHeatmapEnemy };
+    // Build occupied cells set for quick lookup
+    const occupiedCells = new Uint8Array(cols * rows);
+    for (const p of plants) {
+      const cx = Math.floor(p.x), cy = Math.floor(p.y);
+      if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) occupiedCells[cy * cols + cx] = 1;
+    }
+
+    for (let cy = vpTop; cy < vpBottom; cy++) {
+      for (let cx = vpLeft; cx < vpRight; cx++) {
+        const idx = cy * cols + cx;
+        if (occupiedCells[idx] !== 0) continue; // skip already-placed plants
+
+        const cScore = heatmap.companion ? heatmap.companion[idx] : 0;
+        const eScore = heatmap.enemy ? heatmap.enemy[idx] : 0;
+
+        if (eScore > 0 && eScore >= cScore) {
+          ctx.fillStyle = `rgba(239,68,68,${Math.min(0.35, eScore * 0.12)})`;
+        } else if (cScore > 0) {
+          ctx.fillStyle = `rgba(34,197,94,${Math.min(0.35, cScore * 0.12)})`;
+        } else {
+          continue;
+        }
+
+        ctx.fillRect(cx * cellSize * dpr, cy * cellSize * dpr, cellSize * dpr, cellSize * dpr);
+      }
+    }
+  }
+
   // Preload sprites for any new plants before rendering
   const plantDatas = plants.map(p => getPlantById(p.plantId)).filter(Boolean);
   const emojis = [...new Set(plantDatas.map(p => p!.emoji))];
@@ -289,6 +326,7 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     tileBg: string; hasHighlight: boolean;
     relations: CompanionInfo | undefined; spacingIssues: string[] | undefined;
     growthPct: number; emojiSize: number; emojiOffsetY: number;
+    seasonStatus: PlantSeasonStatus;
   }
   const tileMetas: TileMeta[] = [];
   for (const placed of sortedPlants) {
@@ -315,15 +353,23 @@ async function render(state: RenderState): Promise<ImageBitmap> {
       ? Math.max(Math.min(pw, ph) * 0.82, 20)
       : Math.max(cellSize * (0.88 + Math.min(0.1, growthPct * 0.1)), 18);
     const emojiOffsetY = aw > 1 || ah > 1 ? 0 : (hasLabel ? -3 : 0);
-    tileMetas.push({ placed, plantData, px, py, pw, ph, tileBg, hasHighlight, relations, spacingIssues, growthPct, emojiSize, emojiOffsetY });
+    const seasonStatus: PlantSeasonStatus = viewMonth != null
+      ? getPlantSeasonStatus(plantData, placed.plantedAt, viewMonth)
+      : 'active';
+    tileMetas.push({ placed, plantData, px, py, pw, ph, tileBg, hasHighlight, relations, spacingIssues, growthPct, emojiSize, emojiOffsetY, seasonStatus });
   }
 
   // Pass A: normal fills, batched by bg colour
   const normalByBg = new Map<string, TileMeta[]>();
+  const dormantNormal: TileMeta[] = [];
   for (const m of tileMetas) {
     if (m.hasHighlight) continue;
-    if (!normalByBg.has(m.tileBg)) normalByBg.set(m.tileBg, []);
-    normalByBg.get(m.tileBg)!.push(m);
+    if (m.seasonStatus === 'dormant') {
+      dormantNormal.push(m);
+    } else {
+      if (!normalByBg.has(m.tileBg)) normalByBg.set(m.tileBg, []);
+      normalByBg.get(m.tileBg)!.push(m);
+    }
   }
   for (const [bg, group] of normalByBg) {
     ctx.fillStyle = bg;
@@ -333,24 +379,36 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     ctx.fill();
     ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
   }
+  // Render dormant plants with greyed color
+  if (dormantNormal.length > 0) {
+    const dormantBg = isDark ? 'hsl(0 0% 15%)' : 'hsl(0 0% 92%)';
+    ctx.fillStyle = dormantBg;
+    ctx.shadowColor = 'rgba(0,0,0,0.10)'; ctx.shadowBlur = 2;
+    ctx.beginPath();
+    for (const { px, py, pw, ph } of dormantNormal) roundRect(ctx, px + 1, py + 1, pw - 2, ph - 2, 5);
+    ctx.fill();
+    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+  }
 
   // Pass B: highlighted fills
-  for (const { px, py, pw, ph, tileBg, relations, spacingIssues } of tileMetas) {
+  for (const { px, py, pw, ph, tileBg, relations, spacingIssues, seasonStatus } of tileMetas) {
     if (!relations?.hasEnemy && !relations?.hasCompanion && !spacingIssues?.length) continue;
     ctx.save(); ctx.translate(px + 1, py + 1);
     if (relations?.hasEnemy) { ctx.shadowColor = 'rgba(239,68,68,0.35)'; ctx.shadowBlur = 8; }
     else if (relations?.hasCompanion) { ctx.shadowColor = 'rgba(34,197,94,0.3)'; ctx.shadowBlur = 8; }
     else { ctx.shadowColor = 'rgba(245,158,11,0.4)'; ctx.shadowBlur = 8; }
-    ctx.fillStyle = tileBg;
+    const finalBg = seasonStatus === 'dormant' ? (isDark ? 'hsl(0 0% 15%)' : 'hsl(0 0% 92%)') : tileBg;
+    ctx.fillStyle = finalBg;
     ctx.fill(pw === cellSize && ph === cellSize ? tilePath : getCachedPath2D(pw - 2, ph - 2, 5));
     ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.restore();
   }
 
   // Pass C: emoji / sprites — centred in the full area
-  for (const { plantData, px, py, pw, ph, emojiSize, emojiOffsetY } of tileMetas) {
+  for (const { plantData, px, py, pw, ph, emojiSize, emojiOffsetY, seasonStatus } of tileMetas) {
     const customBm = plantData.sprite ? customSpriteCache.get(plantData.sprite) : undefined;
     const twBm = !customBm ? twemojiCache.get(plantData.emoji) : undefined;
     const cx = px + pw / 2, cy = py + ph / 2;
+    if (seasonStatus === 'dormant') ctx.globalAlpha = 0.35;
     if (customBm || twBm) {
       const s = Math.round(emojiSize);
       ctx.drawImage((customBm ?? twBm)!, cx - s / 2, cy + emojiOffsetY - s / 2, s, s);
@@ -358,6 +416,7 @@ async function render(state: RenderState): Promise<ImageBitmap> {
       const img = getCachedEmoji(plantData.emoji, emojiSize);
       ctx.drawImage(img, cx - img.width / 2, cy + emojiOffsetY - img.height / 2);
     }
+    if (seasonStatus === 'dormant') ctx.globalAlpha = 1;
   }
 
   // Pass D: name labels — centred at bottom of area
@@ -400,9 +459,11 @@ async function render(state: RenderState): Promise<ImageBitmap> {
 
   // Pass F: bottom badges — centred at bottom of area
   if (cellSize >= 20) {
-    for (const { plantData, px, py, pw, ph, relations, spacingIssues } of tileMetas) {
+    for (const { plantData, px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
       let badgeText = '', badgeBg = '';
-      if (spacingIssues?.length && !relations?.hasEnemy) { badgeText = '↔ Too close'; badgeBg = 'hsl(38 92% 50%)'; }
+      // Harvest-ready badge takes priority over other badges
+      if (seasonStatus === 'harvest-ready') { badgeText = '🌾 Ready'; badgeBg = 'hsl(38 92% 50%)'; }
+      else if (spacingIssues?.length && !relations?.hasEnemy) { badgeText = '↔ Too close'; badgeBg = 'hsl(38 92% 50%)'; }
       else if (relations?.hasEnemy && relations.enemyNames.length > 0) { badgeText = `❌ ${relations.enemyNames[0]}`; badgeBg = 'hsl(0 84% 60%)'; }
       else if (relations?.hasCompanion && !relations.hasEnemy && relations.companionNames.length > 0 && cellSize >= 24) { badgeText = `✅ ${relations.companionNames[0]}`; badgeBg = primaryColor; }
       if (!badgeText) continue;

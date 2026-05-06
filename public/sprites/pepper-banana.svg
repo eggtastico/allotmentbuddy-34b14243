@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Main foliage -->
+  <ellipse cx="32" cy="20" rx="16" ry="11" fill="#4CAF50"/>
+  <ellipse cx="26" cy="16" rx="8" ry="6" fill="#388E3C"/>
+  <ellipse cx="38" cy="16" rx="8" ry="6" fill="#388E3C"/>
+  <!-- Stem -->
+  <line x1="32" y1="32" x2="32" y2="58" stroke="#5D4037" stroke-width="3" stroke-linecap="round"/>
+  <!-- Long banana pepper - yellow, elongated -->
+  <path d="M26 30 Q24 34 22 42 Q20 48 22 50 Q24 51 26 50 Q28 48 30 42 Q32 34 30 30 Z" fill="#FDD835" stroke="#F9A825" stroke-width="0.5"/>
+  <path d="M26 29 L27 26" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Second banana pepper -->
+  <path d="M38 32 Q36 36 35 44 Q34 50 36 52 Q38 53 40 52 Q42 50 42 44 Q42 36 40 32 Z" fill="#FFEE58" stroke="#F9A825" stroke-width="0.5"/>
+  <path d="M38 31 L39 28" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Leaves near fruit -->
+  <ellipse cx="24" cy="28" rx="4" ry="2.5" fill="#66BB6A" transform="rotate(-15 24 28)"/>
+  <ellipse cx="40" cy="30" rx="4" ry="2.5" fill="#66BB6A" transform="rotate(15 40 30)"/>
+  <!-- Top leaves -->
+  <ellipse cx="28" cy="10" rx="5" ry="3" fill="#66BB6A" transform="rotate(-10 28 10)"/>
+  <ellipse cx="36" cy="10" rx="5" ry="3" fill="#66BB6A" transform="rotate(10 36 10)"/>
+</svg>

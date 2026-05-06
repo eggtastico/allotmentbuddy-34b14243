@@ -217,6 +217,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   const containerRef  = useRef<HTMLDivElement>(null);
   const mainRef       = useRef<HTMLCanvasElement>(null);
   const overlayRef    = useRef<HTMLCanvasElement>(null);
+  const spriteCacheRef = useRef<Map<string, HTMLImageElement | null>>(new Map());
 
   // ── zoom / pan ──────────────────────────────────────────────────────────────
   const [zoom,    setZoom   ] = useState(INITIAL_ZOOM);
@@ -224,6 +225,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   const [originY, setOriginY] = useState(0);
   const [canvasW,  setCanvasW] = useState(0);
   const [canvasH,  setCanvasH] = useState(0);
+  const [spriteVersion, setSpriteVersion] = useState(0);
 
   // ── interaction ─────────────────────────────────────────────────────────────
   const isPanningRef   = useRef(false);
@@ -275,50 +277,104 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     centredRef.current = true;
   }, [canvasW, canvasH, gridW, gridH]);
 
+  // ── Load structure sprites ────────────────────────────────────────────────────
+  useEffect(() => {
+    const spritePaths = new Set<string>();
+    structures.forEach(s => {
+      const structDef = getStructureById(s.structureId);
+      if (structDef?.sprite) spritePaths.add(structDef.sprite);
+    });
+
+    let loadedCount = 0;
+    let totalCount = spritePaths.size;
+
+    spritePaths.forEach(path => {
+      if (spriteCacheRef.current.has(path)) {
+        loadedCount++;
+        return;
+      }
+      spriteCacheRef.current.set(path, null); // Mark as loading
+      const img = new Image();
+      img.onload = () => {
+        spriteCacheRef.current.set(path, img);
+        loadedCount++;
+        if (loadedCount === totalCount) setSpriteVersion(v => v + 1);
+      };
+      img.onerror = () => {
+        spriteCacheRef.current.set(path, null);
+        loadedCount++;
+        if (loadedCount === totalCount) setSpriteVersion(v => v + 1);
+      };
+      img.src = `${import.meta.env.BASE_URL}${path}`;
+    });
+
+    if (totalCount === 0) setSpriteVersion(v => v + 1);
+  }, [structures]);
+
   // ── Build sorted render list (structures + plants) ──────────────────────────
   const renderItems = useMemo<RenderItem[]>(() => {
     const items: RenderItem[] = [];
 
-    // Structures: per-cell box + one label per structure
+    // Structures: render as sprite if available, otherwise per-cell box + label
     structures.forEach(s => {
       const def = getStructureById(s.structureId);
       if (!def) return;
-      const depth   = STRUCTURE_DEPTH[s.structureId] ?? 12;
-      const topHex  = STRUCT_TOP[s.structureId] ?? '#999999';
-      const leftClr = shadeHex(topHex, 0.65);
-      const rightClr= shadeHex(topHex, 0.80);
+      const W     = s.widthCells;
+      const H     = s.heightCells;
+      const depth = STRUCTURE_DEPTH[s.structureId] ?? 12;
 
-      // Box cells
-      for (let dr = 0; dr < s.heightCells; dr++) {
-        for (let dc = 0; dc < s.widthCells; dc++) {
-          const col = s.x + dc;
-          const row = s.y + dr;
-          const sk  = painterKey(col, row);
-          items.push({
-            sortKey: sk,
-            draw: (ctx) => drawIsoBox(ctx, col, row, zoom, originX, originY, topHex, leftClr, rightClr, depth),
-          });
+      // Check if sprite is loaded
+      const sprite = def.sprite ? spriteCacheRef.current.get(def.sprite) : null;
+
+      if (sprite) {
+        // Render full-footprint sprite
+        items.push({
+          sortKey: painterKey(s.x, s.y),
+          draw: (ctx) => {
+            const bboxLeft = originX + (s.x - s.y - H) * tileW(zoom) / 2;
+            const bboxTop  = originY + (s.x + s.y) * tileH(zoom) / 2 - depth * zoom;
+            const bboxW    = (W + H) * tileW(zoom) / 2;
+            const bboxH    = (W + H) * tileH(zoom) / 2 + depth * zoom;
+            ctx.drawImage(sprite, bboxLeft, bboxTop, bboxW, bboxH);
+          },
+        });
+      } else {
+        // Fallback: render per-cell boxes
+        const topHex  = STRUCT_TOP[s.structureId] ?? '#999999';
+        const leftClr = shadeHex(topHex, 0.65);
+        const rightClr= shadeHex(topHex, 0.80);
+
+        for (let dr = 0; dr < H; dr++) {
+          for (let dc = 0; dc < W; dc++) {
+            const col = s.x + dc;
+            const row = s.y + dr;
+            const sk  = painterKey(col, row);
+            items.push({
+              sortKey: sk,
+              draw: (ctx) => drawIsoBox(ctx, col, row, zoom, originX, originY, topHex, leftClr, rightClr, depth),
+            });
+          }
         }
-      }
 
-      // Emoji label — drawn after all cells, at the center cell
-      const cCol  = s.x + Math.floor(s.widthCells / 2);
-      const cRow  = s.y + Math.floor(s.heightCells / 2);
-      const maxSK = painterKey(s.x + s.widthCells - 1, s.y + s.heightCells - 1);
-      items.push({
-        sortKey: maxSK + 0.5,
-        draw: (ctx) => {
-          const { sx, sy } = gridToScreenCenter(cCol, cRow, zoom, originX, originY);
-          const depth2 = (STRUCTURE_DEPTH[s.structureId] ?? 12) * zoom;
-          const sz = Math.max(14, tileH(zoom) * 0.9);
-          ctx.save();
-          ctx.font = `${sz}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(def.emoji, sx, sy - depth2 * 0.5);
-          ctx.restore();
-        },
-      });
+        // Emoji label — drawn after all cells, at the center cell
+        const cCol  = s.x + Math.floor(W / 2);
+        const cRow  = s.y + Math.floor(H / 2);
+        const maxSK = painterKey(s.x + W - 1, s.y + H - 1);
+        items.push({
+          sortKey: maxSK + 0.5,
+          draw: (ctx) => {
+            const { sx, sy } = gridToScreenCenter(cCol, cRow, zoom, originX, originY);
+            const depth2 = depth * zoom;
+            const sz = Math.max(14, tileH(zoom) * 0.9);
+            ctx.save();
+            ctx.font = `${sz}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(def.emoji, sx, sy - depth2 * 0.5);
+            ctx.restore();
+          },
+        });
+      }
     });
 
     // Plants: expand area plants into per-cell items
@@ -376,7 +432,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
     items.sort((a, b) => a.sortKey - b.sortKey);
     return items;
-  }, [structures, plants, selectedPlantId, zoom, originX, originY]);
+  }, [structures, plants, selectedPlantId, zoom, originX, originY, spriteVersion]);
 
   // ── Main canvas draw ─────────────────────────────────────────────────────────
   const drawMain = useCallback(() => {
@@ -553,7 +609,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     if (!cell) return;
     const { col, row } = cell;
 
-    // Cancel pending on right-click already handled — just check plant/structure
+    // Check for plant hit
     const hitPlant = plants.find(pp => {
       const pw = pp.areaW ?? 1;
       const ph = pp.areaH ?? 1;
@@ -561,20 +617,23 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     });
 
     if (hitPlant) {
+      console.log('Hit plant, starting drag:', hitPlant.id);
       onSelectPlant(hitPlant);
-      if (e.detail >= 2) {
-        // Double-click → start drag
-        draggingIdRef.current = hitPlant.id;
-        if (onMovePlantStart) onMovePlantStart(hitPlant.id);
-      }
+      // Single-click drag for plants
+      draggingIdRef.current = hitPlant.id;
+      if (onMovePlantStart) onMovePlantStart(hitPlant.id);
       return;
     }
 
+    // Check for structure hit
     const hitStructure = structures.find(
       s => col >= s.x && col < s.x + s.widthCells && row >= s.y && row < s.y + s.heightCells,
     );
     if (hitStructure) {
-      onSelectPlant(null);
+      console.log('Hit structure, starting drag:', hitStructure.id);
+      // Start dragging structure
+      draggingIdRef.current = hitStructure.id;
+      onSelectBed?.(hitStructure);
       return;
     }
 
@@ -590,7 +649,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       onSelectPlant(null);
     }
   }, [plants, structures, pendingPlantId, pendingIsStructure, originX, originY,
-      onSelectPlant, onPlacePlant, onPlaceStructure, onMovePlantStart, clientToGrid]);
+      onSelectPlant, onPlacePlant, onPlaceStructure, onMovePlantStart, onSelectBed, clientToGrid]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Pan
@@ -602,16 +661,26 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       return;
     }
 
-    // Drag plant
+    // Drag plant or structure
     if (draggingIdRef.current) {
       const cell = clientToGrid(e.clientX, e.clientY);
-      if (cell) onMovePlant(draggingIdRef.current, cell.col, cell.row);
+      if (cell) {
+        console.log('Dragging to:', cell.col, cell.row);
+        // Check if it's a plant or structure
+        const isPlant = plants.some(p => p.id === draggingIdRef.current);
+        console.log('Is plant?', isPlant, 'draggingId:', draggingIdRef.current);
+        if (isPlant) {
+          onMovePlant(draggingIdRef.current, cell.col, cell.row);
+        } else {
+          onMoveStructure(draggingIdRef.current, cell.col, cell.row);
+        }
+      }
     }
 
     // Update hover cell
     const cell = clientToGrid(e.clientX, e.clientY);
     setHoverCell(cell);
-  }, [clientToGrid, onMovePlant]);
+  }, [clientToGrid, onMovePlant, onMoveStructure, plants]);
 
   const handleMouseUp = useCallback(() => {
     isPanningRef.current  = false;

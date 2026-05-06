@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Main foliage -->
+  <ellipse cx="32" cy="20" rx="16" ry="11" fill="#4CAF50"/>
+  <ellipse cx="26" cy="16" rx="8" ry="6" fill="#388E3C"/>
+  <ellipse cx="38" cy="16" rx="8" ry="6" fill="#388E3C"/>
+  <!-- Stem -->
+  <line x1="32" y1="32" x2="32" y2="58" stroke="#5D4037" stroke-width="3" stroke-linecap="round"/>
+  <!-- Bell pepper - blocky shape -->
+  <path d="M24 34 Q22 36 22 42 Q22 48 26 50 Q30 52 32 52 Q34 52 38 50 Q42 48 42 42 Q42 36 40 34 Q36 32 32 32 Q28 32 24 34 Z" fill="#F44336"/>
+  <path d="M24 34 Q22 36 22 42 Q22 48 26 50 Q30 52 32 52 Q34 52 38 50 Q42 48 42 42 Q42 36 40 34 Q36 32 32 32 Q28 32 24 34 Z" fill="none" stroke="#C62828" stroke-width="0.7"/>
+  <!-- Pepper stem -->
+  <rect x="30" y="30" width="4" height="4" rx="1" fill="#2E7D32"/>
+  <!-- Lobes hint -->
+  <line x1="32" y1="34" x2="32" y2="50" stroke="#C62828" stroke-width="0.5" opacity="0.3"/>
+  <line x1="27" y1="36" x2="27" y2="48" stroke="#C62828" stroke-width="0.4" opacity="0.3"/>
+  <line x1="37" y1="36" x2="37" y2="48" stroke="#C62828" stroke-width="0.4" opacity="0.3"/>
+  <!-- Top leaves -->
+  <ellipse cx="26" cy="10" rx="5" ry="3" fill="#66BB6A" transform="rotate(-10 26 10)"/>
+  <ellipse cx="38" cy="10" rx="5" ry="3" fill="#66BB6A" transform="rotate(10 38 10)"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Soil/stem base -->
+  <ellipse cx="32" cy="58" rx="10" ry="4" style="fill:#5c3d2e"/>
+  <rect x="30" y="53" width="4" height="5" style="fill:#8aaa4a"/>
+  <!-- Frilly pale green/yellow outer leaves -->
+  <path d="M16 42 C14 38 16 34 18 32 C20 30 18 28 20 26 C22 28 22 30 20 32 C18 34 20 38 22 40 C20 44 18 44 16 42 Z" style="fill:#b8d46a"/>
+  <path d="M48 42 C50 38 48 34 46 32 C44 30 46 28 44 26 C42 28 42 30 44 32 C46 34 44 38 42 40 C44 44 46 44 48 42 Z" style="fill:#b8d46a"/>
+  <path d="M20 46 C18 42 20 38 22 36 C24 34 22 32 24 30 C26 32 26 34 24 36 C22 38 24 42 26 44 C24 48 22 48 20 46 Z" style="fill:#c4de78"/>
+  <path d="M44 46 C46 42 44 38 42 36 C40 34 42 32 40 30 C38 32 38 34 40 36 C42 38 40 42 38 44 C40 48 42 48 44 46 Z" style="fill:#c4de78"/>
+  <!-- Inner pale yellow leaves -->
+  <path d="M24 48 C22 44 24 40 26 38 C28 36 26 34 28 32 C30 34 30 36 28 38 C26 40 28 44 30 46 C28 50 26 50 24 48 Z" style="fill:#d8ea8c"/>
+  <path d="M40 48 C42 44 40 40 38 38 C36 36 38 34 36 32 C34 34 34 36 36 38 C38 40 36 44 34 46 C36 50 38 50 40 48 Z" style="fill:#d8ea8c"/>
+  <!-- Center pale yellow heart -->
+  <path d="M28 46 C27 42 28 38 30 36 C32 38 32 42 30 44 Z" style="fill:#e8f4a0"/>
+  <path d="M36 46 C37 42 36 38 34 36 C32 38 32 42 34 44 Z" style="fill:#e8f4a0"/>
+  <ellipse cx="32" cy="36" rx="3" ry="4" style="fill:#f0f8b0"/>
+</svg>

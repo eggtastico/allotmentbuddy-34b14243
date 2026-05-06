@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Soil mound -->
+  <ellipse cx="32" cy="54" rx="18" ry="6" fill="#8B6914"/>
+  <ellipse cx="32" cy="53" rx="16" ry="5" fill="#A0782C"/>
+
+  <!-- Salsify long thin root - pale like parsnip -->
+  <path d="M31 50 L30 56 Q31 62 32 62 Q33 62 34 56 L33 50 Z" fill="#F5E6B8"/>
+  <path d="M31.5 50 L32 48 L32.5 50 Z" fill="#FFF8E1"/>
+
+  <!-- Grass-like leaves - narrow and upright -->
+  <path d="M30 48 Q28 36 26 24 Q25 18 24 10" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M31 48 Q30 34 28 22 Q27 14 28 6" stroke="#388E3C" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M32 46 Q32 32 32 20 Q32 12 33 4" stroke="#43A047" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M33 48 Q34 34 36 22 Q37 14 36 6" stroke="#388E3C" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M34 48 Q36 36 38 24 Q39 18 40 10" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Slight leaf curve tips -->
+  <path d="M24 10 Q23 8 22 7" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M40 10 Q41 8 42 7" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+</svg>

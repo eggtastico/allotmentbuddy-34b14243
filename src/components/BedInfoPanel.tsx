@@ -13,6 +13,7 @@ import {
 import { X, PencilIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 
 interface BedInfoPanelProps {
   bed: PlacedStructure;
@@ -281,16 +282,13 @@ export function BedInfoPanel({
     );
   }
 
-  // Mobile bottom sheet
+  // Mobile bottom sheet via Drawer
   return (
-    <div className="fixed inset-x-0 bottom-0 lg:hidden max-h-[90vh] bg-card rounded-t-lg border-t border-border overflow-y-auto z-40">
-      {/* Drag handle */}
-      <div className="px-4 py-2 flex justify-center border-b border-border/50">
-        <div className="h-1 w-10 rounded-full bg-muted" />
-      </div>
-
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between gap-2">
+    <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="max-h-[90vh]">
+        <div className="p-4 overflow-y-auto">
+              {/* Header */}
+          <div className="flex items-center justify-between gap-2 mb-3">
         {isEditingName ? (
           <input
             type="text"
@@ -474,8 +472,8 @@ export function BedInfoPanel({
         </Button>
       </div>
 
-      {/* Bottom padding for safe zone */}
-      <div className="h-4" />
-    </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

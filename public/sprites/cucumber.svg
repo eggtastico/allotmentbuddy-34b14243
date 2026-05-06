@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Trailing vine -->
+  <path d="M10 20 Q20 16 32 20 Q44 24 54 20" stroke="#388E3C" stroke-width="2" fill="none"/>
+  <!-- Leaves along vine -->
+  <ellipse cx="16" cy="16" rx="7" ry="5" fill="#4CAF50" transform="rotate(-20 16 16)"/>
+  <ellipse cx="32" cy="14" rx="8" ry="6" fill="#388E3C"/>
+  <ellipse cx="48" cy="16" rx="7" ry="5" fill="#4CAF50" transform="rotate(20 48 16)"/>
+  <!-- Tendrils -->
+  <path d="M24 18 Q22 12 24 8" stroke="#66BB6A" stroke-width="1" fill="none"/>
+  <path d="M40 18 Q42 12 40 8" stroke="#66BB6A" stroke-width="1" fill="none"/>
+  <!-- Cucumber hanging -->
+  <rect x="26" y="28" width="8" height="24" rx="4" fill="#558B2F"/>
+  <rect x="26" y="28" width="8" height="24" rx="4" fill="none" stroke="#33691E" stroke-width="0.5"/>
+  <!-- Texture bumps -->
+  <circle cx="28" cy="34" r="0.8" fill="#689F38"/>
+  <circle cx="32" cy="38" r="0.8" fill="#689F38"/>
+  <circle cx="29" cy="42" r="0.8" fill="#689F38"/>
+  <circle cx="33" cy="46" r="0.8" fill="#689F38"/>
+  <!-- Connection stem -->
+  <line x1="30" y1="28" x2="30" y2="24" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Small flower -->
+  <circle cx="44" cy="24" r="2.5" fill="#FDD835"/>
+</svg>

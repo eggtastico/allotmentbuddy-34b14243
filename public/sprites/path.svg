@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 100">
+  <!-- PATH: 1 cell wide x 4 cells tall = very narrow vertical strip -->
+  <!-- Shows a single paving stone section that can be stacked -->
+
+  <!-- Top face - narrow vertical diamond (1 wide x 4 tall footprint) -->
+  <polygon points="95,4 180,44 95,84 10,44" fill="#C8B89A"/>
+
+  <!-- Horizontal stone joints dividing sections -->
+  <line x1="10" y1="44" x2="180" y2="44" stroke="#A89880" stroke-width="3" opacity="0.7"/>
+  <line x1="35" y1="24" x2="155" y2="64" stroke="#A89880" stroke-width="2" opacity="0.5"/>
+  <line x1="35" y1="64" x2="155" y2="104" stroke="#A89880" stroke-width="2" opacity="0.5"/>
+
+  <!-- Gravel texture scattered across surface -->
+  <circle cx="45" cy="30" r="1.2" fill="#8B7355" opacity="0.6"/>
+  <circle cx="135" cy="35" r="1" fill="#8B7355" opacity="0.5"/>
+  <circle cx="85" cy="55" r="1.1" fill="#9C8668" opacity="0.5"/>
+  <circle cx="115" cy="65" r="1" fill="#8B7355" opacity="0.5"/>
+  <circle cx="55" cy="75" r="1.2" fill="#8B7355" opacity="0.6"/>
+  <circle cx="145" cy="70" r="0.9" fill="#9C8668" opacity="0.4"/>
+
+  <!-- Left wall (SW) - narrow, shallow depth 4 -->
+  <polygon points="10,44 95,84 95,88 10,48" fill="#B0A080"/>
+  <circle cx="28" cy="58" r="1" fill="#8B7355" opacity="0.5"/>
+  <circle cx="65" cy="74" r="0.9" fill="#8B7355" opacity="0.4"/>
+
+  <!-- Right wall (SE) - narrow, shallow -->
+  <polygon points="95,84 180,44 180,48 95,88" fill="#998F6F"/>
+  <circle cx="155" cy="58" r="1" fill="#8B7355" opacity="0.5"/>
+
+  <!-- Top edge highlight -->
+  <polyline points="10,44 95,4 180,44" stroke="#D4C4A8" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+
+  <!-- Center line to emphasize it's a linear path -->
+  <line x1="95" y1="4" x2="95" y2="88" stroke="#B39876" stroke-width="1.5" opacity="0.3"/>
+</svg>

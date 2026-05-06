@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Soil/stem base -->
+  <ellipse cx="32" cy="58" rx="10" ry="4" style="fill:#5c3d2e"/>
+  <!-- Thin stems -->
+  <line x1="26" y1="54" x2="22" y2="36" style="stroke:#5a8a2e;stroke-width:1"/>
+  <line x1="32" y1="54" x2="32" y2="30" style="stroke:#5a8a2e;stroke-width:1"/>
+  <line x1="38" y1="54" x2="42" y2="36" style="stroke:#5a8a2e;stroke-width:1"/>
+  <line x1="28" y1="52" x2="18" y2="40" style="stroke:#5a8a2e;stroke-width:1"/>
+  <line x1="36" y1="52" x2="46" y2="40" style="stroke:#5a8a2e;stroke-width:1"/>
+  <!-- Small jagged/lobed green leaves -->
+  <path d="M22 36 C18 34 16 30 18 28 C20 26 22 28 22 30 C22 28 24 26 26 28 C28 30 26 34 22 36 Z" style="fill:#5ca83a"/>
+  <path d="M32 30 C28 28 26 24 28 22 C30 20 32 22 32 24 C32 22 34 20 36 22 C38 24 36 28 32 30 Z" style="fill:#5ca83a"/>
+  <path d="M42 36 C38 34 36 30 38 28 C40 26 42 28 42 30 C42 28 44 26 46 28 C48 30 46 34 42 36 Z" style="fill:#5ca83a"/>
+  <path d="M18 40 C14 38 12 34 14 32 C16 30 18 32 18 34 C18 32 20 30 22 32 C24 34 22 38 18 40 Z" style="fill:#4e9c32"/>
+  <path d="M46 40 C42 38 40 34 42 32 C44 30 46 32 46 34 C46 32 48 30 50 32 C52 34 50 38 46 40 Z" style="fill:#4e9c32"/>
+  <!-- Top small leaves -->
+  <path d="M28 34 C26 32 25 30 26 28 C27 27 28 28 28 29 C28 28 29 27 30 28 C31 30 30 32 28 34 Z" style="fill:#68b444"/>
+  <path d="M36 34 C34 32 33 30 34 28 C35 27 36 28 36 29 C36 28 37 27 38 28 C39 30 38 32 36 34 Z" style="fill:#68b444"/>
+</svg>

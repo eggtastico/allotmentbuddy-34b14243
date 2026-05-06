@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Soil/stem base -->
+  <ellipse cx="32" cy="58" rx="10" ry="4" style="fill:#5c3d2e"/>
+  <rect x="30" y="50" width="4" height="8" style="fill:#4a7a3a"/>
+  <!-- Curly dark blue-green leaves -->
+  <path d="M16 40 C14 36 16 32 18 30 C20 28 18 26 20 24 C22 22 24 24 22 28 C20 32 22 36 20 40 C18 44 16 44 16 40 Z" style="fill:#2a5e4a"/>
+  <path d="M48 40 C50 36 48 32 46 30 C44 28 46 26 44 24 C42 22 40 24 42 28 C44 32 42 36 44 40 C46 44 48 44 48 40 Z" style="fill:#2a5e4a"/>
+  <path d="M20 44 C18 40 20 36 22 34 C24 32 22 30 24 28 C26 26 28 28 26 32 C24 36 26 40 24 44 C22 48 20 48 20 44 Z" style="fill:#326a52"/>
+  <path d="M44 44 C46 40 44 36 42 34 C40 32 42 30 40 28 C38 26 36 28 38 32 C40 36 38 40 40 44 C42 48 44 48 44 44 Z" style="fill:#326a52"/>
+  <path d="M24 46 C22 42 24 38 26 36 C28 34 26 32 28 30 C30 28 32 30 30 34 C28 38 30 42 28 46 C26 50 24 50 24 46 Z" style="fill:#3a765a"/>
+  <path d="M40 46 C42 42 40 38 38 36 C36 34 38 32 36 30 C34 28 32 30 34 34 C36 38 34 42 36 46 C38 50 40 50 40 46 Z" style="fill:#3a765a"/>
+  <!-- Center top leaves -->
+  <path d="M28 38 C26 34 28 30 30 28 C32 26 30 24 32 22 C34 24 34 26 32 28 C30 32 32 36 30 38 Z" style="fill:#428262"/>
+  <path d="M36 38 C38 34 36 30 34 28 C32 26 34 24 32 22 C30 24 30 26 32 28 C34 32 32 36 34 38 Z" style="fill:#428262"/>
+</svg>

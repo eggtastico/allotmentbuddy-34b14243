@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Soil/stem base -->
+  <ellipse cx="32" cy="58" rx="10" ry="4" style="fill:#5c3d2e"/>
+  <!-- Trailing stems -->
+  <path d="M32 54 C28 50 24 48 20 46 C16 44 14 46 12 44" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <path d="M32 54 C36 50 40 48 44 46 C48 44 50 46 52 44" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <path d="M32 54 C30 48 28 44 26 40 C24 36 22 34 20 32" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <path d="M32 54 C34 48 36 44 38 40 C40 36 42 34 44 32" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <path d="M32 54 C32 48 32 42 30 36 C28 32 28 28 28 24" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <path d="M32 54 C32 48 34 42 36 36 C38 32 38 28 38 24" style="fill:none;stroke:#4a8a32;stroke-width:0.8"/>
+  <!-- Small round green leaves along stems -->
+  <circle cx="12" cy="44" r="3" style="fill:#4ea836"/>
+  <circle cx="16" cy="44" r="2.5" style="fill:#4ea836"/>
+  <circle cx="52" cy="44" r="3" style="fill:#4ea836"/>
+  <circle cx="48" cy="44" r="2.5" style="fill:#4ea836"/>
+  <circle cx="20" cy="32" r="3" style="fill:#56b23e"/>
+  <circle cx="24" cy="36" r="2.5" style="fill:#56b23e"/>
+  <circle cx="44" cy="32" r="3" style="fill:#56b23e"/>
+  <circle cx="40" cy="36" r="2.5" style="fill:#56b23e"/>
+  <circle cx="28" cy="24" r="3" style="fill:#5ebc44"/>
+  <circle cx="30" cy="30" r="2.5" style="fill:#5ebc44"/>
+  <circle cx="38" cy="24" r="3" style="fill:#5ebc44"/>
+  <circle cx="36" cy="30" r="2.5" style="fill:#5ebc44"/>
+  <circle cx="32" cy="20" r="2.5" style="fill:#66c44c"/>
+</svg>

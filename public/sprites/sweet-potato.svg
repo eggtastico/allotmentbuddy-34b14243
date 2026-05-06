@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Soil mound -->
+  <ellipse cx="32" cy="54" rx="18" ry="6" fill="#8B6914"/>
+  <ellipse cx="32" cy="53" rx="16" ry="5" fill="#A0782C"/>
+
+  <!-- Trailing vine stems -->
+  <path d="M32 50 Q26 44 18 40 Q12 38 6 40" stroke="#388E3C" stroke-width="1.5" fill="none"/>
+  <path d="M32 50 Q38 42 44 38 Q50 36 58 38" stroke="#2E7D32" stroke-width="1.5" fill="none"/>
+  <path d="M32 50 Q32 40 30 30 Q28 22 26 16" stroke="#43A047" stroke-width="1.5" fill="none"/>
+
+  <!-- Heart-shaped leaves - left vine -->
+  <path d="M18 38 Q16 34 18 32 Q20 30 22 32 Q22 30 24 32 Q26 34 24 38 Q22 40 18 38 Z" fill="#2E7D32"/>
+  <path d="M8 38 Q6 34 8 32 Q10 30 12 32 Q12 30 14 32 Q16 34 14 38 Q12 40 8 38 Z" fill="#388E3C"/>
+
+  <!-- Heart-shaped leaves - right vine -->
+  <path d="M44 36 Q42 32 44 30 Q46 28 48 30 Q48 28 50 30 Q52 32 50 36 Q48 38 44 36 Z" fill="#43A047"/>
+  <path d="M54 36 Q52 32 54 30 Q56 28 58 30 Q58 28 60 30 Q62 32 60 36 Q58 38 54 36 Z" fill="#2E7D32"/>
+
+  <!-- Heart-shaped leaves - center vine -->
+  <path d="M28 28 Q26 24 28 22 Q30 20 32 22 Q32 20 34 22 Q36 24 34 28 Q32 30 28 28 Z" fill="#388E3C"/>
+  <path d="M24 18 Q22 14 24 12 Q26 10 28 12 Q28 10 30 12 Q32 14 30 18 Q28 20 24 18 Z" fill="#43A047"/>
+</svg>

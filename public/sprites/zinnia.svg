@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <line x1="32" y1="34" x2="32" y2="58" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="32" cy="36" rx="10" ry="6" fill="#4CAF50"/>
+  <ellipse cx="24" cy="34" rx="6" ry="4" fill="#388E3C"/>
+  <ellipse cx="40" cy="34" rx="6" ry="4" fill="#388E3C"/>
+  <g transform="translate(32,20)">
+    <ellipse cx="0" cy="-7" rx="2.5" ry="5" fill="#E91E63"/>
+    <ellipse cx="5" cy="-5" rx="2.5" ry="5" fill="#F06292" transform="rotate(45)"/>
+    <ellipse cx="7" cy="0" rx="2.5" ry="5" fill="#E91E63" transform="rotate(90)"/>
+    <ellipse cx="5" cy="5" rx="2.5" ry="5" fill="#F06292" transform="rotate(135)"/>
+    <ellipse cx="0" cy="7" rx="2.5" ry="5" fill="#E91E63" transform="rotate(180)"/>
+    <ellipse cx="-5" cy="5" rx="2.5" ry="5" fill="#F06292" transform="rotate(225)"/>
+    <ellipse cx="-7" cy="0" rx="2.5" ry="5" fill="#E91E63" transform="rotate(270)"/>
+    <ellipse cx="-5" cy="-5" rx="2.5" ry="5" fill="#F06292" transform="rotate(315)"/>
+    <circle cx="0" cy="0" r="4" fill="#FFEB3B"/>
+  </g>
+</svg>

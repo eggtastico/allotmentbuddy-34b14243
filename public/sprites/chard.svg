@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Soil/stem base -->
+  <ellipse cx="32" cy="58" rx="10" ry="4" style="fill:#5c3d2e"/>
+  <!-- Bright white/rainbow stems -->
+  <path d="M24 56 L22 34 L24 32 L26 56 Z" style="fill:#f0f0f0"/>
+  <path d="M30 56 L29 30 L31 28 L32 56 Z" style="fill:#e83030"/>
+  <path d="M34 56 L35 30 L37 28 L36 56 Z" style="fill:#f0c020"/>
+  <path d="M40 56 L42 34 L40 32 L38 56 Z" style="fill:#f0f0f0"/>
+  <!-- Large green leaves -->
+  <path d="M22 34 C16 30 14 24 16 18 C18 14 22 16 24 20 C22 26 22 30 24 34 Z" style="fill:#2e7e24"/>
+  <path d="M29 30 C24 26 22 20 24 14 C26 10 28 12 30 16 C28 22 28 26 30 30 Z" style="fill:#348a2a"/>
+  <path d="M35 30 C40 26 42 20 40 14 C38 10 36 12 34 16 C36 22 36 26 34 30 Z" style="fill:#348a2a"/>
+  <path d="M42 34 C48 30 50 24 48 18 C46 14 42 16 40 20 C42 26 42 30 40 34 Z" style="fill:#2e7e24"/>
+  <!-- Leaf veins -->
+  <line x1="20" y1="24" x2="22" y2="34" style="stroke:#1e5a14;stroke-width:0.5"/>
+  <line x1="27" y1="20" x2="29" y2="30" style="stroke:#1e5a14;stroke-width:0.5"/>
+  <line x1="37" y1="20" x2="35" y2="30" style="stroke:#1e5a14;stroke-width:0.5"/>
+  <line x1="44" y1="24" x2="42" y2="34" style="stroke:#1e5a14;stroke-width:0.5"/>
+</svg>

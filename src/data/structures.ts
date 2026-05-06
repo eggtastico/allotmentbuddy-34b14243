@@ -2,6 +2,7 @@ export interface Structure {
   id: string;
   name: string;
   emoji: string;
+  sprite?: string; // Path to SVG sprite
   widthCells: number;
   heightCells: number;
   canGrowInside: boolean;
@@ -14,7 +15,7 @@ export interface Structure {
 
 export const structures: Structure[] = [
   // Vegetable Growing
-  { id: 'raised-bed', name: 'Raised Bed', emoji: '🟫', widthCells: 4, heightCells: 2, canGrowInside: false, color: 'hsl(30 60% 50% / 0.45)', description: 'Better drainage and soil control. Great for root veg.', showCells: true },
+  { id: 'raised-bed', name: 'Raised Bed', emoji: '🟫', sprite: 'sprites/raised-bed.svg', widthCells: 4, heightCells: 2, canGrowInside: false, color: 'hsl(30 60% 50% / 0.45)', description: 'Better drainage and soil control. Great for root veg.', showCells: true },
   { id: 'growing-bed', name: 'Growing Bed', emoji: '🌱', widthCells: 6, heightCells: 3, canGrowInside: false, color: 'hsl(30 50% 45% / 0.4)', description: 'Outdoor growing bed for vegetables and crops.', showCells: true },
 
   // Flowers & Herbs
@@ -24,14 +25,14 @@ export const structures: Structure[] = [
   { id: 'fruit-cage', name: 'Fruit Cage', emoji: '🫐', widthCells: 4, heightCells: 4, canGrowInside: false, color: 'hsl(280 55% 60% / 0.4)', description: 'Netted cage to protect soft fruit from birds.', showCells: true },
 
   // Covered Growing
-  { id: 'greenhouse', name: 'Greenhouse', emoji: '🏠', widthCells: 6, heightCells: 4, canGrowInside: true, color: 'hsl(200 70% 75% / 0.5)', description: 'Year-round growing. Ideal for tender crops and seedlings.' },
+  { id: 'greenhouse', name: 'Greenhouse', emoji: '🏠', sprite: 'sprites/greenhouse.svg', widthCells: 6, heightCells: 4, canGrowInside: true, color: 'hsl(200 70% 75% / 0.5)', description: 'Year-round growing. Ideal for tender crops and seedlings.' },
   { id: 'polytunnel', name: 'Polytunnel', emoji: '🏕️', widthCells: 8, heightCells: 4, canGrowInside: true, color: 'hsl(142 55% 75% / 0.5)', description: 'Extends growing season. Great for tomatoes, peppers & cucumbers.' },
-  { id: 'cold-frame', name: 'Cold Frame', emoji: '🪟', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(50 70% 75% / 0.45)', description: 'Harden off seedlings and grow hardy salads over winter.' },
+  { id: 'cold-frame', name: 'Cold Frame', emoji: '🪟', sprite: 'sprites/cold-frame.svg', widthCells: 3, heightCells: 2, canGrowInside: true, color: 'hsl(50 70% 75% / 0.45)', description: 'Harden off seedlings and grow hardy salads over winter.' },
 
   // Storage & Utilities
-  { id: 'shed', name: 'Shed', emoji: '🏚️', widthCells: 4, heightCells: 3, canGrowInside: false, color: 'hsl(25 40% 45% / 0.5)', description: 'Tool storage. Cannot grow plants inside.' },
-  { id: 'compost-bin', name: 'Compost Bin', emoji: '♻️', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(80 50% 45% / 0.5)', description: 'Composting area for garden waste.' },
-  { id: 'water-butt', name: 'Water Butt', emoji: '🪣', widthCells: 1, heightCells: 1, canGrowInside: false, color: 'hsl(210 65% 55% / 0.45)', description: 'Rainwater collection.' },
+  { id: 'shed', name: 'Shed', emoji: '🏚️', sprite: 'sprites/shed.svg', widthCells: 4, heightCells: 3, canGrowInside: false, color: 'hsl(25 40% 45% / 0.5)', description: 'Tool storage. Cannot grow plants inside.' },
+  { id: 'compost-bin', name: 'Compost Bin', emoji: '♻️', sprite: 'sprites/compost-bin.svg', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(80 50% 45% / 0.5)', description: 'Composting area for garden waste.' },
+  { id: 'water-butt', name: 'Water Butt', emoji: '🪣', sprite: 'sprites/water-butt.svg', widthCells: 1, heightCells: 1, canGrowInside: false, color: 'hsl(210 65% 55% / 0.45)', description: 'Rainwater collection.' },
 
   // Containers
   { id: 'pot-round', name: 'Round Pot', emoji: '🪴', widthCells: 2, heightCells: 2, canGrowInside: false, color: 'hsl(15 65% 50% / 0.5)', description: 'Round container pot for herbs & small plants.', shape: 'circle', isContainer: true },
@@ -41,11 +42,11 @@ export const structures: Structure[] = [
   { id: 'grow-bag', name: 'Grow Bag', emoji: '🛍️', widthCells: 3, heightCells: 1, canGrowInside: false, color: 'hsl(0 0% 35% / 0.45)', description: 'Grow bag for tomatoes, potatoes and courgettes.', shape: 'rectangle', isContainer: true },
 
   // Trees
-  { id: 'fruit-tree', name: 'Fruit Tree', emoji: '🍎', widthCells: 3, heightCells: 3, canGrowInside: false, color: 'hsl(120 45% 40% / 0.5)', description: 'Apple, pear, plum or cherry tree. Provides shade and fruit.', shape: 'circle' },
+  { id: 'fruit-tree', name: 'Fruit Tree', emoji: '🍎', sprite: 'sprites/fruit-tree.svg', widthCells: 3, heightCells: 3, canGrowInside: false, color: 'hsl(120 45% 40% / 0.5)', description: 'Apple, pear, plum or cherry tree. Provides shade and fruit.', shape: 'circle' },
   { id: 'tree', name: 'Tree', emoji: '🌳', widthCells: 3, heightCells: 3, canGrowInside: false, color: 'hsl(140 40% 35% / 0.5)', description: 'Existing tree. Creates shade — plan planting around it.', shape: 'circle' },
 
   // Access & Features
-  { id: 'path', name: 'Path', emoji: '🧱', widthCells: 1, heightCells: 4, canGrowInside: false, color: 'hsl(30 25% 60% / 0.55)', description: 'Walking path between beds.' },
+  { id: 'path', name: 'Path', emoji: '🧱', sprite: 'sprites/path.svg', widthCells: 1, heightCells: 4, canGrowInside: false, color: 'hsl(30 25% 60% / 0.55)', description: 'Walking path between beds.' },
   { id: 'fence', name: 'Fence', emoji: '🪵', widthCells: 8, heightCells: 1, canGrowInside: false, color: 'hsl(30 40% 38% / 0.45)', description: 'Garden boundary or windbreak.' },
 ];
 

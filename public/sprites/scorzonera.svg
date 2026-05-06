@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Soil mound -->
+  <ellipse cx="32" cy="54" rx="18" ry="6" fill="#8B6914"/>
+  <ellipse cx="32" cy="53" rx="16" ry="5" fill="#A0782C"/>
+
+  <!-- Scorzonera long dark root -->
+  <path d="M31 50 L30 56 Q31 62 32 62 Q33 62 34 56 L33 50 Z" fill="#4E342E"/>
+  <path d="M31.5 50 L32 48 L32.5 50 Z" fill="#5D4037"/>
+
+  <!-- Narrow green leaves - slightly broader than salsify -->
+  <path d="M28 48 Q24 36 20 26 Q18 20 16 14" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M30 46 Q28 34 26 22 Q24 14 24 8" stroke="#388E3C" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+  <path d="M32 44 Q32 32 32 20 Q32 12 32 6" stroke="#43A047" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M34 46 Q36 34 38 22 Q40 14 40 8" stroke="#388E3C" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+  <path d="M36 48 Q40 36 44 26 Q46 20 48 14" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Leaf tips droop slightly -->
+  <path d="M16 14 Q15 12 14 11" stroke="#2E7D32" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M48 14 Q49 12 50 11" stroke="#2E7D32" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+</svg>

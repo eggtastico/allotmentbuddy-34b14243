@@ -1,6 +1,6 @@
-import { Sprout, Image, ListTodo, BookOpen, MoreHorizontal } from 'lucide-react';
+import { Sprout, Leaf, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
 
-export type NavSection = 'garden' | 'photos' | 'tasks' | 'more';
+export type NavSection = 'garden' | 'crops' | 'tasks' | 'plan' | 'more';
 
 interface BottomNavBarProps {
   active: NavSection;
@@ -10,8 +10,9 @@ interface BottomNavBarProps {
 export function BottomNavBar({ active, onNavigate }: BottomNavBarProps) {
   const navItems: Array<{ id: NavSection; label: string; icon: React.ReactNode }> = [
     { id: 'garden', label: 'Garden', icon: <Sprout className="w-6 h-6" /> },
-    { id: 'photos', label: 'Photos', icon: <Image className="w-6 h-6" /> },
-    { id: 'tasks', label: 'Tasks', icon: <ListTodo className="w-6 h-6" /> },
+    { id: 'crops', label: 'Crops', icon: <Leaf className="w-6 h-6" /> },
+    { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-6 h-6" /> },
+    { id: 'plan', label: 'Plan', icon: <Calendar className="w-6 h-6" /> },
     { id: 'more', label: 'More', icon: <MoreHorizontal className="w-6 h-6" /> },
   ];
 

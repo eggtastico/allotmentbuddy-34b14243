@@ -98,3 +98,63 @@ export function getMonthName(month?: number): string {
   const m = month ?? new Date().getMonth();
   return MONTH_NAMES[m] ?? '';
 }
+
+/**
+ * Seasonal status of a planted plant — determines how it appears on the grid.
+ */
+export type PlantSeasonStatus = 'active' | 'harvest-ready' | 'dormant';
+
+/**
+ * Determine a plant's seasonal status (active, harvest-ready, or dormant) for a given month.
+ *
+ * A plant is:
+ * - 'harvest-ready' if it's in its harvest window AND has been in the ground long enough
+ * - 'active' if it's in any sowing or harvest month
+ * - 'dormant' if it's not in season
+ */
+export function getPlantSeasonStatus(
+  plant: Plant,
+  placedAt: string,
+  viewMonth: number
+): PlantSeasonStatus {
+  // Handle "Year-round" plants
+  if (plant.harvest?.toLowerCase().includes('year')) {
+    return 'active';
+  }
+
+  // Check if in harvest window and has been growing long enough
+  if (plant.harvest) {
+    const harvestMonths = monthRangeToSet(plant.harvest);
+    if (harvestMonths.has(viewMonth)) {
+      try {
+        const planted = new Date(placedAt);
+        const daysInGround = (Date.now() - planted.getTime()) / 86400000;
+        const daysToHarvest = plant.daysToHarvest ?? 90;
+        // Consider ready if 85% of growth period has passed
+        if (daysInGround >= daysToHarvest * 0.85) {
+          return 'harvest-ready';
+        }
+      } catch {
+        // Invalid date — skip harvest-ready check
+      }
+    }
+  }
+
+  // Check if in any sowing or harvest month
+  const sowIndoorMonths = plant.sowIndoors ? monthRangeToSet(plant.sowIndoors) : new Set<number>();
+  const sowOutdoorMonths = plant.sowOutdoors ? monthRangeToSet(plant.sowOutdoors) : new Set<number>();
+  const harvestMonths = plant.harvest ? monthRangeToSet(plant.harvest) : new Set<number>();
+
+  const allActiveMonths = new Set([...sowIndoorMonths, ...sowOutdoorMonths, ...harvestMonths]);
+
+  if (allActiveMonths.size === 0) {
+    // No seasonal data — assume always active
+    return 'active';
+  }
+
+  if (allActiveMonths.has(viewMonth)) {
+    return 'active';
+  }
+
+  return 'dormant';
+}

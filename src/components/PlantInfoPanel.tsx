@@ -3,6 +3,7 @@ import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { generateId } from '@/lib/uuid';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus, Camera } from 'lucide-react';
 import { PhotoGallery } from '@/components/PhotoGallery';
@@ -479,20 +480,19 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
     </div>
   );
 
-  // Render as modal on sm-md, as sidebar on lg+
+  // Render as drawer on mobile
   if (modal) {
     return (
-      <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-        <div className="bg-card rounded-t-xl sm:rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fade-in p-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="font-semibold text-foreground">{plant.name}</h3>
-            <button onClick={onClose} className="p-1 rounded hover:bg-muted">
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
+      <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
+        <DrawerContent className="max-h-[90vh]">
+          <div className="p-4 overflow-y-auto">
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="font-semibold text-foreground text-lg">{plant.name}</h3>
+            </div>
+            {panelContent}
           </div>
-          {panelContent}
-        </div>
-      </div>
+        </DrawerContent>
+      </Drawer>
     );
   }
 

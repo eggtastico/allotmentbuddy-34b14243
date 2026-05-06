@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Bush foliage -->
+  <ellipse cx="32" cy="24" rx="20" ry="13" fill="#4CAF50"/>
+  <ellipse cx="26" cy="20" rx="9" ry="7" fill="#388E3C"/>
+  <ellipse cx="38" cy="20" rx="9" ry="7" fill="#388E3C"/>
+  <!-- Stem -->
+  <line x1="32" y1="40" x2="32" y2="58" stroke="#5D4037" stroke-width="3" stroke-linecap="round"/>
+  <!-- Large beefsteak tomato 1 -->
+  <ellipse cx="24" cy="40" rx="10" ry="9" fill="#D32F2F"/>
+  <ellipse cx="24" cy="40" rx="10" ry="9" fill="none" stroke="#B71C1C" stroke-width="0.7"/>
+  <path d="M18 38 Q24 35 30 38" stroke="#388E3C" stroke-width="2" fill="none"/>
+  <!-- Ribbing lines -->
+  <path d="M20 36 Q24 50 28 36" stroke="#C62828" stroke-width="0.5" fill="none" opacity="0.4"/>
+  <!-- Large beefsteak tomato 2 -->
+  <ellipse cx="42" cy="42" rx="9" ry="8" fill="#E53935"/>
+  <ellipse cx="42" cy="42" rx="9" ry="8" fill="none" stroke="#C62828" stroke-width="0.7"/>
+  <path d="M36 40 Q42 37 48 40" stroke="#388E3C" stroke-width="2" fill="none"/>
+  <path d="M38 38 Q42 52 46 38" stroke="#D32F2F" stroke-width="0.5" fill="none" opacity="0.4"/>
+  <!-- Top leaves -->
+  <ellipse cx="24" cy="14" rx="7" ry="4" fill="#66BB6A" transform="rotate(-12 24 14)"/>
+  <ellipse cx="40" cy="14" rx="7" ry="4" fill="#66BB6A" transform="rotate(12 40 14)"/>
+</svg>

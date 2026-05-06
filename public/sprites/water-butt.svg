@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 120">
+  <!-- Left wall (SW) curved part - depth 20 -->
+  <path d="M 4 34 Q 30 50 64 64 L 64 84 Q 30 70 4 54 Z" fill="#546E7A"/>
+  <!-- Right wall (SE) curved part -->
+  <path d="M 64 64 Q 98 50 124 34 L 124 54 Q 98 70 64 84 Z" fill="#37474F"/>
+  <!-- Top curved surface - water-butt lid -->
+  <ellipse cx="64" cy="20" rx="45" ry="18" fill="#455A64"/>
+  <ellipse cx="64" cy="18" rx="42" ry="15" fill="#546E7A"/>
+  <!-- Lid handle -->
+  <circle cx="64" cy="14" r="3.5" fill="#607D8B"/>
+  <!-- Barrel hoops/bands - horizontal ellipses -->
+  <ellipse cx="64" cy="45" rx="44" ry="9" fill="none" stroke="#37474F" stroke-width="2.5" opacity="0.6"/>
+  <ellipse cx="64" cy="60" rx="42" ry="8" fill="none" stroke="#455A64" stroke-width="2" opacity="0.5"/>
+  <!-- Water level inside -->
+  <ellipse cx="64" cy="55" rx="38" ry="6" fill="#546E7A" opacity="0.25"/>
+  <!-- Tap/spigot on front lower part -->
+  <rect x="58" y="72" width="3.5" height="5" fill="#795548"/>
+  <circle cx="60" cy="78" r="2.5" fill="#6D4C41"/>
+  <!-- Shadow/depth on right -->
+  <path d="M 124 34 Q 104 46 64 64 L 64 66 Q 104 48 124 36 Z" fill="#000000" opacity="0.12"/>
+</svg>

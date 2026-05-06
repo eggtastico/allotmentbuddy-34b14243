@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Soil mound -->
+  <ellipse cx="32" cy="54" rx="18" ry="6" fill="#8B6914"/>
+  <ellipse cx="32" cy="53" rx="16" ry="5" fill="#A0782C"/>
+
+  <!-- Thick root partially visible -->
+  <path d="M30 52 L29 58 Q32 62 32 62 Q32 62 35 58 L34 52 Z" fill="#F5E6B8"/>
+  <path d="M31 50 L32 48 L33 50 Q32 51 31 50" fill="#FFF8E1"/>
+
+  <!-- Large broad wavy leaves - left -->
+  <path d="M24 48 Q16 38 10 28 Q12 32 16 30 Q10 22 8 14 Q14 20 18 26 Q14 18 12 10 Q18 18 22 28 Q20 20 18 14 Q24 24 26 36 Z" fill="#2E7D32"/>
+  <!-- Wavy edge detail -->
+  <path d="M10 28 Q8 26 10 24 Q12 26 10 28" fill="#1B5E20" opacity="0.4"/>
+
+  <!-- Large broad wavy leaves - center -->
+  <path d="M32 44 Q28 30 26 18 Q30 24 32 16 Q34 24 38 18 Q36 30 32 44 Z" fill="#388E3C"/>
+  <!-- Central vein -->
+  <line x1="32" y1="44" x2="32" y2="18" stroke="#1B5E20" stroke-width="1" opacity="0.4"/>
+
+  <!-- Large broad wavy leaves - right -->
+  <path d="M40 48 Q48 38 54 28 Q52 32 48 30 Q54 22 56 14 Q50 20 46 26 Q50 18 52 10 Q46 18 42 28 Q44 20 46 14 Q40 24 38 36 Z" fill="#43A047"/>
+  <!-- Wavy edge detail -->
+  <path d="M54 28 Q56 26 54 24 Q52 26 54 28" fill="#1B5E20" opacity="0.4"/>
+</svg>

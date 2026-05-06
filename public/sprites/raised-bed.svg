@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96">
+  <!-- Left wall (SW) - wood planks - depth 10 -->
+  <polygon points="4,34 64,64 64,76 4,46" fill="#7A5230"/>
+  <line x1="4" y1="38" x2="64" y2="68" stroke="#5E3D22" stroke-width="1.5" opacity="0.6"/>
+  <line x1="4" y1="43" x2="64" y2="73" stroke="#5E3D22" stroke-width="1.5" opacity="0.6"/>
+  <line x1="4" y1="48" x2="64" y2="78" stroke="#5E3D22" stroke-width="1.5" opacity="0.6"/>
+  <!-- Right wall (SE) - darker wood -->
+  <polygon points="64,64 124,34 124,46 64,76" fill="#5C3B1A"/>
+  <line x1="64" y1="68" x2="124" y2="38" stroke="#3F2510" stroke-width="1.5" opacity="0.6"/>
+  <line x1="64" y1="73" x2="124" y2="43" stroke="#3F2510" stroke-width="1.5" opacity="0.6"/>
+  <!-- Top face - dark soil -->
+  <polygon points="64,4 124,34 64,64 4,34" fill="#2C1A0E"/>
+  <!-- Soil texture -->
+  <ellipse cx="50" cy="30" rx="6" ry="2.5" fill="#1A0F06" opacity="0.5" transform="rotate(-35 50 30)"/>
+  <ellipse cx="78" cy="26" rx="5" ry="2" fill="#1A0F06" opacity="0.5" transform="rotate(-35 78 26)"/>
+  <ellipse cx="64" cy="48" rx="6" ry="2.5" fill="#1A0F06" opacity="0.5" transform="rotate(-35 64 48)"/>
+  <!-- Top rim highlight -->
+  <polyline points="4,34 64,4 124,34" stroke="#A07A50" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -27,6 +27,7 @@ interface DailyTask {
 interface GardenAssistantPanelProps {
   placedPlants: PlacedPlant[];
   frostDates?: { lastSpringFrost?: string; firstFallFrost?: string } | null;
+  defaultExpanded?: boolean;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -171,9 +172,9 @@ function monthMatchesCurrent(rangeStr: string | undefined): boolean {
   return false;
 }
 
-export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssistantPanelProps) {
+export function GardenAssistantPanel({ placedPlants, frostDates, defaultExpanded = false }: GardenAssistantPanelProps) {
   const { user } = useAuth();
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!defaultExpanded);
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
@@ -449,12 +450,13 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
       .map(pp => pp.plantId);
     const successionAlerts = getSuccessionTasks([...new Set(harvestingNow)]);
 
-    // Month tasks
-    const toSow = plantDB.filter(p => monthMatchesCurrent(p.sowIndoors) || monthMatchesCurrent(p.sowOutdoors));
-    const toHarvest = plantDB.filter(p => monthMatchesCurrent(p.harvest));
-
     // Plant tips (from what's actually in the garden)
     const plantedIds = new Set(placedPlants.map(p => p.plantId));
+
+    // Month tasks - only for plants actually in the garden
+    const toSow = plantDB.filter(p => monthMatchesCurrent(p.sowIndoors) || monthMatchesCurrent(p.sowOutdoors));
+    const toHarvest = plantDB.filter(p => monthMatchesCurrent(p.harvest) && plantedIds.has(p.id));
+
     const placedPlantData = Array.from(plantedIds)
       .map(id => plantDB.find(p => p.id === id))
       .filter((p): p is typeof plantDB[0] => p !== undefined);
@@ -512,8 +514,8 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
       {!collapsed && (
         <div className="bg-card">
           <Tabs defaultValue="today" className="w-full">
-            <TabsList className="w-full border-b border-border rounded-none justify-start bg-transparent p-0">
-              <TabsTrigger value="today" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600">
+            <TabsList className="w-full border-b border-border rounded-none justify-start bg-transparent p-0 overflow-x-auto overflow-y-hidden flex-nowrap">
+              <TabsTrigger value="today" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600 flex-shrink-0 whitespace-nowrap px-3">
                 Today
                 {(taskData.readyNow.length + taskData.justPlanted.length) > 0 && (
                   <Badge className="ml-1.5 bg-red-500/20 text-red-700 dark:text-red-400">
@@ -522,7 +524,7 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                 )}
               </TabsTrigger>
 
-              <TabsTrigger value="week" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600">
+              <TabsTrigger value="week" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600 flex-shrink-0 whitespace-nowrap px-3">
                 This Week
                 {taskData.soonThisWeek.length > 0 && (
                   <Badge className="ml-1.5 bg-amber-500/20 text-amber-700 dark:text-amber-400">
@@ -531,11 +533,20 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                 )}
               </TabsTrigger>
 
-              <TabsTrigger value="month" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600">
+              <TabsTrigger value="month" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600 flex-shrink-0 whitespace-nowrap px-3">
                 This Month
               </TabsTrigger>
 
-              <TabsTrigger value="tips" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600">
+              <TabsTrigger value="feeding" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600 flex-shrink-0 whitespace-nowrap px-3">
+                Feeding Guide
+                {(weeklyFeeding.length + monthlyFeeding.length) > 0 && (
+                  <Badge className="ml-1.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                    {weeklyFeeding.length + monthlyFeeding.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+
+              <TabsTrigger value="tips" className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-blue-600 flex-shrink-0 whitespace-nowrap px-3">
                 Monthly Tips
               </TabsTrigger>
             </TabsList>
@@ -781,6 +792,15 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
 
             {/* THIS MONTH */}
             <TabsContent value="month" className="p-4 space-y-4">
+              {/* Feeding summary badge */}
+              {monthlyFeeding.length > 0 && (
+                <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Feeding Guide:</strong> {monthlyFeeding.length} plant{monthlyFeeding.length !== 1 ? 's' : ''} need feeding this month
+                  </p>
+                </div>
+              )}
+
               {(taskData.toSow.length > 0 || taskData.toHarvest.length > 0) && (
                 <>
                   {taskData.toSow.length > 0 && (
@@ -847,6 +867,107 @@ export function GardenAssistantPanel({ placedPlants, frostDates }: GardenAssista
                   <p className="text-xs text-muted-foreground">Quiet month for sowing and harvesting.</p>
                 </div>
               )}
+            </TabsContent>
+
+            {/* FEEDING GUIDE - Yearly Overview */}
+            <TabsContent value="feeding" className="p-4 space-y-4">
+              <div className="space-y-4">
+                {/* Year-round feeding calendar */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Sprout className="h-4 w-4 text-green-600" />
+                    Year-Round Feeding Calendar
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Jan - Feb: Prepare Beds</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add compost, mulch, or well-rotted manure to empty beds. Apply early-spring feeds to fruit trees and perennials.</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Mar - Apr: Sow & Feed</p>
+                      <p className="text-xs text-muted-foreground mt-1">Begin feeding leafy crops (lettuce, spinach, kale). High-nitrogen feeds for vigorous growth.</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">May - Jun: Weekly Feeding</p>
+                      <p className="text-xs text-muted-foreground mt-1">Start weekly feeds for fruiting crops (tomatoes, peppers, beans). High-potash for flowers & fruit.</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Jul - Aug: Peak Feeding</p>
+                      <p className="text-xs text-muted-foreground mt-1">Continue weekly feeds. Keep on top of watering in hot weather. Feed courgettes, cucumbers, melons fortnightly.</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Sep - Oct: Reduce & Refresh</p>
+                      <p className="text-xs text-muted-foreground mt-1">Taper feeding as growth slows. Start planning winter crops. Begin clearing summer beds.</p>
+                    </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Nov - Dec: Rest & Prepare</p>
+                      <p className="text-xs text-muted-foreground mt-1">Cease feeding. Add mulch or manure to beds for winter. Plan next year's feeding schedule.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bed Preparation Guide */}
+                <div className="space-y-2 border-t border-border pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Sprout className="h-4 w-4 text-amber-600" />
+                    Empty Bed Preparation
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Immediate (Before Planting)</p>
+                      <p className="text-xs text-muted-foreground mt-1">Mix in compost or aged manure (5-10cm). Add balanced fertilizer (Growmore) 1-2 weeks before planting.</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Long-term (Autumn/Winter)</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add well-rotted manure or compost as mulch (10-15cm). Apply in Nov-Jan for spring planting.</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="font-medium text-sm text-foreground">Soil Testing</p>
+                      <p className="text-xs text-muted-foreground mt-1">Test soil pH & nutrients every 2-3 years. Add lime if acidic, sulfur if alkaline. Boost nitrogen-poor soil with blood fish & bone.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Reference */}
+                <div className="space-y-2 border-t border-border pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Lightbulb className="h-4 w-4 text-yellow-600" />
+                    Quick Feed Types
+                  </div>
+                  <div className="grid gap-2 text-xs">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/20 rounded border border-slate-200 dark:border-slate-800">
+                      <p><strong>High-Nitrogen (Leafy crops):</strong> Growmore, blood fish & bone, liquid seaweed, nettle tea</p>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/20 rounded border border-slate-200 dark:border-slate-800">
+                      <p><strong>High-Potash (Fruiting crops):</strong> Tomorite, tomato feed, Miracle-Gro, Chempak</p>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/20 rounded border border-slate-200 dark:border-slate-800">
+                      <p><strong>Balanced (General):</strong> Growmore, miracle-gro all-purpose, liquid seaweed</p>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/20 rounded border border-slate-200 dark:border-slate-800">
+                      <p><strong>Slow-release (Long-term):</strong> Well-rotted manure, compost, aged mulch</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Current Plants Needing Feed */}
+                {(weeklyFeeding.length > 0 || monthlyFeeding.length > 0) && (
+                  <div className="space-y-2 border-t border-border pt-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Sprout className="h-4 w-4 text-emerald-600" />
+                      Your Plants Now
+                    </div>
+                    <div className="grid gap-2">
+                      {weeklyFeeding.concat(monthlyFeeding).map(task => (
+                        <div key={task.id} className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                          <p className="font-medium text-sm text-foreground">{task.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             {/* MONTHLY TIPS */}

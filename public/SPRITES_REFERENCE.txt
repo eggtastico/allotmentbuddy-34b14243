@@ -1,0 +1,243 @@
+================================================================================
+ALLOTMENT BUDDY - SPRITE REFERENCE GUIDE
+================================================================================
+
+This file lists all plants and structures that use SVG sprites, along with their
+current viewBox dimensions. Use these aspect ratios when creating or replacing SVGs.
+
+================================================================================
+STRUCTURES (8 key structures with SVG sprites)
+================================================================================
+
+Structure ID          | Name           | Sprite File              | ViewBox        | Aspect Ratio
+----------------------+----------------+--------------------------+-----------------+-------------
+raised-bed           | Raised Bed     | sprites/raised-bed.svg   | 0 0 128 96     | 1.33:1
+greenhouse           | Greenhouse     | sprites/greenhouse.svg   | 0 0 128 180    | 0.71:1
+shed                 | Shed           | sprites/shed.svg         | 0 0 128 190    | 0.67:1
+compost-bin          | Compost Bin    | sprites/compost-bin.svg  | 0 0 128 104    | 1.23:1
+water-butt           | Water Butt     | sprites/water-butt.svg   | 0 0 128 120    | 1.07:1
+cold-frame           | Cold Frame     | sprites/cold-frame.svg   | 0 0 128 102    | 1.25:1
+fruit-tree           | Fruit Tree     | sprites/fruit-tree.svg   | 0 0 128 136    | 0.94:1
+path                 | Path           | sprites/path.svg         | 0 0 190 100    | 1.90:1
+
+Notes on Structures:
+- The viewBox width × height determines the aspect ratio when rendered
+- Each structure's viewBox height is scaled proportionally to its depth value
+  (deeper structures = taller viewBox)
+- Use these exact aspect ratios when creating replacement SVGs
+- All SVGs use flat fills, no gradients or filters
+
+================================================================================
+PLANTS (123 plants - sample list, all use sprites/[plant-id].svg)
+================================================================================
+
+Plant ID             | Name                | Sprite File
+---------------------+---------------------+------------------------
+apple                | Apple               | sprites/apple.svg
+apricot              | Apricot             | sprites/apricot.svg
+artichoke            | Artichoke           | sprites/artichoke.svg
+asparagus            | Asparagus           | sprites/asparagus.svg
+aubergine            | Aubergine           | sprites/aubergine.svg
+basil                | Basil               | sprites/basil.svg
+bay                  | Bay                 | sprites/bay.svg
+bean                 | Bean (Climbing)     | sprites/bean-climbing.svg
+bean-dwarf           | Bean (Dwarf)        | sprites/bean-dwarf.svg
+beetroot             | Beetroot            | sprites/beetroot.svg
+blackberry           | Blackberry          | sprites/blackberry.svg
+blackcurrant         | Blackcurrant        | sprites/blackcurrant.svg
+blueberry            | Blueberry           | sprites/blueberry.svg
+borage               | Borage              | sprites/borage.svg
+broad-bean           | Broad Bean          | sprites/broad-bean.svg
+broccoli             | Broccoli            | sprites/broccoli.svg
+brussels-sprout      | Brussels Sprout     | sprites/brussels-sprout.svg
+cabbage              | Cabbage             | sprites/cabbage.svg
+cabbage-red          | Cabbage (Red)       | sprites/cabbage-red.svg
+cabbage-savoy        | Cabbage (Savoy)     | sprites/cabbage-savoy.svg
+cabbage-spring       | Cabbage (Spring)    | sprites/cabbage-spring.svg
+calabrese            | Calabrese           | sprites/calabrese.svg
+calendula            | Calendula           | sprites/calendula.svg
+carrot               | Carrot              | sprites/carrot.svg
+cauliflower          | Cauliflower         | sprites/cauliflower.svg
+cavolo-nero          | Cavolo Nero         | sprites/cavolo-nero.svg
+celeriac             | Celeriac            | sprites/celeriac.svg
+celery               | Celery              | sprites/celery.svg
+chamomile            | Chamomile           | sprites/chamomile.svg
+chard                | Chard               | sprites/chard.svg
+cherry               | Cherry              | sprites/cherry.svg
+chervil              | Chervil             | sprites/chervil.svg
+chicory              | Chicory             | sprites/chicory.svg
+chilli               | Chilli              | sprites/chilli.svg
+chive                | Chive               | sprites/chive.svg
+comfrey              | Comfrey             | sprites/comfrey.svg
+coriander            | Coriander           | sprites/coriander.svg
+cornflower           | Cornflower          | sprites/cornflower.svg
+cosmos               | Cosmos              | sprites/cosmos.svg
+courgette            | Courgette           | sprites/courgette.svg
+cranberry            | Cranberry           | sprites/cranberry.svg
+cucumber             | Cucumber            | sprites/cucumber.svg
+dahlia               | Dahlia              | sprites/dahlia.svg
+damson               | Damson              | sprites/damson.svg
+dill                 | Dill                | sprites/dill.svg
+echinacea            | Echinacea           | sprites/echinacea.svg
+endive               | Endive              | sprites/endive.svg
+fennel               | Fennel              | sprites/fennel.svg
+fig                  | Fig                 | sprites/fig.svg
+florence-fennel      | Florence Fennel     | sprites/florence-fennel.svg
+garlic               | Garlic              | sprites/garlic.svg
+gooseberry           | Gooseberry          | sprites/gooseberry.svg
+grapevine            | Grapevine           | sprites/grapevine.svg
+greengages           | Greengages          | sprites/greengages.svg
+kohlrabi             | Kohlrabi            | sprites/kohlrabi.svg
+kale                 | Kale                | sprites/kale.svg
+laver                | Laver               | sprites/laver.svg
+leek                 | Leek                | sprites/leek.svg
+lemon                | Lemon               | sprites/lemon.svg
+lemon-balm           | Lemon Balm          | sprites/lemon-balm.svg
+lettuce              | Lettuce             | sprites/lettuce.svg
+lime                 | Lime                | sprites/lime.svg
+lingonberry          | Lingonberry         | sprites/lingonberry.svg
+loganberry           | Loganberry          | sprites/loganberry.svg
+lovage               | Lovage              | sprites/lovage.svg
+lupin                | Lupin               | sprites/lupin.svg
+marigold             | Marigold            | sprites/marigold.svg
+marjoram             | Marjoram            | sprites/marjoram.svg
+melon                | Melon               | sprites/melon.svg
+mint                 | Mint                | sprites/mint.svg
+mizuna               | Mizuna              | sprites/mizuna.svg
+mozzarella-plant     | Mozzarella Plant    | sprites/mozzarella-plant.svg
+mustard-leaf         | Mustard Leaf        | sprites/mustard-leaf.svg
+nasturtium           | Nasturtium          | sprites/nasturtium.svg
+nectarine            | Nectarine           | sprites/nectarine.svg
+nettle               | Nettle              | sprites/nettle.svg
+okra                 | Okra                | sprites/okra.svg
+olive                | Olive               | sprites/olive.svg
+onion                | Onion               | sprites/onion.svg
+oregano              | Oregano             | sprites/oregano.svg
+oyster-plant         | Oyster Plant        | sprites/oyster-plant.svg
+pak-choi             | Pak Choi            | sprites/pak-choi.svg
+parsnip              | Parsnip             | sprites/parsnip.svg
+parsley              | Parsley             | sprites/parsley.svg
+passion-fruit        | Passion Fruit       | sprites/passion-fruit.svg
+pea                  | Pea                 | sprites/pea.svg
+peach                | Peach               | sprites/peach.svg
+pear                 | Pear                | sprites/pear.svg
+peppermint           | Peppermint          | sprites/peppermint.svg
+pepper               | Pepper              | sprites/pepper.svg
+persimmon            | Persimmon           | sprites/persimmon.svg
+phacelia             | Phacelia            | sprites/phacelia.svg
+pigeon-pea           | Pigeon Pea          | sprites/pigeon-pea.svg
+pineapple            | Pineapple           | sprites/pineapple.svg
+plum                 | Plum                | sprites/plum.svg
+poke                 | Poke                | sprites/poke.svg
+poppy                | Poppy               | sprites/poppy.svg
+potato               | Potato              | sprites/potato.svg
+pumpkin              | Pumpkin             | sprites/pumpkin.svg
+quince               | Quince              | sprites/quince.svg
+radish               | Radish              | sprites/radish.svg
+radicchio            | Radicchio           | sprites/radicchio.svg
+raspberry            | Raspberry           | sprites/raspberry.svg
+red-currant          | Red Currant         | sprites/red-currant.svg
+rhubarb              | Rhubarb             | sprites/rhubarb.svg
+rocket               | Rocket              | sprites/rocket.svg
+romaine              | Romaine             | sprites/romaine.svg
+rosemary             | Rosemary            | sprites/rosemary.svg
+rowan                | Rowan               | sprites/rowan.svg
+rue                  | Rue                 | sprites/rue.svg
+runner-bean          | Runner Bean         | sprites/runner-bean.svg
+rye                  | Rye                 | sprites/rye.svg
+saffron              | Saffron             | sprites/saffron.svg
+sage                 | Sage                | sprites/sage.svg
+salsify              | Salsify             | sprites/salsify.svg
+samphire             | Samphire            | sprites/samphire.svg
+savory-summer        | Savory (Summer)     | sprites/savory-summer.svg
+savory-winter        | Savory (Winter)     | sprites/savory-winter.svg
+scorzonera           | Scorzonera          | sprites/scorzonera.svg
+sea-kale             | Sea Kale            | sprites/sea-kale.svg
+sedum                | Sedum               | sprites/sedum.svg
+self-heal            | Self Heal           | sprites/self-heal.svg
+sesame               | Sesame              | sprites/sesame.svg
+shiso                | Shiso               | sprites/shiso.svg
+sorrel               | Sorrel              | sprites/sorrel.svg
+speedwell            | Speedwell           | sprites/speedwell.svg
+spinach              | Spinach             | sprites/spinach.svg
+squash               | Squash              | sprites/squash.svg
+strawberry           | Strawberry          | sprites/strawberry.svg
+sunflower            | Sunflower           | sprites/sunflower.svg
+swede                | Swede               | sprites/swede.svg
+sweetcorn            | Sweetcorn           | sprites/sweetcorn.svg
+Swiss-chard          | Swiss Chard         | sprites/Swiss-chard.svg
+tansy                | Tansy               | sprites/tansy.svg
+tarragon             | Tarragon            | sprites/tarragon.svg
+tayberry             | Tayberry            | sprites/tayberry.svg
+tea                  | Tea                 | sprites/tea.svg
+teasel               | Teasel              | sprites/teasel.svg
+thistle              | Thistle             | sprites/thistle.svg
+thyme                | Thyme               | sprites/thyme.svg
+tomatillo            | Tomatillo           | sprites/tomatillo.svg
+tomato               | Tomato              | sprites/tomato.svg
+trefoil              | Trefoil             | sprites/trefoil.svg
+turnip               | Turnip              | sprites/turnip.svg
+turmeric             | Turmeric            | sprites/turmeric.svg
+valerian             | Valerian            | sprites/valerian.svg
+verbena              | Verbena             | sprites/verbena.svg
+vetch                | Vetch               | sprites/vetch.svg
+violet               | Violet              | sprites/violet.svg
+wallflower           | Wallflower          | sprites/wallflower.svg
+walnut               | Walnut              | sprites/walnut.svg
+wasabi               | Wasabi              | sprites/wasabi.svg
+watermelon           | Watermelon          | sprites/watermelon.svg
+weld                 | Weld                | sprites/weld.svg
+white-currant        | White Currant       | sprites/white-currant.svg
+whitloof             | Whitloof            | sprites/whitloof.svg
+wineberry            | Wineberry           | sprites/wineberry.svg
+winged-pea           | Winged Pea          | sprites/winged-pea.svg
+wintergreen          | Wintergreen         | sprites/wintergreen.svg
+witch-hazel          | Witch Hazel         | sprites/witch-hazel.svg
+wormwood             | Wormwood            | sprites/wormwood.svg
+yarrow               | Yarrow              | sprites/yarrow.svg
+yam                  | Yam                 | sprites/yam.svg
+zucchini             | Zucchini            | sprites/zucchini.svg
+
+(All plant sprites use viewBox="0 0 64 64" for consistency)
+
+================================================================================
+HOW TO CREATE REPLACEMENT SVGS
+================================================================================
+
+1. ASPECT RATIO:
+   Copy the ViewBox dimensions from this file (e.g., "0 0 128 96")
+   - Width = first number (128)
+   - Height = second number (96)
+   - Aspect ratio = Width / Height (e.g., 128/96 = 1.33:1)
+
+2. DESIGN TIPS:
+   - Use flat fills (no gradients, filters, or defs)
+   - Keep SVG simple (8-25 elements max)
+   - Use Material Design colors
+   - For structures: show 3D isometric perspective with visible walls
+   - For plants: flat illustrative style, centered in viewBox
+
+3. SVG TEMPLATE:
+   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96">
+     <!-- Your SVG content here -->
+   </svg>
+
+4. PLACEMENT:
+   Save your SVG to: public/sprites/[sprite-name].svg
+   - Example: public/sprites/raised-bed.svg
+
+5. COLORS (Material Design palette):
+   - Greens: #2E7D32, #388E3C, #4CAF50, #66BB6A
+   - Browns: #5D4037, #8B6347, #795548, #A1887F
+   - Blues: #1565C0, #1976D2, #42A5F5, #90CAF9
+   - Reds: #C62828, #D32F2F, #EF5350, #FF5252
+   - Yellows: #F57F17, #FDD835, #FFEB3B
+
+================================================================================
+USEFUL LINKS
+================================================================================
+
+- SVG Editor (online): https://editor.method.ac/
+- Inkscape (free): https://inkscape.org/
+- Material Design Colors: https://material.io/design/color/
+
