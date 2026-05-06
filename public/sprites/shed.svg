@@ -1,35 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 190">
-  <!-- Left wall (SW) - wood planks - depth 46 -->
-  <polygon points="4,34 64,64 64,110 4,80" fill="#8B5A2B"/>
-  <line x1="4" y1="38" x2="64" y2="68" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="43" x2="64" y2="73" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="48" x2="64" y2="78" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="53" x2="64" y2="83" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="58" x2="64" y2="88" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="63" x2="64" y2="93" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
-  <line x1="4" y1="70" x2="64" y2="100" stroke="#6B3E1F" stroke-width="1.5" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 158">
+  <!-- SHED: 4x3, depth=46. Diamond: top=(112,0) R=(224,56) B=(112,112) L=(0,56) -->
+
+  <!-- Left wall (SW) - wood planks -->
+  <polygon points="0,56 112,112 112,158 0,102" fill="#8B5A2B"/>
+  <line x1="0" y1="62" x2="112" y2="118" stroke="#6B3E1F" stroke-width="1.5" opacity="0.5"/>
+  <line x1="0" y1="70" x2="112" y2="126" stroke="#6B3E1F" stroke-width="1.5" opacity="0.5"/>
+  <line x1="0" y1="78" x2="112" y2="134" stroke="#6B3E1F" stroke-width="1.5" opacity="0.5"/>
+  <line x1="0" y1="86" x2="112" y2="142" stroke="#6B3E1F" stroke-width="1.5" opacity="0.5"/>
+  <line x1="0" y1="94" x2="112" y2="150" stroke="#6B3E1F" stroke-width="1.5" opacity="0.5"/>
+
   <!-- Right wall (SE) - darker wood -->
-  <polygon points="64,64 124,34 124,80 64,110" fill="#6B3E1F"/>
-  <line x1="64" y1="68" x2="124" y2="38" stroke="#4A2415" stroke-width="1.5" opacity="0.6"/>
-  <line x1="64" y1="73" x2="124" y2="43" stroke="#4A2415" stroke-width="1.5" opacity="0.6"/>
-  <line x1="64" y1="78" x2="124" y2="48" stroke="#4A2415" stroke-width="1.5" opacity="0.6"/>
-  <line x1="64" y1="88" x2="124" y2="58" stroke="#4A2415" stroke-width="1.5" opacity="0.6"/>
+  <polygon points="112,112 224,56 224,102 112,158" fill="#6B3E1F"/>
+  <line x1="112" y1="118" x2="224" y2="62" stroke="#4A2415" stroke-width="1.5" opacity="0.5"/>
+  <line x1="112" y1="126" x2="224" y2="70" stroke="#4A2415" stroke-width="1.5" opacity="0.5"/>
+  <line x1="112" y1="134" x2="224" y2="78" stroke="#4A2415" stroke-width="1.5" opacity="0.5"/>
+  <line x1="112" y1="142" x2="224" y2="86" stroke="#4A2415" stroke-width="1.5" opacity="0.5"/>
+
   <!-- Roof left face -->
-  <polygon points="4,34 40,8 40,16 4,42" fill="#5C3D1F"/>
+  <polygon points="0,56 70,14 70,22 0,64" fill="#5C3D1F"/>
   <!-- Roof right face -->
-  <polygon points="40,8 124,34 124,42 40,16" fill="#3D2410"/>
-  <!-- Roof edge/ridge -->
-  <polyline points="4,34 40,8 124,34" stroke="#7A5630" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-  <!-- Door on left face -->
-  <rect x="18" y="65" width="18" height="28" fill="#3D2410"/>
-  <rect x="18" y="65" width="18" height="28" fill="none" stroke="#8B6640" stroke-width="1.2"/>
-  <!-- Door panel lines -->
-  <line x1="27" y1="65" x2="27" y2="93" stroke="#7A5630" stroke-width="0.8"/>
-  <line x1="18" y1="79" x2="36" y2="79" stroke="#7A5630" stroke-width="0.8"/>
-  <!-- Door handle -->
-  <circle cx="33" cy="80" r="1.5" fill="#B8A080"/>
+  <polygon points="70,14 224,56 224,64 70,22" fill="#3D2410"/>
+  <!-- Roof ridge -->
+  <polyline points="0,56 70,14 224,56" stroke="#7A5630" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+
+  <!-- Door on left wall -->
+  <rect x="30" y="90" width="28" height="40" fill="#3D2410" rx="1"/>
+  <rect x="30" y="90" width="28" height="40" fill="none" stroke="#8B6640" stroke-width="1.5" rx="1"/>
+  <line x1="44" y1="90" x2="44" y2="130" stroke="#7A5630" stroke-width="0.8"/>
+  <circle cx="53" cy="110" r="2" fill="#B8A080"/>
+
   <!-- Window on right wall -->
-  <rect x="80" y="70" width="16" height="14" fill="#A8D4E8" opacity="0.6"/>
-  <line x1="88" y1="70" x2="88" y2="84" stroke="#7A9AB0" stroke-width="1"/>
-  <line x1="80" y1="77" x2="96" y2="77" stroke="#7A9AB0" stroke-width="1"/>
+  <rect x="152" y="78" width="24" height="18" fill="#A8D4E8" opacity="0.5" rx="1"/>
+  <line x1="164" y1="78" x2="164" y2="96" stroke="#78909C" stroke-width="1"/>
+  <line x1="152" y1="87" x2="176" y2="87" stroke="#78909C" stroke-width="1"/>
 </svg>

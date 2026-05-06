@@ -1,23 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 104">
-  <!-- Left wall (SW) - wooden slats - depth 14 -->
-  <polygon points="4,34 64,64 64,78 4,48" fill="#6B5D3F"/>
-  <line x1="4" y1="39" x2="64" y2="69" stroke="#3D3D1F" stroke-width="2.5" opacity="0.7"/>
-  <line x1="4" y1="48" x2="64" y2="78" stroke="#3D3D1F" stroke-width="2.5" opacity="0.7"/>
-  <line x1="4" y1="57" x2="64" y2="87" stroke="#3D3D1F" stroke-width="2" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 78">
+  <!-- COMPOST BIN: 2x2, depth=14. Diamond: top=(64,0) R=(128,32) B=(64,64) L=(0,32) -->
+
+  <!-- Left wall (SW) - wooden slats -->
+  <polygon points="0,32 64,64 64,78 0,46" fill="#6B5D3F"/>
+  <line x1="0" y1="37" x2="64" y2="69" stroke="#3D3D1F" stroke-width="2" opacity="0.6"/>
+  <line x1="0" y1="43" x2="64" y2="75" stroke="#3D3D1F" stroke-width="2" opacity="0.6"/>
+
   <!-- Right wall (SE) - darker slats -->
-  <polygon points="64,64 124,34 124,48 64,78" fill="#4A3F28"/>
-  <line x1="64" y1="69" x2="124" y2="39" stroke="#2D2D14" stroke-width="2.5" opacity="0.7"/>
-  <line x1="64" y1="78" x2="124" y2="48" stroke="#2D2D14" stroke-width="2.5" opacity="0.7"/>
-  <!-- Top face - dark compost inside -->
-  <polygon points="64,4 124,34 64,64 4,34" fill="#1A0F00"/>
+  <polygon points="64,64 128,32 128,46 64,78" fill="#4A3F28"/>
+  <line x1="64" y1="69" x2="128" y2="37" stroke="#2D2D14" stroke-width="2" opacity="0.6"/>
+  <line x1="64" y1="75" x2="128" y2="43" stroke="#2D2D14" stroke-width="2" opacity="0.6"/>
+
+  <!-- Top face - dark compost -->
+  <polygon points="64,0 128,32 64,64 0,32" fill="#1A0F00"/>
+
   <!-- Compost texture -->
-  <ellipse cx="44" cy="32" rx="8" ry="4" fill="#2C1A0A" opacity="0.6" transform="rotate(-25 44 32)"/>
-  <ellipse cx="78" cy="28" rx="7" ry="3" fill="#2C1A0A" opacity="0.6" transform="rotate(-25 78 28)"/>
-  <ellipse cx="64" cy="48" rx="8" ry="3" fill="#2C1A0A" opacity="0.5" transform="rotate(-25 64 48)"/>
-  <!-- Rim/edge highlight -->
-  <polyline points="4,34 64,4 124,34" stroke="#8B7355" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Small compost bits -->
-  <circle cx="35" cy="38" r="1" fill="#3D2410" opacity="0.7"/>
-  <circle cx="92" cy="32" r="1.2" fill="#3D2410" opacity="0.7"/>
-  <circle cx="60" cy="55" r="0.8" fill="#3D2410" opacity="0.6"/>
+  <ellipse cx="44" cy="28" rx="8" ry="3.5" fill="#2C1A0A" opacity="0.5"/>
+  <ellipse cx="84" cy="30" rx="7" ry="3" fill="#2C1A0A" opacity="0.5"/>
+  <ellipse cx="64" cy="44" rx="8" ry="3" fill="#2C1A0A" opacity="0.4"/>
+
+  <!-- Rim highlight -->
+  <polyline points="0,32 64,0 128,32" stroke="#8B7355" stroke-width="1.5" fill="none"/>
 </svg>

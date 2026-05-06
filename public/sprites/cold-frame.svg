@@ -1,25 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 102">
-  <!-- Left wall (SW) - wooden frame - depth 12 -->
-  <polygon points="4,34 64,64 64,76 4,46" fill="#8B6347"/>
-  <line x1="4" y1="37" x2="64" y2="67" stroke="#6B4535" stroke-width="1" opacity="0.5"/>
-  <line x1="4" y1="42" x2="64" y2="72" stroke="#6B4535" stroke-width="1" opacity="0.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 92">
+  <!-- COLD FRAME: 3x2, depth=12. Diamond: top=(80,0) R=(160,40) B=(80,80) L=(0,40) -->
+
+  <!-- Left wall (SW) - wood frame -->
+  <polygon points="0,40 80,80 80,92 0,52" fill="#8B6347"/>
+  <line x1="0" y1="45" x2="80" y2="85" stroke="#6B4535" stroke-width="1" opacity="0.5"/>
+
   <!-- Right wall (SE) - darker wood -->
-  <polygon points="64,64 124,34 124,46 64,76" fill="#6B4535"/>
-  <line x1="64" y1="67" x2="124" y2="37" stroke="#5C3D27" stroke-width="1" opacity="0.5"/>
-  <!-- Glass lid - left face angled -->
-  <polygon points="4,34 42,10 42,18 4,42" fill="#B0D4E8" opacity="0.7"/>
-  <!-- Glass lid - right face angled -->
-  <polygon points="42,10 124,34 124,42 42,18" fill="#8ABFD8" opacity="0.75"/>
-  <!-- Lid frame/edge -->
-  <polyline points="4,34 42,10 124,34" stroke="#C8D8E0" stroke-width="2" fill="none" stroke-linejoin="round"/>
-  <!-- Lid divisions (glass panel lines) -->
-  <line x1="23" y1="22" x2="42" y2="10" stroke="#C0C8D0" stroke-width="1" opacity="0.6"/>
-  <line x1="63" y1="22" x2="42" y2="10" stroke="#C0C8D0" stroke-width="1" opacity="0.6"/>
-  <line x1="83" y1="22" x2="42" y2="10" stroke="#C0C8D0" stroke-width="1" opacity="0.6"/>
-  <!-- Seedlings inside hint -->
-  <path d="M 20 55 Q 25 48 30 55" stroke="#4CAF50" stroke-width="1.5" fill="none" opacity="0.5"/>
-  <path d="M 48 60 Q 53 51 58 60" stroke="#388E3C" stroke-width="1.5" fill="none" opacity="0.5"/>
-  <path d="M 78 52 Q 85 44 92 52" stroke="#4CAF50" stroke-width="1.5" fill="none" opacity="0.5"/>
-  <!-- Soil patch inside -->
-  <ellipse cx="48" cy="60" rx="18" ry="5" fill="#5C3D27" opacity="0.2"/>
+  <polygon points="80,80 160,40 160,52 80,92" fill="#6B4535"/>
+  <line x1="80" y1="85" x2="160" y2="45" stroke="#5C3D27" stroke-width="1" opacity="0.5"/>
+
+  <!-- Glass lid - angled, left face -->
+  <polygon points="0,40 50,12 50,18 0,46" fill="#B0D4E8" opacity="0.65"/>
+  <!-- Glass lid - angled, right face -->
+  <polygon points="50,12 160,40 160,46 50,18" fill="#8ABFD8" opacity="0.7"/>
+
+  <!-- Lid frame edge -->
+  <polyline points="0,40 50,12 160,40" stroke="#C8D8E0" stroke-width="2" fill="none" stroke-linejoin="round"/>
+
+  <!-- Glass panel dividers -->
+  <line x1="25" y1="26" x2="50" y2="12" stroke="#B0B8C0" stroke-width="1" opacity="0.5"/>
+  <line x1="80" y1="26" x2="50" y2="12" stroke="#B0B8C0" stroke-width="1" opacity="0.5"/>
+  <line x1="120" y1="33" x2="50" y2="12" stroke="#B0B8C0" stroke-width="1" opacity="0.5"/>
+
+  <!-- Seedling hints inside -->
+  <path d="M 30 60 Q 35 52 40 60" stroke="#4CAF50" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <path d="M 60 66 Q 68 56 76 66" stroke="#388E3C" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <path d="M 100 58 Q 108 48 116 58" stroke="#4CAF50" stroke-width="1.5" fill="none" opacity="0.5"/>
 </svg>

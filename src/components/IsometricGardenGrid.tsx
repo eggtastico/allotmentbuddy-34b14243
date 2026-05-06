@@ -92,6 +92,29 @@ const STAGE_SCALE: Record<string, number> = { seed: 0.42, seedling: 0.65, establ
 const SOIL_LIGHT = '#D4B896';
 const SOIL_DARK  = '#C8A882';
 
+// ─── structure sprite cache (module-level, survives re-renders) ──────────────
+const structSpriteCache = new Map<string, HTMLImageElement>();
+const structSpriteErrors = new Set<string>();
+const structSpritePending = new Set<string>();
+
+function loadStructSprite(relPath: string, onDone: () => void): void {
+  if (structSpriteCache.has(relPath) || structSpriteErrors.has(relPath)) return;
+  if (structSpritePending.has(relPath)) return;
+  structSpritePending.add(relPath);
+  const img = new Image();
+  img.onload = () => {
+    structSpriteCache.set(relPath, img);
+    structSpritePending.delete(relPath);
+    onDone();
+  };
+  img.onerror = () => {
+    structSpriteErrors.add(relPath);
+    structSpritePending.delete(relPath);
+    onDone();
+  };
+  img.src = `${import.meta.env.BASE_URL}${relPath}`;
+}
+
 // ─── pure drawing helpers ────────────────────────────────────────────────────
 
 /** Draw a flat ground tile (diamond top face only — no depth) */
@@ -226,6 +249,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   const [originY, setOriginY] = useState(0);
   const [canvasW,  setCanvasW] = useState(0);
   const [canvasH,  setCanvasH] = useState(0);
+  const [spriteVer, setSpriteVer] = useState(0);
 
   // ── interaction ─────────────────────────────────────────────────────────────
   const isPanningRef       = useRef(false);
@@ -279,50 +303,86 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     centredRef.current = true;
   }, [canvasW, canvasH, gridW, gridH]);
 
+  // ── Load structure sprites ────────────────────────────────────────────────────
+  useEffect(() => {
+    const paths = new Set<string>();
+    structures.forEach(s => {
+      const def = getStructureById(s.structureId);
+      if (def?.sprite && !structSpriteCache.has(def.sprite) && !structSpriteErrors.has(def.sprite)) {
+        paths.add(def.sprite);
+      }
+    });
+    if (paths.size === 0) return;
+    const bump = () => setSpriteVer(v => v + 1);
+    paths.forEach(p => loadStructSprite(p, bump));
+  }, [structures]);
+
   // ── Build sorted render list (structures + plants) ──────────────────────────
   const renderItems = useMemo<RenderItem[]>(() => {
     const items: RenderItem[] = [];
 
-    // Structures: per-cell box + one label per structure
+    // Structures: sprite if available, otherwise per-cell box + emoji
     structures.forEach(s => {
       const def = getStructureById(s.structureId);
       if (!def) return;
-      const depth   = STRUCTURE_DEPTH[s.structureId] ?? 12;
-      const topHex  = STRUCT_TOP[s.structureId] ?? '#999999';
-      const leftClr = shadeHex(topHex, 0.65);
-      const rightClr= shadeHex(topHex, 0.80);
+      const W     = s.widthCells;
+      const H     = s.heightCells;
+      const depth = STRUCTURE_DEPTH[s.structureId] ?? 12;
+      const tw    = tileW(zoom);
+      const th    = tileH(zoom);
+      const d     = depth * zoom;
 
-      // Box cells
-      for (let dr = 0; dr < s.heightCells; dr++) {
-        for (let dc = 0; dc < s.widthCells; dc++) {
-          const col = s.x + dc;
-          const row = s.y + dr;
-          const sk  = painterKey(col, row);
-          items.push({
-            sortKey: sk,
-            draw: (ctx) => drawIsoBox(ctx, col, row, zoom, originX, originY, topHex, leftClr, rightClr, depth),
-          });
+      // Try sprite first
+      const sprite = def.sprite ? structSpriteCache.get(def.sprite) : undefined;
+
+      if (sprite) {
+        // Bounding box that encloses the full isometric footprint + depth walls
+        const bboxL = originX + (s.x - s.y - H) * tw / 2;
+        const bboxT = originY + (s.x + s.y) * th / 2;
+        const bboxW = (W + H) * tw / 2;
+        const bboxH = (W + H) * th / 2 + d;
+
+        // Single render item, sorted at the back-most cell so it draws early
+        items.push({
+          sortKey: painterKey(s.x, s.y),
+          draw: (ctx) => {
+            ctx.drawImage(sprite, bboxL, bboxT, bboxW, bboxH);
+          },
+        });
+      } else {
+        // Fallback: per-cell 3D boxes
+        const topHex   = STRUCT_TOP[s.structureId] ?? '#999999';
+        const leftClr  = shadeHex(topHex, 0.65);
+        const rightClr = shadeHex(topHex, 0.80);
+
+        for (let dr = 0; dr < H; dr++) {
+          for (let dc = 0; dc < W; dc++) {
+            const col = s.x + dc;
+            const row = s.y + dr;
+            items.push({
+              sortKey: painterKey(col, row),
+              draw: (ctx) => drawIsoBox(ctx, col, row, zoom, originX, originY, topHex, leftClr, rightClr, depth),
+            });
+          }
         }
-      }
 
-      // Emoji label — drawn after all cells, at the center cell
-      const cCol  = s.x + Math.floor(s.widthCells / 2);
-      const cRow  = s.y + Math.floor(s.heightCells / 2);
-      const maxSK = painterKey(s.x + s.widthCells - 1, s.y + s.heightCells - 1);
-      items.push({
-        sortKey: maxSK + 0.5,
-        draw: (ctx) => {
-          const { sx, sy } = gridToScreenCenter(cCol, cRow, zoom, originX, originY);
-          const depth2 = (STRUCTURE_DEPTH[s.structureId] ?? 12) * zoom;
-          const sz = Math.max(14, tileH(zoom) * 0.9);
-          ctx.save();
-          ctx.font = `${sz}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(def.emoji, sx, sy - depth2 * 0.5);
-          ctx.restore();
-        },
-      });
+        // Emoji label at centre
+        const cCol  = s.x + Math.floor(W / 2);
+        const cRow  = s.y + Math.floor(H / 2);
+        items.push({
+          sortKey: painterKey(s.x + W - 1, s.y + H - 1) + 0.5,
+          draw: (ctx) => {
+            const { sx, sy } = gridToScreenCenter(cCol, cRow, zoom, originX, originY);
+            const sz = Math.max(14, th * 0.9);
+            ctx.save();
+            ctx.font = `${sz}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(def.emoji, sx, sy - d * 0.5);
+            ctx.restore();
+          },
+        });
+      }
     });
 
     // Plants: expand area plants into per-cell items
@@ -380,7 +440,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
     items.sort((a, b) => a.sortKey - b.sortKey);
     return items;
-  }, [structures, plants, selectedPlantId, zoom, originX, originY]);
+  }, [structures, plants, selectedPlantId, zoom, originX, originY, spriteVer]);
 
   // ── Main canvas draw ─────────────────────────────────────────────────────────
   const drawMain = useCallback(() => {

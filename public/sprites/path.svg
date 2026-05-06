@@ -1,35 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 100">
-  <!-- PATH: 1 cell wide x 4 cells tall = very narrow vertical strip -->
-  <!-- Shows a single paving stone section that can be stacked -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 84">
+  <!-- PATH: 1x4, depth=4. Diamond: top=(80,0) R=(160,40) B=(80,80) L=(0,40) -->
 
-  <!-- Top face - narrow vertical diamond (1 wide x 4 tall footprint) -->
-  <polygon points="95,4 180,44 95,84 10,44" fill="#C8B89A"/>
+  <!-- Left wall (SW) - shallow -->
+  <polygon points="0,40 80,80 80,84 0,44" fill="#B0A080"/>
 
-  <!-- Horizontal stone joints dividing sections -->
-  <line x1="10" y1="44" x2="180" y2="44" stroke="#A89880" stroke-width="3" opacity="0.7"/>
-  <line x1="35" y1="24" x2="155" y2="64" stroke="#A89880" stroke-width="2" opacity="0.5"/>
-  <line x1="35" y1="64" x2="155" y2="104" stroke="#A89880" stroke-width="2" opacity="0.5"/>
+  <!-- Right wall (SE) - shallow -->
+  <polygon points="80,80 160,40 160,44 80,84" fill="#998F6F"/>
 
-  <!-- Gravel texture scattered across surface -->
-  <circle cx="45" cy="30" r="1.2" fill="#8B7355" opacity="0.6"/>
-  <circle cx="135" cy="35" r="1" fill="#8B7355" opacity="0.5"/>
-  <circle cx="85" cy="55" r="1.1" fill="#9C8668" opacity="0.5"/>
-  <circle cx="115" cy="65" r="1" fill="#8B7355" opacity="0.5"/>
-  <circle cx="55" cy="75" r="1.2" fill="#8B7355" opacity="0.6"/>
-  <circle cx="145" cy="70" r="0.9" fill="#9C8668" opacity="0.4"/>
+  <!-- Top face - paving stones -->
+  <polygon points="80,0 160,40 80,80 0,40" fill="#C8B89A"/>
 
-  <!-- Left wall (SW) - narrow, shallow depth 4 -->
-  <polygon points="10,44 95,84 95,88 10,48" fill="#B0A080"/>
-  <circle cx="28" cy="58" r="1" fill="#8B7355" opacity="0.5"/>
-  <circle cx="65" cy="74" r="0.9" fill="#8B7355" opacity="0.4"/>
+  <!-- Stone joint lines -->
+  <line x1="0" y1="40" x2="160" y2="40" stroke="#A89880" stroke-width="2" opacity="0.6"/>
+  <line x1="40" y1="20" x2="120" y2="60" stroke="#A89880" stroke-width="1.5" opacity="0.4"/>
+  <line x1="40" y1="60" x2="120" y2="20" stroke="#A89880" stroke-width="1.5" opacity="0.4"/>
 
-  <!-- Right wall (SE) - narrow, shallow -->
-  <polygon points="95,84 180,44 180,48 95,88" fill="#998F6F"/>
-  <circle cx="155" cy="58" r="1" fill="#8B7355" opacity="0.5"/>
+  <!-- Gravel texture -->
+  <circle cx="50" cy="30" r="1.5" fill="#8B7355" opacity="0.5"/>
+  <circle cx="110" cy="35" r="1.2" fill="#8B7355" opacity="0.4"/>
+  <circle cx="80" cy="50" r="1.3" fill="#9C8668" opacity="0.4"/>
+  <circle cx="60" cy="55" r="1" fill="#8B7355" opacity="0.5"/>
+  <circle cx="120" cy="55" r="1.2" fill="#8B7355" opacity="0.4"/>
+  <circle cx="90" cy="25" r="1" fill="#9C8668" opacity="0.4"/>
 
-  <!-- Top edge highlight -->
-  <polyline points="10,44 95,4 180,44" stroke="#D4C4A8" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
-
-  <!-- Center line to emphasize it's a linear path -->
-  <line x1="95" y1="4" x2="95" y2="88" stroke="#B39876" stroke-width="1.5" opacity="0.3"/>
+  <!-- Edge highlight -->
+  <polyline points="0,40 80,0 160,40" stroke="#D4C4A8" stroke-width="1.5" fill="none" opacity="0.6"/>
 </svg>
