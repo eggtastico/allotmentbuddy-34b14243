@@ -285,30 +285,27 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       if (structDef?.sprite) spritePaths.add(structDef.sprite);
     });
 
-    let loadedCount = 0;
-    let totalCount = spritePaths.size;
+    const pendingPaths = new Set<string>();
 
     spritePaths.forEach(path => {
-      if (spriteCacheRef.current.has(path)) {
-        loadedCount++;
-        return;
-      }
+      if (spriteCacheRef.current.has(path)) return;
+      pendingPaths.add(path);
       spriteCacheRef.current.set(path, null); // Mark as loading
       const img = new Image();
       img.onload = () => {
         spriteCacheRef.current.set(path, img);
-        loadedCount++;
-        if (loadedCount === totalCount) setSpriteVersion(v => v + 1);
+        pendingPaths.delete(path);
+        if (pendingPaths.size === 0) setSpriteVersion(v => v + 1);
       };
       img.onerror = () => {
         spriteCacheRef.current.set(path, null);
-        loadedCount++;
-        if (loadedCount === totalCount) setSpriteVersion(v => v + 1);
+        pendingPaths.delete(path);
+        if (pendingPaths.size === 0) setSpriteVersion(v => v + 1);
       };
       img.src = `${import.meta.env.BASE_URL}${path}`;
     });
 
-    if (totalCount === 0) setSpriteVersion(v => v + 1);
+    if (pendingPaths.size === 0) setSpriteVersion(v => v + 1);
   }, [structures]);
 
   // ── Build sorted render list (structures + plants) ──────────────────────────
@@ -326,7 +323,8 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       // Check if sprite is loaded
       const sprite = def.sprite ? spriteCacheRef.current.get(def.sprite) : null;
 
-      if (sprite) {
+      if (sprite && false) {
+        // TODO: Fix sprite rendering bounding box calculation
         // Render full-footprint sprite
         items.push({
           sortKey: painterKey(s.x, s.y),
