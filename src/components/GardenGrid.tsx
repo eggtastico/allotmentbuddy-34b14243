@@ -2105,14 +2105,11 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           {structures.map(struct => {
             const data = getStructureById(struct.structureId);
             if (!data) return null;
-            const structureMode = propStructureMode ?? internalStructureMode;
-            const isDisabled = !structureMode;
-
             return (
               <div key={struct.id}>
                 <div
                   data-structure-tile
-                className={`absolute border-4 flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'} ${isDisabled ? 'pointer-events-none opacity-60' : ''}`}
+                className={`absolute border-4 flex flex-col items-center justify-center group cursor-move ${data.shape === 'circle' ? 'rounded-full' : 'rounded-md'}`}
                 style={{
                   left: struct.x * cellSize,
                   top: struct.y * cellSize,

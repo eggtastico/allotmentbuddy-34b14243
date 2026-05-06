@@ -205,6 +205,8 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   onMovePlant,
   onSelectPlant,
   onPlaceStructure,
+  onMoveStructure,
+  onResizeStructure,
   showSunOverlay,
   onShowSunOverlayChange,
   selectedPlantId,
@@ -226,9 +228,11 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   const [canvasH,  setCanvasH] = useState(0);
 
   // ── interaction ─────────────────────────────────────────────────────────────
-  const isPanningRef   = useRef(false);
-  const panStartRef    = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
-  const draggingIdRef  = useRef<string | null>(null);
+  const isPanningRef       = useRef(false);
+  const panStartRef        = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const draggingIdRef      = useRef<string | null>(null);   // plant drag
+  const draggingStructRef  = useRef<string | null>(null);   // structure drag
+  const resizingStructRef  = useRef<{ id: string; edge: 'right' | 'bottom' | 'corner'; startW: number; startH: number; startCol: number; startRow: number } | null>(null);
   const [hoverCell, setHoverCell] = useState<{ col: number; row: number } | null>(null);
 
   // ── overlays ────────────────────────────────────────────────────────────────
@@ -535,7 +539,9 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     const mx = clientX - rect.left;
     const my = clientY - rect.top;
     const { col: rawCol, row: rawRow } = screenToGrid(mx, my, zoom, originX, originY);
-    return clampGrid(Math.round(rawCol), Math.round(rawRow), gridW, gridH);
+    // screenToGrid maps from top-tip coordinates; clicking at a cell's visual
+    // centre yields (col+0.5, row+0.5).  Math.floor gives the correct cell.
+    return clampGrid(Math.floor(rawCol), Math.floor(rawRow), gridW, gridH);
   }, [zoom, originX, originY, gridW, gridH]);
 
   // ── Mouse handlers ───────────────────────────────────────────────────────────
@@ -562,11 +568,9 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
     if (hitPlant) {
       onSelectPlant(hitPlant);
-      if (e.detail >= 2) {
-        // Double-click → start drag
-        draggingIdRef.current = hitPlant.id;
-        if (onMovePlantStart) onMovePlantStart(hitPlant.id);
-      }
+      // Single-click → start plant drag
+      draggingIdRef.current = hitPlant.id;
+      if (onMovePlantStart) onMovePlantStart(hitPlant.id);
       return;
     }
 
@@ -575,6 +579,17 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     );
     if (hitStructure) {
       onSelectPlant(null);
+      const atRight  = col === hitStructure.x + hitStructure.widthCells - 1;
+      const atBottom = row === hitStructure.y + hitStructure.heightCells - 1;
+      if (atRight && atBottom) {
+        resizingStructRef.current = { id: hitStructure.id, edge: 'corner', startW: hitStructure.widthCells, startH: hitStructure.heightCells, startCol: col, startRow: row };
+      } else if (atRight) {
+        resizingStructRef.current = { id: hitStructure.id, edge: 'right', startW: hitStructure.widthCells, startH: hitStructure.heightCells, startCol: col, startRow: row };
+      } else if (atBottom) {
+        resizingStructRef.current = { id: hitStructure.id, edge: 'bottom', startW: hitStructure.widthCells, startH: hitStructure.heightCells, startCol: col, startRow: row };
+      } else {
+        draggingStructRef.current = hitStructure.id;
+      }
       return;
     }
 
@@ -608,21 +623,46 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       if (cell) onMovePlant(draggingIdRef.current, cell.col, cell.row);
     }
 
+    // Drag structure
+    if (draggingStructRef.current) {
+      const cell = clientToGrid(e.clientX, e.clientY);
+      if (cell) onMoveStructure(draggingStructRef.current, cell.col, cell.row);
+    }
+
+    // Resize structure
+    if (resizingStructRef.current) {
+      const cell = clientToGrid(e.clientX, e.clientY);
+      if (cell) {
+        const r = resizingStructRef.current;
+        const deltaCol = cell.col - r.startCol;
+        const deltaRow = cell.row - r.startRow;
+        let newW = r.startW;
+        let newH = r.startH;
+        if (r.edge === 'right' || r.edge === 'corner') newW = Math.max(1, r.startW + deltaCol);
+        if (r.edge === 'bottom' || r.edge === 'corner') newH = Math.max(1, r.startH + deltaRow);
+        onResizeStructure(r.id, newW, newH);
+      }
+    }
+
     // Update hover cell
     const cell = clientToGrid(e.clientX, e.clientY);
     setHoverCell(cell);
-  }, [clientToGrid, onMovePlant]);
+  }, [clientToGrid, onMovePlant, onMoveStructure, onResizeStructure]);
 
   const handleMouseUp = useCallback(() => {
-    isPanningRef.current  = false;
-    panStartRef.current   = null;
-    draggingIdRef.current = null;
+    isPanningRef.current      = false;
+    panStartRef.current       = null;
+    draggingIdRef.current     = null;
+    draggingStructRef.current = null;
+    resizingStructRef.current = null;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    isPanningRef.current  = false;
-    panStartRef.current   = null;
-    draggingIdRef.current = null;
+    isPanningRef.current      = false;
+    panStartRef.current       = null;
+    draggingIdRef.current     = null;
+    draggingStructRef.current = null;
+    resizingStructRef.current = null;
     setHoverCell(null);
   }, []);
 
