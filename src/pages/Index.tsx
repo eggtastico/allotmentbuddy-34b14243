@@ -24,42 +24,26 @@ import { LocationPicker } from '@/components/LocationPicker';
 import { RainWidget } from '@/components/RainWidget';
 import { GardenAssistantPanel } from '@/components/GardenAssistantPanel';
 import { SocialShare } from '@/components/SocialShare';
+import { SyncStatusBar } from '@/components/SyncStatusBar';
 import { SuccessionSlider } from '@/components/SuccessionSlider';
 import { PanelSkeleton } from '@/components/PanelSkeleton';
-
-// Lazy-loaded modal components
-const PlantingCalendar = React.lazy(() => import('@/components/PlantingCalendar').then(m => ({ default: m.PlantingCalendar })));
-const AIChat = React.lazy(() => import('@/components/AIChat').then(m => ({ default: m.AIChat })));
-const AuthModal = React.lazy(() => import('@/components/AuthModal').then(m => ({ default: m.AuthModal })));
-const SaveLoadPanel = React.lazy(() => import('@/components/SaveLoadPanel').then(m => ({ default: m.SaveLoadPanel })));
-const RotationPanel = React.lazy(() => import('@/components/RotationPanel').then(m => ({ default: m.RotationPanel })));
-const WeatherYieldPanel = React.lazy(() => import('@/components/WeatherYieldPanel').then(m => ({ default: m.WeatherYieldPanel })));
-const WateringGuide = React.lazy(() => import('@/components/WateringGuide').then(m => ({ default: m.WateringGuide })));
-const PlotMapPanel = React.lazy(() => import('@/components/PlotMapPanel').then(m => ({ default: m.PlotMapPanel })));
-const GardenJournal = React.lazy(() => import('@/components/GardenJournal').then(m => ({ default: m.GardenJournal })));
-const DocsGuide = React.lazy(() => import('@/components/DocsGuide').then(m => ({ default: m.DocsGuide })));
-const SeedInventory = React.lazy(() => import('@/components/SeedInventory').then(m => ({ default: m.SeedInventory })));
-const PlantingSuggestions = React.lazy(() => import('@/components/PlantingSuggestions').then(m => ({ default: m.PlantingSuggestions })));
+import { ModalContainer } from '@/components/ModalContainer';
+// GardenTasks is also used inline on mobile (not in ModalContainer)
 const GardenTasks = React.lazy(() => import('@/components/GardenTasks').then(m => ({ default: m.GardenTasks })));
-const MonthlyPlanner = React.lazy(() => import('@/components/MonthlyPlanner').then(m => ({ default: m.MonthlyPlanner })));
-const GrowGuide = React.lazy(() => import('@/components/GrowGuide').then(m => ({ default: m.GrowGuide })));
-const ShoppingList = React.lazy(() => import('@/components/ShoppingList').then(m => ({ default: m.ShoppingList })));
-const HarvestLogger = React.lazy(() => import('@/components/HarvestLogger').then(m => ({ default: m.HarvestLogger })));
-const PestDiseaseLog = React.lazy(() => import('@/components/PestDiseaseLog').then(m => ({ default: m.PestDiseaseLog })));
-const CropRotationPlanner = React.lazy(() => import('@/components/CropRotationPlanner').then(m => ({ default: m.CropRotationPlanner })));
 import { useGardenPlans } from '@/hooks/useGardenPlans';
 import { useAuth } from '@/hooks/use-auth';
 import { useGardenAutoSave } from '@/hooks/useGardenAutoSave';
 import { useGardenModals } from '@/hooks/useGardenModals';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useFrostDates } from '@/hooks/useFrostDates';
+import { useConflictResolution } from '@/hooks/useConflictResolution';
+import { ConflictDialog } from '@/components/ConflictDialog';
 // exportGardenPDF is loaded on-demand to keep jsPDF out of the initial bundle
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { logError } from '@/utils/errorUtils';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, Undo2, Redo2, History, Loader2, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +59,7 @@ const Index = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { plans, save, isSaving } = useGardenPlans();
   const { getFavouritesWithQuantity, getFavouriteIds } = useFavouritePlants();
+  const { conflict, checkForConflict, resolveConflict } = useConflictResolution();
 
   const [settings, setSettings] = useState<PlotSettings>({
     widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180, snapToGrid: true,
@@ -103,6 +88,18 @@ const Index = () => {
   // Succession planting slider — month view and visibility
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [showSuccessionSlider, setShowSuccessionSlider] = useState(false);
+
+  // Auto-save flash indicator
+  const [showSaved, setShowSaved] = useState(false);
+  const wasSavingRef = useRef(false);
+  useEffect(() => {
+    if (wasSavingRef.current && !isSaving) {
+      setShowSaved(true);
+      const t = setTimeout(() => setShowSaved(false), 2000);
+      return () => clearTimeout(t);
+    }
+    wasSavingRef.current = isSaving;
+  }, [isSaving]);
 
   // Undo/Redo history
   const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
@@ -157,6 +154,27 @@ const Index = () => {
     setPlacedPlants(next);
     setSelectedPlant(null);
   }, [redoStack, placedPlants]);
+
+  // Keyboard shortcuts: Ctrl+Z for undo, Ctrl+Y / Ctrl+Shift+Z for redo
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // Initialize IndexedDB on mount
   useEffect(() => {
@@ -392,10 +410,22 @@ const Index = () => {
   }, [placedPlants, pushUndo, settings.cellSizeCm, defaultStage, getFavouritesWithQuantity]);
 
   const handleRemovePlant = useCallback((id: string) => {
+    const removed = placedPlants.find(p => p.id === id);
     pushUndo(placedPlants);
     setPlacedPlants(prev => prev.filter(p => p.id !== id));
     if (selectedPlant?.id === id) setSelectedPlant(null);
-  }, [selectedPlant, pushUndo, placedPlants]);
+
+    if (removed) {
+      const name = getPlantById(removed.plantId)?.name ?? 'Plant';
+      toast(`${name} removed`, {
+        action: {
+          label: 'Undo',
+          onClick: () => handleUndo(),
+        },
+        duration: 5000,
+      });
+    }
+  }, [selectedPlant, pushUndo, placedPlants, handleUndo]);
 
   const handleUpdatePlacedPlant = useCallback((updated: PlacedPlant) => {
     setPlacedPlants(prev => prev.map(p => p.id === updated.id ? updated : p));
@@ -460,7 +490,7 @@ const Index = () => {
     setSelectedBed(prev => prev?.id === updated.id ? updated : prev);
   }, []);
 
-  const handleLoadPlan = useCallback((plan: GardenPlanRow) => {
+  const applyPlan = useCallback((plan: GardenPlanRow) => {
     setCurrentPlanId(plan.id);
     setPlanName(plan.name);
     setSettings(plan.plot_settings as PlotSettings);
@@ -483,6 +513,17 @@ const Index = () => {
     setSelectedBed(null);
     toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
+
+  const handleLoadPlan = useCallback(async (plan: GardenPlanRow) => {
+    const resolved = await checkForConflict(plan);
+    if (resolved) applyPlan(resolved);
+    // If null, the conflict dialog is shown and will call handleConflictResolve
+  }, [checkForConflict, applyPlan]);
+
+  const handleConflictResolve = useCallback(async (choice: 'local' | 'remote' | null) => {
+    const resolved = await resolveConflict(choice);
+    if (resolved) applyPlan(resolved);
+  }, [resolveConflict, applyPlan]);
 
   const handleNewPlan = useCallback(() => {
     setCurrentPlanId(null);
@@ -828,7 +869,16 @@ const Index = () => {
           >
             {useIsometric ? '🏔️ Iso' : '🗺️ Flat'}
           </Button>
-          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
+          {isSaving && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground ml-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+            </span>
+          )}
+          {showSaved && !isSaving && (
+            <span className="flex items-center gap-1 text-[10px] text-green-600 ml-2 animate-in fade-in duration-300">
+              <Check className="h-3 w-3" /> Saved
+            </span>
+          )}
         </div>
       </div>
 
@@ -1056,146 +1106,44 @@ const Index = () => {
       )}
 
       {/* Modals (lazy-loaded with Suspense) */}
-      {showCalendar && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <PlantingCalendar placedPlants={placedPlants} location={location} onClose={() => setShowCalendar(false)} />
-        </Suspense>
-      )}
-      {showAI && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <AIChat settings={settings} plants={placedPlants} location={location} onClose={() => setShowAI(false)} />
-        </Suspense>
-      )}
-      {showAuth && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <AuthModal onClose={() => setShowAuth(false)} />
-        </Suspense>
-      )}
-      {showSaveLoad && user && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <SaveLoadPanel
-            currentPlanId={currentPlanId}
-            currentName={planName}
-            settings={settings}
-            plants={placedPlants}
-            beds={placedStructures}
-            onLoad={handleLoadPlan}
-            onNewPlan={handleNewPlan}
-            onClose={() => setShowSaveLoad(false)}
-          />
-        </Suspense>
-      )}
-      {showWeather && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <WeatherYieldPanel plants={placedPlants} location={location} onClose={() => setShowWeather(false)} />
-        </Suspense>
-      )}
-      {showRotation && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <RotationPanel
-            plants={placedPlants}
-            onOptimize={handleOptimizeRotation}
-            onClose={() => setShowRotation(false)}
-          />
-        </Suspense>
-      )}
-      {showWatering && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <WateringGuide
-            plants={placedPlants}
-            structures={placedStructures}
-            location={location}
-           onClose={() => setShowWatering(false)}
-          />
-        </Suspense>
-      )}
-      {showPlotMap && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <PlotMapPanel onClose={() => setShowPlotMap(false)} />
-        </Suspense>
-      )}
-      {showJournal && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <GardenJournal onClose={() => setShowJournal(false)} />
-        </Suspense>
-      )}
-      {showDocs && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <DocsGuide onClose={() => setShowDocs(false)} />
-        </Suspense>
-      )}
-      {showSeedInventory && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <SeedInventory onClose={() => setShowSeedInventory(false)} />
-        </Suspense>
-      )}
-      {showPlantingSuggestions && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />
-        </Suspense>
-      )}
-      {showTasks && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <GardenTasks placedPlants={placedPlants} frostDates={frostDates} onClose={() => setShowTasks(false)} />
-        </Suspense>
-      )}
-      {showMonthlyPlanner && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <MonthlyPlanner onClose={() => setShowMonthlyPlanner(false)} />
-        </Suspense>
-      )}
-      {showGrowGuide && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <GrowGuide onClose={() => setShowGrowGuide(false)} />
-        </Suspense>
-      )}
-      {showShoppingList && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <ShoppingList placedPlants={placedPlants} onClose={() => setShowShoppingList(false)} />
-        </Suspense>
-      )}
-      {showHarvestLogger && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <HarvestLogger
-            placedPlants={placedPlants}
-            gardenId={currentPlanId ?? 'local'}
-            onClose={() => setShowHarvestLogger(false)}
-          />
-        </Suspense>
-      )}
-      {showPestLog && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <PestDiseaseLog
-            placedPlants={placedPlants}
-            gardenId={currentPlanId ?? 'local'}
-            onClose={() => setShowPestLog(false)}
-          />
-        </Suspense>
-      )}
-      {showRotationPlanner && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <CropRotationPlanner
-            placedPlants={placedPlants}
-            onClose={() => setShowRotationPlanner(false)}
-          />
-        </Suspense>
-      )}
-      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear this garden plan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove all placed plants and structures from your current layout.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmClear}>
-              Delete plan
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ModalContainer
+        {...{
+          showCalendar, setShowCalendar,
+          showAI, setShowAI,
+          showAuth, setShowAuth,
+          showSaveLoad, setShowSaveLoad,
+          showRotation, setShowRotation,
+          showWeather, setShowWeather,
+          showWatering, setShowWatering,
+          showPlotMap, setShowPlotMap,
+          showJournal, setShowJournal,
+          showDocs, setShowDocs,
+          showSeedInventory, setShowSeedInventory,
+          showPlantingSuggestions, setShowPlantingSuggestions,
+          showTasks, setShowTasks,
+          showMonthlyPlanner, setShowMonthlyPlanner,
+          showGrowGuide, setShowGrowGuide,
+          showShoppingList, setShowShoppingList,
+          showHarvestLogger, setShowHarvestLogger,
+          showPestLog, setShowPestLog,
+          showRotationPlanner, setShowRotationPlanner,
+          showClearConfirm, setShowClearConfirm,
+        }}
+        placedPlants={placedPlants}
+        placedStructures={placedStructures}
+        settings={settings}
+        location={location}
+        currentPlanId={currentPlanId}
+        planName={planName}
+        frostDates={frostDates}
+        user={user}
+        onLoadPlan={handleLoadPlan}
+        onNewPlan={handleNewPlan}
+        onOptimizeRotation={handleOptimizeRotation}
+        onClearConfirm={confirmClear}
+      />
+
+      <ConflictDialog conflict={conflict} onResolve={handleConflictResolve} />
 
       {/* Alternative views for mobile navigation */}
       {isMobile && activeNav === 'crops' && (
@@ -1432,6 +1380,8 @@ const Index = () => {
           />
         </div>
       )}
+
+      <SyncStatusBar />
     </div>
   );
 };

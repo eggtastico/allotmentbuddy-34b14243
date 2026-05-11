@@ -105,7 +105,14 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newDueDate, setNewDueDate] = useState('');
-  const [tab, setTab] = useState(inline ? 'today' : 'tasks');
+  const TASK_TAB_KEY = inline ? 'allotment-task-tab-inline' : 'allotment-task-tab-dialog';
+  const [tab, setTab] = useState(() => {
+    try { return localStorage.getItem(TASK_TAB_KEY) || (inline ? 'today' : 'tasks'); } catch { return inline ? 'today' : 'tasks'; }
+  });
+  const handleTabChange = (value: string) => {
+    setTab(value);
+    try { localStorage.setItem(TASK_TAB_KEY, value); } catch {}
+  };
   const [weeklyFeeding, setWeeklyFeeding] = useState<GeneratedTask[]>([]);
   const [monthlyFeeding, setMonthlyFeeding] = useState<GeneratedTask[]>([]);
   const [checkedTasks, setCheckedTasks] = useState<Set<string>>(loadCheckedTasks);
@@ -564,7 +571,7 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
 
   // ── Inline (mobile) tab layout: Today | This Week | This Month | Feeding | My Tasks ──
   const inlineTabsContent = (
-    <Tabs value={tab} onValueChange={setTab}>
+    <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList className="w-full overflow-x-auto overflow-y-hidden flex-nowrap">
         <TabsTrigger value="today" className="flex-1 text-xs whitespace-nowrap">
           Today
@@ -746,7 +753,7 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
 
   // ── Dialog (non-inline) tab layout: Daily | Weekly | Monthly | Feeding | My Tasks ──
   const dialogTabsContent = (
-    <Tabs value={tab} onValueChange={setTab}>
+    <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList className="w-full overflow-x-auto overflow-y-hidden flex-nowrap">
         <TabsTrigger value="tasks" className="flex-1 text-xs whitespace-nowrap">
           Daily
