@@ -16,6 +16,7 @@ import {
 import { getPlantById } from '@/data/plants';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Leaf, Scale, Star } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 
 interface HarvestLoggerProps {
   onClose: () => void;
@@ -259,9 +260,13 @@ export function HarvestLogger({ onClose, placedPlants, gardenId }: HarvestLogger
                   <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
                 </div>
               ) : logs.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground px-4">
-                  No harvests logged yet. Hit "Log harvest" to record your first pick.
-                </div>
+                <EmptyState
+                  icon={Leaf}
+                  title="No harvests logged yet"
+                  description="Track what you pick and when. Tap below to record your first harvest."
+                  actionLabel="Log harvest"
+                  onAction={() => setShowForm(true)}
+                />
               ) : (
                 <div className="divide-y">
                   {logs.map(log => {

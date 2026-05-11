@@ -11,7 +11,8 @@ import { PlacedPlant, PestLog, PestSeverity } from '@/types/garden';
 import { savePestLog, getPestLogs, updatePestLog, deletePestLog } from '@/lib/db';
 import { getPlantById } from '@/data/plants';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Bug, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Loader2, Bug, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 
 interface PestDiseaseLogProps {
   onClose: () => void;
@@ -280,13 +281,27 @@ export function PestDiseaseLog({ onClose, placedPlants, gardenId }: PestDiseaseL
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground px-4">
-              {filterResolved === 'active'
-                ? 'No active problems — garden is clean!'
-                : filterResolved === 'resolved'
-                ? 'No resolved entries yet.'
-                : 'No problems logged yet.'}
-            </div>
+            filterResolved === 'active' ? (
+              <EmptyState
+                icon={ShieldCheck}
+                title="Garden is clean!"
+                description="No active pest or disease problems. Keep an eye out and log any issues early."
+              />
+            ) : filterResolved === 'resolved' ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title="No resolved entries yet"
+                description="Resolved problems will appear here once you mark active issues as fixed."
+              />
+            ) : (
+              <EmptyState
+                icon={Bug}
+                title="No problems logged"
+                description="Track pests and diseases to spot patterns and protect your crops season to season."
+                actionLabel="Log a problem"
+                onAction={() => setShowForm(true)}
+              />
+            )
           ) : (
             <div className="divide-y">
               {filteredLogs.map(log => {

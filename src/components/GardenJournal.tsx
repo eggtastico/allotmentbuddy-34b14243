@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { X, Plus, Trash2, Camera, Loader2 } from 'lucide-react';
+import { X, Plus, Trash2, Camera, Loader2, BookOpen } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -165,7 +166,11 @@ export function GardenJournal({ onClose }: Props) {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No journal entries yet. Start documenting your garden! 🌱</p>
+          <EmptyState
+            icon={BookOpen}
+            title="No journal entries yet"
+            description="Keep a record of your garden's progress — observations, weather, what you planted and when. Use the form above to add your first entry."
+          />
         ) : (
           <div className="space-y-3">
             {entries.map(entry => (

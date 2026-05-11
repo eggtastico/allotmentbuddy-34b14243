@@ -25,6 +25,7 @@ import { RainWidget } from '@/components/RainWidget';
 import { GardenAssistantPanel } from '@/components/GardenAssistantPanel';
 import { SocialShare } from '@/components/SocialShare';
 import { SuccessionSlider } from '@/components/SuccessionSlider';
+import { PanelSkeleton } from '@/components/PanelSkeleton';
 
 // Lazy-loaded modal components
 const PlantingCalendar = React.lazy(() => import('@/components/PlantingCalendar').then(m => ({ default: m.PlantingCalendar })));
@@ -52,7 +53,7 @@ import { useGardenAutoSave } from '@/hooks/useGardenAutoSave';
 import { useGardenModals } from '@/hooks/useGardenModals';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useFrostDates } from '@/hooks/useFrostDates';
-import { exportGardenPDF } from '@/utils/exportPDF';
+// exportGardenPDF is loaded on-demand to keep jsPDF out of the initial bundle
 import { optimizeRotation } from '@/utils/rotationOptimizer';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import { logError } from '@/utils/errorUtils';
@@ -107,6 +108,7 @@ const Index = () => {
   const [undoStack, setUndoStack] = useState<PlacedPlant[][]>([]);
   const [redoStack, setRedoStack] = useState<PlacedPlant[][]>([]);
   const skipHistoryRef = useRef(false);
+  const exportingRef = useRef(false);
 
   const pushUndo = useCallback((prev: PlacedPlant[]) => {
     setUndoStack(s => [...s.slice(-49), prev]);
@@ -172,7 +174,14 @@ const Index = () => {
 
   // Auto-load most recent plan: prefer remote plans from Supabase, fall back to IndexedDB
   const autoLoaded = useRef(false);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
+    // Reset the guard when the user identity changes (login, logout, switch account)
+    if (prevUserRef.current !== undefined && prevUserRef.current !== (user?.id ?? null)) {
+      autoLoaded.current = false;
+    }
+    prevUserRef.current = user?.id ?? null;
+
     if (autoLoaded.current) return;
 
     if (user && plans.length > 0) {
@@ -280,8 +289,7 @@ const Index = () => {
       stage: defaultStage,
     }]);
     setDragging(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placedPlants, defaultStage, pushUndo, settings.cellSizeCm]);
+  }, [placedPlants, defaultStage, pushUndo, settings.cellSizeCm, frostDates]);
 
   const handleFillPlantArea = useCallback((plantId: string, originX: number, originY: number, w: number, h: number) => {
     pushUndo(placedPlants);
@@ -482,11 +490,16 @@ const Index = () => {
   }, []);
 
   const handleExportPDF = async () => {
+    if (exportingRef.current) return;
+    exportingRef.current = true;
     try {
+      const { exportGardenPDF } = await import('@/utils/exportPDF');
       await exportGardenPDF(settings, placedPlants, planName);
       toast.success('PDF exported! 📄');
     } catch {
       toast.error('Failed to export PDF');
+    } finally {
+      exportingRef.current = false;
     }
   };
 
@@ -1037,22 +1050,22 @@ const Index = () => {
 
       {/* Modals (lazy-loaded with Suspense) */}
       {showCalendar && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <PlantingCalendar placedPlants={placedPlants} location={location} onClose={() => setShowCalendar(false)} />
         </Suspense>
       )}
       {showAI && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <AIChat settings={settings} plants={placedPlants} location={location} onClose={() => setShowAI(false)} />
         </Suspense>
       )}
       {showAuth && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <AuthModal onClose={() => setShowAuth(false)} />
         </Suspense>
       )}
       {showSaveLoad && user && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <SaveLoadPanel
             currentPlanId={currentPlanId}
             currentName={planName}
@@ -1066,12 +1079,12 @@ const Index = () => {
         </Suspense>
       )}
       {showWeather && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <WeatherYieldPanel plants={placedPlants} location={location} onClose={() => setShowWeather(false)} />
         </Suspense>
       )}
       {showRotation && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <RotationPanel
             plants={placedPlants}
             onOptimize={handleOptimizeRotation}
@@ -1080,7 +1093,7 @@ const Index = () => {
         </Suspense>
       )}
       {showWatering && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <WateringGuide
             plants={placedPlants}
             structures={placedStructures}
@@ -1090,52 +1103,52 @@ const Index = () => {
         </Suspense>
       )}
       {showPlotMap && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <PlotMapPanel onClose={() => setShowPlotMap(false)} />
         </Suspense>
       )}
       {showJournal && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <GardenJournal onClose={() => setShowJournal(false)} />
         </Suspense>
       )}
       {showDocs && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <DocsGuide onClose={() => setShowDocs(false)} />
         </Suspense>
       )}
       {showSeedInventory && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <SeedInventory onClose={() => setShowSeedInventory(false)} />
         </Suspense>
       )}
       {showPlantingSuggestions && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <PlantingSuggestions onClose={() => setShowPlantingSuggestions(false)} />
         </Suspense>
       )}
       {showTasks && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <GardenTasks placedPlants={placedPlants} onClose={() => setShowTasks(false)} />
         </Suspense>
       )}
       {showMonthlyPlanner && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <MonthlyPlanner onClose={() => setShowMonthlyPlanner(false)} />
         </Suspense>
       )}
       {showGrowGuide && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <GrowGuide onClose={() => setShowGrowGuide(false)} />
         </Suspense>
       )}
       {showShoppingList && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <ShoppingList placedPlants={placedPlants} onClose={() => setShowShoppingList(false)} />
         </Suspense>
       )}
       {showHarvestLogger && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <HarvestLogger
             placedPlants={placedPlants}
             gardenId={currentPlanId ?? 'local'}
@@ -1144,7 +1157,7 @@ const Index = () => {
         </Suspense>
       )}
       {showPestLog && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <PestDiseaseLog
             placedPlants={placedPlants}
             gardenId={currentPlanId ?? 'local'}
@@ -1153,7 +1166,7 @@ const Index = () => {
         </Suspense>
       )}
       {showRotationPlanner && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelSkeleton />}>
           <CropRotationPlanner
             placedPlants={placedPlants}
             onClose={() => setShowRotationPlanner(false)}
@@ -1190,7 +1203,7 @@ const Index = () => {
 
       {isMobile && activeNav === 'tasks' && (
         <div className="flex-1 overflow-y-auto pb-24 lg:hidden">
-          <Suspense fallback={null}>
+          <Suspense fallback={<div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />Loading tasks…</div>}>
             <GardenTasks placedPlants={placedPlants} onClose={() => setActiveNav('garden')} inline={true} frostDates={frostDates} />
           </Suspense>
         </div>

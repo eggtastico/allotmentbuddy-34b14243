@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { plants as plantDB } from '@/data/plants';
 import { PlacedPlant } from '@/types/garden';
 import { Plus, Trash2, Loader2, ListTodo, Leaf, Sprout, Scissors } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { toast } from 'sonner';
 import { PLANT_FEEDING, NO_FEED, FeedingInfo } from '@/utils/feedingGuide';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
@@ -455,9 +456,13 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
       ) : (
         <>
           {incomplete.length === 0 && completed.length === 0 && !adding && (
-            <p className="text-xs text-muted-foreground italic text-center py-4">
-              No custom tasks yet — add your own below.
-            </p>
+            <EmptyState
+              icon={ListTodo}
+              title="No custom tasks yet"
+              description="Add your own gardening reminders — watering schedules, planting dates, or anything else."
+              actionLabel="Add a task"
+              onAction={() => setAdding(true)}
+            />
           )}
 
           {/* Incomplete */}

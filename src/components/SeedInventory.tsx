@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Camera, Package, Trash2, Edit2, Check, Loader2, Sprout, PoundSterling } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -483,7 +484,13 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : seeds.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No seeds yet. Add some or scan a seed packet!</p>
+                <EmptyState
+                  icon={Package}
+                  title="No seeds in your inventory"
+                  description="Keep track of what seeds you have, when they expire, and how well they germinate."
+                  actionLabel="Add seeds"
+                  onAction={() => setShowAdd(true)}
+                />
               ) : (
                 <div className="space-y-1">
                   {seeds.map(seed => {
