@@ -397,6 +397,11 @@ const Index = () => {
     if (selectedPlant?.id === id) setSelectedPlant(null);
   }, [selectedPlant, pushUndo, placedPlants]);
 
+  const handleUpdatePlacedPlant = useCallback((updated: PlacedPlant) => {
+    setPlacedPlants(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setSelectedPlant(prev => prev?.id === updated.id ? updated : prev);
+  }, []);
+
   const handleMovePlantStart = useCallback(() => {
     pushUndo(placedPlants);
   }, [placedPlants, pushUndo]);
@@ -917,6 +922,7 @@ const Index = () => {
               allPlaced={placedPlants}
               onClose={() => setSelectedPlant(null)}
               onRemove={handleRemovePlant}
+              onUpdatePlaced={handleUpdatePlacedPlant}
               sunExposure={(() => {
                 const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
                 const c = Math.round(settings.widthM * cellsPerUnit);
@@ -950,6 +956,7 @@ const Index = () => {
             allPlaced={placedPlants}
             onClose={() => setSelectedPlant(null)}
             onRemove={handleRemovePlant}
+            onUpdatePlaced={handleUpdatePlacedPlant}
             modal={true}
             sunExposure={(() => {
               const cellsPerUnit = settings.unit === 'meters' ? (100 / settings.cellSizeCm) : (30.48 / settings.cellSizeCm);
@@ -1129,7 +1136,7 @@ const Index = () => {
       )}
       {showTasks && (
         <Suspense fallback={<PanelSkeleton />}>
-          <GardenTasks placedPlants={placedPlants} onClose={() => setShowTasks(false)} />
+          <GardenTasks placedPlants={placedPlants} frostDates={frostDates} onClose={() => setShowTasks(false)} />
         </Suspense>
       )}
       {showMonthlyPlanner && (

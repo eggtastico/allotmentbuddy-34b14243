@@ -82,6 +82,21 @@ function monthMatchesCurrent(rangeStr: string | undefined): boolean {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
+// Track which auto-generated tasks have been checked off today
+const CHECKED_TASKS_KEY = 'allotment-checked-tasks';
+function loadCheckedTasks(): Set<string> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHECKED_TASKS_KEY) || '{}');
+    const today = new Date().toISOString().slice(0, 10);
+    if (raw.date !== today) return new Set();
+    return new Set(raw.ids ?? []);
+  } catch { return new Set(); }
+}
+function saveCheckedTasks(ids: Set<string>) {
+  const today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem(CHECKED_TASKS_KEY, JSON.stringify({ date: today, ids: [...ids] }));
+}
+
 export function GardenTasks({ onClose, placedPlants, inline = false, frostDates }: GardenTasksProps) {
   const { user } = useAuth();
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
@@ -93,6 +108,16 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
   const [tab, setTab] = useState(inline ? 'today' : 'tasks');
   const [weeklyFeeding, setWeeklyFeeding] = useState<GeneratedTask[]>([]);
   const [monthlyFeeding, setMonthlyFeeding] = useState<GeneratedTask[]>([]);
+  const [checkedTasks, setCheckedTasks] = useState<Set<string>>(loadCheckedTasks);
+
+  const toggleChecked = (id: string) => {
+    setCheckedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      saveCheckedTasks(next);
+      return next;
+    });
+  };
 
   // Load custom tasks (Supabase when logged in, localStorage otherwise)
   useEffect(() => {
@@ -120,16 +145,15 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
     load();
   }, [user]);
 
-  // Load weekly/monthly feeding schedules (inline mode only)
+  // Load weekly/monthly feeding schedules
   useEffect(() => {
-    if (!inline || placedPlants.length === 0) return;
+    if (placedPlants.length === 0) return;
     setWeeklyFeeding(generateWeeklyFeedingSchedule(placedPlants));
     setMonthlyFeeding(generateMonthlyFeedingSchedule(placedPlants));
-  }, [inline, placedPlants]);
+  }, [placedPlants]);
 
-  // Week/month task data (inline mode only)
+  // Week/month task data
   const taskData = useMemo(() => {
-    if (!inline) return null;
     const now = new Date();
 
     // Group plants by ID, keeping earliest plant date
@@ -179,7 +203,7 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
     const toHarvest = plantDB.filter(p => monthMatchesCurrent(p.harvest) && plantedIds.has(p.id));
 
     return { soonThisWeek, successionAlerts, toSow, toHarvest };
-  }, [inline, placedPlants]);
+  }, [placedPlants]);
 
   // Auto-generated tasks from placed plants
   const generatedTasks = useMemo(() => {
@@ -381,26 +405,34 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
           <p className="text-[11px] text-muted-foreground">Add plants to your garden to get task reminders.</p>
         </div>
       ) : (
-        generatedTasks.map(task => (
-          <div
-            key={task.id}
-            className={`p-2 rounded border-l-3 ${
-              task.priority === 'high'
-                ? 'bg-red-50 dark:bg-red-950/20 border-red-400'
-                : task.priority === 'medium'
-                ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400'
-                : 'bg-blue-50 dark:bg-blue-950/20 border-blue-400'
-            }`}
-          >
-            <div className="flex items-start gap-2">
-              <span className="text-base shrink-0">{task.icon}</span>
-              <div>
-                <p className="text-xs font-semibold text-foreground">{task.title}</p>
-                <p className="text-[11px] text-muted-foreground leading-tight">{task.description}</p>
+        generatedTasks.map(task => {
+          const done = checkedTasks.has(task.id);
+          return (
+            <div
+              key={task.id}
+              className={`p-2 rounded border-l-3 ${done ? 'opacity-50' : ''} ${
+                task.priority === 'high'
+                  ? 'bg-red-50 dark:bg-red-950/20 border-red-400'
+                  : task.priority === 'medium'
+                  ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400'
+                  : 'bg-blue-50 dark:bg-blue-950/20 border-blue-400'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  checked={done}
+                  onCheckedChange={() => toggleChecked(task.id)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span className="text-base shrink-0">{task.icon}</span>
+                <div>
+                  <p className={`text-xs font-semibold ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{task.title}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{task.description}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
     </TabsContent>
   );
@@ -712,20 +744,29 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
     </Tabs>
   );
 
-  // ── Dialog (non-inline) tab layout: Tasks | Feeding Guide | My Tasks ──
+  // ── Dialog (non-inline) tab layout: Daily | Weekly | Monthly | Feeding | My Tasks ──
   const dialogTabsContent = (
     <Tabs value={tab} onValueChange={setTab}>
-      <TabsList className="w-full">
-        <TabsTrigger value="tasks" className="flex-1 text-xs">
-          Tasks
+      <TabsList className="w-full overflow-x-auto overflow-y-hidden flex-nowrap">
+        <TabsTrigger value="tasks" className="flex-1 text-xs whitespace-nowrap">
+          Daily
           {generatedTasks.length > 0 && (
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5 bg-primary/20 text-primary">{generatedTasks.length}</Badge>
           )}
         </TabsTrigger>
-        <TabsTrigger value="feeding" className="flex-1 text-xs">
-          Feeding Guide
+        <TabsTrigger value="week" className="flex-1 text-xs whitespace-nowrap">
+          Weekly
+          {taskData && taskData.soonThisWeek.length > 0 && (
+            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5 bg-amber-500/20 text-amber-700">{taskData.soonThisWeek.length}</Badge>
+          )}
         </TabsTrigger>
-        <TabsTrigger value="my-tasks" className="flex-1 text-xs">
+        <TabsTrigger value="month" className="flex-1 text-xs whitespace-nowrap">
+          Monthly
+        </TabsTrigger>
+        <TabsTrigger value="feeding" className="flex-1 text-xs whitespace-nowrap">
+          Feeding
+        </TabsTrigger>
+        <TabsTrigger value="my-tasks" className="flex-1 text-xs whitespace-nowrap">
           My Tasks
           {incomplete.length > 0 && (
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{incomplete.length}</Badge>
@@ -733,8 +774,149 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
         </TabsTrigger>
       </TabsList>
 
-      {/* ── Auto-generated Tasks ── */}
+      {/* ── Daily ── */}
       {todayTabContent}
+
+      {/* ── Weekly ── */}
+      <TabsContent value="week" className="space-y-2 mt-2">
+        {taskData && taskData.soonThisWeek.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Scissors className="h-3.5 w-3.5 text-amber-600" />
+              Harvest Soon
+            </div>
+            <div className="grid gap-1.5">
+              {taskData.soonThisWeek.map(h => (
+                <div key={h.plantId} className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{h.plant.emoji}</span>
+                      <span className="font-medium text-xs">{h.plant.name}</span>
+                      {h.count > 1 && <span className="text-[10px] text-muted-foreground">x{h.count}</span>}
+                    </div>
+                    <Badge className="bg-amber-500 text-white text-[10px] h-4 px-1.5">{h.daysRemaining}d</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {weeklyFeeding.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Sprout className="h-3.5 w-3.5 text-green-600" />
+              Feeding This Week
+            </div>
+            <div className="grid gap-1.5">
+              {weeklyFeeding.map(task => (
+                <div key={task.id} className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded">
+                  <p className="font-medium text-xs text-foreground">{task.title}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{task.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {taskData && taskData.successionAlerts.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Sprout className="h-3.5 w-3.5 text-primary" />
+              Plant Next
+            </div>
+            <div className="grid gap-1.5">
+              {taskData.successionAlerts.map(alert => (
+                <div key={alert.plantName} className="p-2 bg-primary/10 border border-primary/20 rounded">
+                  <p className="text-[11px] text-muted-foreground">
+                    After <strong>{alert.plantName}</strong> → <strong>{alert.suggestions.map(s => s.plant.name).join(', ')}</strong>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(!taskData || (taskData.soonThisWeek.length === 0 && weeklyFeeding.length === 0 && taskData.successionAlerts.length === 0)) && (
+          <div className="p-2 bg-muted rounded text-center">
+            <p className="text-[11px] text-muted-foreground">No urgent actions this week.</p>
+          </div>
+        )}
+      </TabsContent>
+
+      {/* ── Monthly ── */}
+      <TabsContent value="month" className="space-y-2 mt-2">
+        {monthlyFeeding.length > 0 && (
+          <div className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded">
+            <p className="text-[11px] text-muted-foreground">
+              <strong>Feeding:</strong> {monthlyFeeding.length} plant{monthlyFeeding.length !== 1 ? 's' : ''} need feeding this month
+            </p>
+          </div>
+        )}
+
+        {taskData && taskData.toSow.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Sprout className="h-3.5 w-3.5 text-primary" />
+              Sow in {currentMonth}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {taskData.toSow.slice(0, 8).map(p => (
+                <Badge key={p.id} className="bg-primary/20 text-primary font-normal text-[10px] h-5 px-1.5">
+                  {p.emoji} {p.name}
+                </Badge>
+              ))}
+              {taskData.toSow.length > 8 && <Badge variant="outline" className="text-[10px] h-5 px-1.5">{taskData.toSow.length - 8}+ more</Badge>}
+            </div>
+          </div>
+        )}
+
+        {taskData && taskData.toHarvest.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Scissors className="h-3.5 w-3.5 text-accent" />
+              Harvest in {currentMonth}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {taskData.toHarvest.slice(0, 8).map(p => (
+                <Badge key={p.id} className="bg-accent/20 text-accent font-normal text-[10px] h-5 px-1.5">
+                  {p.emoji} {p.name}
+                </Badge>
+              ))}
+              {taskData.toHarvest.length > 8 && <Badge variant="outline" className="text-[10px] h-5 px-1.5">{taskData.toHarvest.length - 8}+ more</Badge>}
+            </div>
+          </div>
+        )}
+
+        {monthlyFeeding.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Sprout className="h-3.5 w-3.5 text-green-600" />
+              Feeding This Month
+            </div>
+            <div className="grid gap-1.5">
+              {monthlyFeeding.map(task => (
+                <div key={task.id} className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded">
+                  <p className="font-medium text-xs text-foreground">{task.title}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{task.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {frostDates && (
+          <div className="p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded text-[11px] text-muted-foreground">
+            <p><strong>Frost:</strong> Last spring {frostDates.lastSpringFrost}, first fall {frostDates.firstFallFrost}</p>
+          </div>
+        )}
+
+        {(!taskData || (taskData.toSow.length === 0 && taskData.toHarvest.length === 0 && monthlyFeeding.length === 0)) && (
+          <div className="p-2 bg-muted rounded text-center">
+            <p className="text-[11px] text-muted-foreground">Quiet month for sowing and harvesting.</p>
+          </div>
+        )}
+      </TabsContent>
 
       {/* ── Feeding Guide ── */}
       {feedingTabContent}

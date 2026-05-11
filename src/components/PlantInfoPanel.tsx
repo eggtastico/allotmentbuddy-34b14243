@@ -439,7 +439,6 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
           </div>
         </div>
       )}
-
       {/* Photos section */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2">

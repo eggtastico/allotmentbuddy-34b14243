@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     fs: {
       allow: ['..'],
     },
-    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1'],
+    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1', '140.238.126.166'],
     proxy: {
       "/api": {
         target: "http://localhost:3001",
@@ -29,7 +29,17 @@ export default defineConfig(({ mode }) => ({
     // The service worker is registered in src/main.tsx
   ].filter(Boolean),
   preview: {
-    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1'],
+    allowedHosts: ['appsabaloo.com', 'www.appsabaloo.com', 'localhost', '127.0.0.1', '140.238.126.166'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('jspdf')) return 'vendor-pdf';
+          if (id.includes('@radix-ui/')) return 'vendor-radix';
+        },
+      },
+    },
   },
   resolve: {
     alias: {

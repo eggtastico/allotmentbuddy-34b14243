@@ -1,4 +1,4 @@
-import { useRef, useEffect, RefObject, useCallback } from 'react';
+import { useRef, useEffect, RefObject, useCallback, useState } from 'react';
 import { PlacedPlant, PlacedStructure, PlotSettings } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
@@ -50,6 +50,7 @@ export function GardenMinimap({
 }: GardenMinimapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDragging = useRef(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const cellSize = settings.cellSizePx;
   const gridW = cols * cellSize;
@@ -183,23 +184,25 @@ export function GardenMinimap({
   if (sidebarMode) {
     return (
       <div className="rounded border border-border/60 overflow-hidden select-none" title="Click or drag to navigate">
-        <div
-          className="bg-card/90 border-b border-border/40 text-center"
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="bg-card/90 border-b border-border/40 text-center w-full hover:bg-muted/60 transition-colors"
           style={{ fontSize: 8, padding: '1px 4px', color: 'hsl(var(--muted-foreground))' }}
         >
-          overview
-        </div>
-        {/* Centre the canvas horizontally; let it render at its natural pixel size */}
-        <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#e6d5b8' }}>
-          <canvas
-            ref={canvasRef}
-            style={{ display: 'block', cursor: 'crosshair' }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-          />
-        </div>
+          overview {collapsed ? '▸' : '▾'}
+        </button>
+        {!collapsed && (
+          <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#e6d5b8' }}>
+            <canvas
+              ref={canvasRef}
+              style={{ display: 'block', cursor: 'crosshair' }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -210,20 +213,23 @@ export function GardenMinimap({
       style={{ bottom: 10, right: 10, zIndex: 35 }}
       title="Click or drag to navigate"
     >
-      <div
-        className="bg-card/90 border-b border-border/40 text-center"
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="bg-card/90 border-b border-border/40 text-center w-full hover:bg-muted/60 transition-colors"
         style={{ fontSize: 8, padding: '1px 4px', color: 'hsl(var(--muted-foreground))' }}
       >
-        overview
-      </div>
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'block', cursor: 'crosshair' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      />
+        overview {collapsed ? '▸' : '▾'}
+      </button>
+      {!collapsed && (
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'block', cursor: 'crosshair' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        />
+      )}
     </div>
   );
 }
