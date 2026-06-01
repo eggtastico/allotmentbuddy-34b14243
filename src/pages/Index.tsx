@@ -739,7 +739,7 @@ const Index = () => {
             <div className="h-5 w-px bg-border mx-1 shrink-0" />
 
             {/* View mode */}
-            <Button variant={useIsometric ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={() => setUseIsometric(v => !v)} title={useIsometric ? 'Switch to flat' : 'Switch to isometric'}>
+            <Button data-testid="iso-toggle" variant={useIsometric ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={() => setUseIsometric(v => !v)} title={useIsometric ? 'Switch to flat' : 'Switch to isometric'}>
               {useIsometric ? '🏔️ Iso' : '🗺️ Flat'}
             </Button>
             <div className="h-5 w-px bg-border mx-1 shrink-0" />
@@ -799,7 +799,7 @@ const Index = () => {
             <div className="h-5 w-px bg-border mx-1 shrink-0" />
 
             {/* Plants count */}
-            <span className="text-xs text-muted-foreground whitespace-nowrap">🌱 {placedPlants.length}</span>
+            <span data-testid="plant-count" className="text-xs text-muted-foreground whitespace-nowrap">🌱 {placedPlants.length}</span>
 
             {/* Plan history */}
             {user && plans.length > 0 && (

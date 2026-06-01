@@ -23,6 +23,7 @@ export function BottomNavBar({ active, onNavigate }: BottomNavBarProps) {
         {navItems.map((item) => (
           <button
             key={item.id}
+            data-testid={`nav-${item.id}`}
             onClick={() => {
               navigator.vibrate?.(5);
               onNavigate(item.id);

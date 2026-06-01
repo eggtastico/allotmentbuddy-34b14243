@@ -23,4 +23,12 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
+  {
+    // Playwright fixtures legitimately use empty object destructuring, e.g.
+    // `test.beforeEach(({}, testInfo) => ...)`, which trips no-empty-pattern.
+    files: ["e2e/**/*.ts"],
+    rules: {
+      "no-empty-pattern": "off",
+    },
+  },
 );

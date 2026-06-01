@@ -1531,6 +1531,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={() => { setDragOver(false); setDragTooltip(null); }}
+          data-testid="garden-canvas"
           onClick={handleCanvasClick}
           onPointerDown={handleCanvasPointerDown}
           onPointerMove={handleCanvasPointerMove}

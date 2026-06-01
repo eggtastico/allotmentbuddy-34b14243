@@ -110,7 +110,7 @@ export function PlotToolbar({ settings, onSettingsChange, plantCount, onClear, s
 
       <div className="h-5 w-px bg-border" />
 
-      <span className="text-xs text-muted-foreground">🌱 {plantCount} planted</span>
+      <span data-testid="plant-count" className="text-xs text-muted-foreground">🌱 {plantCount} planted</span>
 
       <div className="h-5 w-px bg-border" />
 

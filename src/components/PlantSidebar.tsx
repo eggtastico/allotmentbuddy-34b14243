@@ -128,6 +128,7 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPendi
       <HoverCardTrigger asChild>
         <div
           draggable
+          data-testid={`plant-item-${plant.id}`}
           onDragStart={e => {
             e.dataTransfer.setData('plantId', plant.id);
             onDragStart(plant.id);
