@@ -11,6 +11,11 @@ export interface SyncProgress {
   lastError?: string;
 }
 
+// `placed_plants` and `garden_beds` aren't in the generated Supabase types yet,
+// so use a relaxed accessor for those tables until the types are regenerated.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fromTable = (table: string): any => supabase.from(table as never);
+
 // Helper function to sync a single item to Supabase
 async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
   const { action, entityType, entityId, data } = item;
@@ -35,11 +40,11 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
 
     case "plant": {
       if (action === "create" || action === "update") {
-        const { error } = await (supabase.from as any)("placed_plants")
+        const { error } = await fromTable("placed_plants")
           .upsert(data, { onConflict: "id" });
         if (error) throw error;
       } else if (action === "delete") {
-        const { error } = await (supabase.from as any)("placed_plants")
+        const { error } = await fromTable("placed_plants")
           .delete()
           .eq("id", entityId);
         if (error) throw error;
@@ -49,11 +54,11 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
 
     case "bed": {
       if (action === "create" || action === "update") {
-        const { error } = await (supabase.from as any)("garden_beds")
+        const { error } = await fromTable("garden_beds")
           .upsert(data, { onConflict: "id" });
         if (error) throw error;
       } else if (action === "delete") {
-        const { error } = await (supabase.from as any)("garden_beds")
+        const { error } = await fromTable("garden_beds")
           .delete()
           .eq("id", entityId);
         if (error) throw error;

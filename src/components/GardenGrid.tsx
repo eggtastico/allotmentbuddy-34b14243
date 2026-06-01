@@ -4,8 +4,8 @@ import RenderWorker from '@/workers/gardenRender.worker?worker';
 import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
-import { calculateShadeZones } from '@/utils/sunCalculator';
-import { getCompanionReason } from '@/data/companionReasons';
+import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
+import { getCompanionReason, categoryColors, categoryColorsDark } from '@/data/companionReasons';
 import { useFavouritePlants } from '@/hooks/useFavouritePlants';
 import { buildCompanionHeatmap } from '@/utils/companionHeatmap';
 import { getPlantSeasonStatus, type PlantSeasonStatus } from '@/utils/seasonalSowing';
@@ -601,7 +601,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
       // Sun/shade overlay
       if (showSunOverlay && shadeZones.size > 0) {
-        const { getSunExposure } = require('@/utils/sunCalculator');
         if (shadeMaskZonesRef.current !== shadeZones || !shadeMaskRef.current
             || shadeMaskRef.current.width !== gridW || shadeMaskRef.current.height !== gridH) {
           const mask = new OffscreenCanvas(gridW, gridH);
@@ -681,7 +680,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
       // Plant tiles -- multi-pass batched rendering
       const hasLabel = cellSize >= 20;
       const tilePath = getCachedPath2D(cellSize - 2, cellSize - 2, 5);
-      const { categoryColors, categoryColorsDark } = require('@/data/companionReasons');
       const sortedPlants = [...plants].sort((a, b) => {
         const aData = getPlantById(a.plantId);
         const bData = getPlantById(b.plantId);
@@ -1304,7 +1302,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
         hCtx.drawImage(staticCanvasRef.current, 0, 0, gridW, gridH);
       }
 
-      const { categoryColors: cc, categoryColorsDark: ccd } = require('@/data/companionReasons');
+      const cc = categoryColors, ccd = categoryColorsDark;
       const hasLabel = cellSize >= 28;
       const sortedPlants = [...plants].sort((a, b) => {
         const aD = getPlantById(a.plantId), bD = getPlantById(b.plantId);

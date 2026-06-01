@@ -121,16 +121,20 @@ export function useGardenState({ user, plans }: UseGardenStateOptions): GardenSt
       plantedAt: p.plantedAt || new Date().toISOString(),
       stage: p.stage || 'seed' as PlantStage,
     })));
-    setPlacedStructures(((plan.beds as PlacedStructure[]) || []).map((s: PlacedStructure) => ({
+    setPlacedStructures(((plan.beds as PlacedStructure[]) || []).map((s: PlacedStructure) => {
+      // Legacy plans stored structures with type/width/height instead of the current field names.
+      const legacy = s as Partial<{ type: string; width: number; height: number }>;
+      return {
       id: s.id || `struct-${Date.now()}`,
-      structureId: s.structureId || (s as any).type || 'raised-bed',
+      structureId: s.structureId || legacy.type || 'raised-bed',
       x: s.x ?? 0,
       y: s.y ?? 0,
-      widthCells: s.widthCells ?? (s as any).width ?? 4,
-      heightCells: s.heightCells ?? (s as any).height ?? 2,
+      widthCells: s.widthCells ?? legacy.width ?? 4,
+      heightCells: s.heightCells ?? legacy.height ?? 2,
       name: s.name,
       rotationHistory: s.rotationHistory,
-    })));
+      };
+    }));
     setSelectedPlant(null);
     setSelectedBed(null);
     toast.success(`Loaded "${plan.name}" 🌿`);

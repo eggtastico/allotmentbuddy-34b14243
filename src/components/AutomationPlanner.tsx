@@ -72,10 +72,10 @@ export function AutomationPlanner({
   );
 
   const toggleCrop = (id: string) =>
-    setSelectedCropIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelectedCropIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const toggleBed = (id: string) =>
-    setManagedBedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setManagedBedIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const startNew = () => {
     setStep(1);

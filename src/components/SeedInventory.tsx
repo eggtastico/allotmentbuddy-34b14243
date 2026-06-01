@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { SignedImage } from '@/components/SignedImage';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 
 interface SeedItem {
   id: string;
@@ -263,6 +262,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       reader.onload = async (e) => {
         try {
           const imgSrc = e.target?.result as string;
+          const { Html5QrcodeScanner } = await import('html5-qrcode');
           // @ts-expect-error - scanImage exists at runtime but is missing from type definitions
           const barcode = await Html5QrcodeScanner.scanImage(imgSrc, {
             qrbox: { width: 250, height: 250 },
@@ -292,6 +292,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       reader.onload = async (e) => {
         try {
           const imgSrc = e.target?.result as string;
+          const { Html5QrcodeScanner } = await import('html5-qrcode');
           // @ts-expect-error - scanImage exists at runtime but is missing from type definitions
           const qrData = await Html5QrcodeScanner.scanImage(imgSrc, {
             qrbox: { width: 250, height: 250 },
