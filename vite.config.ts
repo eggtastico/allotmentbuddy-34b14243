@@ -49,6 +49,11 @@ export default defineConfig(({ mode }) => ({
         manualChunks(id: string) {
           if (id.includes('jspdf')) return 'vendor-pdf';
           if (id.includes('@radix-ui/')) return 'vendor-radix';
+          // Stable framework core — always eager, so a dedicated chunk just
+          // improves cross-deploy caching without dragging lazy deps eager.
+          if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler|@tanstack)\//.test(id)) {
+            return 'vendor-react';
+          }
         },
       },
     },
