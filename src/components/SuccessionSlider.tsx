@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { PlacedPlant } from '@/types/garden';
 import { Slider } from '@/components/ui/slider';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { plants as allPlants, getPlantById } from '@/data/plants';
+import { plants as allPlants } from '@/data/plants';
 import { getSowingStatus } from '@/utils/seasonalSowing';
 import { cn } from '@/lib/utils';
 

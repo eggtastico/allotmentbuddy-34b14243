@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Location } from '@/types/garden';
-import { getWeatherData, getFrostData, getSunData } from '@/lib/weatherByLocation';
+import { getWeatherData, getFrostData } from '@/lib/weatherByLocation';
 import { toast } from 'sonner';
 
 interface LocationData {

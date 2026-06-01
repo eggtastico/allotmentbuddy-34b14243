@@ -6,7 +6,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlacedPlant, PestLog, PestSeverity } from '@/types/garden';
 import { savePestLog, getPestLogs, updatePestLog, deletePestLog } from '@/lib/db';
 import { getPlantById } from '@/data/plants';

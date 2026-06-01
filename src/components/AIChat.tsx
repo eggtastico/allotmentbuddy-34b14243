@@ -6,7 +6,6 @@ import { X, Send, Bot, Loader2 } from 'lucide-react';
 import { PlacedPlant, PlotSettings } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { analyzeRotation } from '@/utils/rotationOptimizer';
-import { getCompanionReason } from '@/data/companionReasons';
 import ReactMarkdown from 'react-markdown';
 
 interface LocationData {

@@ -58,7 +58,7 @@ const ZONE_FROST_DATES: Record<number, { lastFrost: number; firstFrost: number }
  * @param longitude - Location longitude (-180 to 180, not used in simplified version)
  * @returns Frost dates as Date objects
  */
-export function getFrostDates(latitude: number, longitude?: number): FrostDates {
+export function getFrostDates(latitude: number, _longitude?: number): FrostDates {
   const zone = getHardinessZone(latitude);
   const zoneData = ZONE_FROST_DATES[zone] || ZONE_FROST_DATES[5]; // Default to zone 5
 

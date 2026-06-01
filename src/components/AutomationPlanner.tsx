@@ -117,7 +117,7 @@ export function AutomationPlanner({
   );
 
   const selectedBedDetails = useMemo(
-    () => growingBeds.filter((b, idx) => managedBedIds.has(b.id)).map((b, idx) => ({
+    () => growingBeds.filter((b) => managedBedIds.has(b.id)).map((b) => ({
       bed: b,
       name: b.name || `Bed ${growingBeds.indexOf(b) + 1}`,
       structure: getStructureById(b.structureId),
@@ -156,7 +156,7 @@ export function AutomationPlanner({
                   const cropNames = allPlants.filter(p => plan.selectedCropIds.includes(p.id));
                   const bedNames = growingBeds
                     .filter(b => plan.managedBedIds.includes(b.id))
-                    .map((b, i) => b.name || `Bed ${growingBeds.indexOf(b) + 1}`);
+                    .map((b) => b.name || `Bed ${growingBeds.indexOf(b) + 1}`);
                   const pending = plan.tasks.filter(t => !t.completed).length;
                   return (
                     <div key={plan.id} className="p-3 rounded-lg border border-border bg-card space-y-2">

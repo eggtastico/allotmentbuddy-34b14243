@@ -91,7 +91,7 @@ export function useCamera() {
   }, [isFacingFront, startCamera, stopCamera]);
 
   const capturePhoto = useCallback(
-    (targetWidth: number = 1280, targetHeight: number = 720): Promise<string | null> => {
+    (_targetWidth: number = 1280, _targetHeight: number = 720): Promise<string | null> => {
       return new Promise((resolve) => {
         if (!videoRef.current || !canvasRef.current || !isActive) {
           resolve(null);

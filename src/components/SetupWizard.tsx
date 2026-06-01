@@ -28,7 +28,7 @@ interface SetupWizardProps {
 }
 
 export function SetupWizard({ isOpen, onComplete, onSkip }: SetupWizardProps) {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [step, setStep] = useState(0);
   const [unit, setUnit] = useState<'meters' | 'feet'>('meters');
   const [width, setWidth] = useState('6');
@@ -124,7 +124,7 @@ export function SetupWizard({ isOpen, onComplete, onSkip }: SetupWizardProps) {
             lon: longitude,
           });
           setLocationError(null);
-        } catch (error) {
+        } catch {
           setLocation({
             name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
             lat: latitude,

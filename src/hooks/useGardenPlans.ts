@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { PlacedPlant, PlacedStructure, PlotSettings } from '@/types/garden';
@@ -68,7 +67,7 @@ export function useGardenPlans() {
         return { id: (data as { id: string; updated_at: string }).id, updated_at: (data as { id: string; updated_at: string }).updated_at };
       }
     },
-    onSuccess: (_result, variables) => {
+    onSuccess: (_result, _variables) => {
       // Targeted invalidation — only refetch this user's plans
       queryClient.invalidateQueries({ queryKey: ['garden-plans', user?.id] });
     },

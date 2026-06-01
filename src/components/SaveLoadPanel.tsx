@@ -23,14 +23,13 @@ interface SaveLoadPanelProps {
   onImport: (data: GardenExportData) => void;
 }
 
-export function SaveLoadPanel({ currentPlanId, currentName, settings, plants, beds, onLoad, onNewPlan, onClose, onImport }: SaveLoadPanelProps) {
+export function SaveLoadPanel({ currentPlanId, currentName, settings, plants, beds, onLoad, onClose, onImport }: SaveLoadPanelProps) {
   const { user } = useAuth();
   const { plans, save, delete: deletePlan, isSaving } = useGardenPlans();
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [slotName, setSlotName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportConfirm, setShowImportConfirm] = useState<GardenExportData | null>(null);
-  const [confirmOverwrite, setConfirmOverwrite] = useState<{ slotIndex: number; plan: GardenPlanRow } | null>(null);
 
   const handleExport = () => {
     exportGardenJSON(currentName, settings, plants, beds);

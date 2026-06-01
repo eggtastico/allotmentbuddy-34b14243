@@ -20,7 +20,7 @@ export function InstallPrompt({ className = '' }: InstallPromptProps) {
     try {
       await prompt();
       toast.success('App installed successfully! Look for Allotment Buddy on your home screen.');
-    } catch (error) {
+    } catch {
       toast.error('Installation cancelled');
     }
   };

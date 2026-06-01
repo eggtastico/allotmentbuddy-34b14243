@@ -62,7 +62,6 @@ export function MobilePlantSheet({ pendingPlantId, onSelectPlant, visible }: Mob
 
   /** Get the translateY value for a position (lower = more visible) */
   const getTranslateY = useCallback((pos: SheetPosition): number => {
-    const vh = window.innerHeight;
     const sheetHeight = getSheetHeight(pos);
     // The sheet is positioned with bottom at BOTTOM_OFFSET.
     // TranslateY moves it down from its "full" position.

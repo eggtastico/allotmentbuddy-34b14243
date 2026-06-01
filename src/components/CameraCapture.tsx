@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useCamera } from '@/hooks/useCamera';
 import { compressImage } from '@/lib/photoStorage';
 import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Camera, RotateCw, X, Check, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Camera, RotateCw, Check, Loader2 } from 'lucide-react';
 
 interface CameraCapturProps {
   isOpen: boolean;

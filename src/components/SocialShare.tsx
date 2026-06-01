@@ -8,7 +8,7 @@ interface SocialShareProps {
   text?: string;
 }
 
-export function SocialShare({ title = 'My Allotment Garden', text = 'Check out my allotment garden plan on Allotment Buddy! 🌱🥕' }: SocialShareProps) {
+export function SocialShare({ text = 'Check out my allotment garden plan on Allotment Buddy! 🌱🥕' }: SocialShareProps) {
   const url = window.location.href;
 
   const shareToFacebook = () => {

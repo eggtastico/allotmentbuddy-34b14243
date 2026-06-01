@@ -76,7 +76,6 @@ export function getFrostData(location: Location): FrostData {
   today.setHours(0, 0, 0, 0);
 
   const lastFrostDate = new Date(lastSpringFrost);
-  const firstFrostDate = new Date(firstFallFrost);
 
   const daysUntilLastFrost = Math.ceil((lastFrostDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   const daysSinceFrostRisk = Math.ceil((today.getTime() - lastFrostDate.getTime()) / (1000 * 60 * 60 * 24));

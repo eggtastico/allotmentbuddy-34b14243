@@ -1,6 +1,5 @@
 import { Plant } from '@/types/garden';
 import { plants as allPlants } from '@/data/plants';
-import { Structure } from '@/data/structures';
 import { getSuccessionSuggestions, SuccessionSuggestion } from './successionPlanting';
 
 /**

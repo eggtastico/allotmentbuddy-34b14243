@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { PlacedPlant } from '@/types/garden';
 import { plants as plantDB } from '@/data/plants';
 import { getSuccessionTasks } from '@/utils/bedPlantSuggestions';
-import { ChevronDown, ChevronUp, Droplets, Sprout, Scissors, Lightbulb, CheckSquare, Plus, X, Loader2, MapPin } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sprout, Scissors, Lightbulb, Plus, X, Loader2, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';

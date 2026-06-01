@@ -97,7 +97,7 @@ interface DragTooltip {
   gridY: number;
 }
 
-export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, onMoveStructureStart, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange, pendingPlantId, pendingIsStructure, pendingStructureSize, onCancelPending, structureMode: propStructureMode, showSunOverlay: propShowSunOverlay, onShowSunOverlayChange, isMobile, controlsPortalRef, canvasExportRef, viewMonth, onSelectBed, locked = false }: GardenGridProps) {
+export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemovePlant, onMovePlantStart, onMovePlant, onSelectPlant, onPlaceStructure, onRemoveStructure, onResizeStructure, onMoveStructure, onMoveStructureStart, selectedPlantId, onFillPlantArea, onSmartAutoFill, onSettingsChange, pendingPlantId, pendingIsStructure, pendingStructureSize, onCancelPending, structureMode: propStructureMode, showSunOverlay: propShowSunOverlay, isMobile, controlsPortalRef, canvasExportRef, viewMonth, onSelectBed, locked = false }: GardenGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   // Static layer cache: background + grid lines (only redrawn when geometry/theme changes)
@@ -112,16 +112,12 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
   const [dragOver, setDragOver] = useState(false);
   const [layoutVersion, setLayoutVersion] = useState(0);
-  const [internalShowSunOverlay, setInternalShowSunOverlay] = useState(propShowSunOverlay ?? true);
+  const [internalShowSunOverlay] = useState(propShowSunOverlay ?? true);
   const showSunOverlay = propShowSunOverlay ?? internalShowSunOverlay;
-  const setShowSunOverlay = (show: boolean) => {
-    setInternalShowSunOverlay(show);
-    onShowSunOverlayChange?.(show);
-  };
-  const [showColorCoding, setShowColorCoding] = useState(true);
+  const [showColorCoding] = useState(true);
   const [showRotationOverlay, setShowRotationOverlay] = useState(false);
   const [layersPanelCollapsed, setLayersPanelCollapsed] = useState(true);
-  const [newlyPlacedId, setNewlyPlacedId] = useState<string | null>(null);
+  const [, setNewlyPlacedId] = useState<string | null>(null);
   const [placementAnim, setPlacementAnim] = useState<{ x: number; y: number; emoji: string } | null>(null);
   const [hoveredPlantId, setHoveredPlantId] = useState<string | null>(null);
   const [spriteVersion, setSpriteVersion] = useState(0);
@@ -134,7 +130,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const favouriteIds = getFavouriteIds();
 
   // Scroll position for ruler measurements
-  const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
+  const [, setScrollPos] = useState({ x: 0, y: 0 });
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const mainRafRef = useRef<number | null>(null);
   const overlayRafRef = useRef<number | null>(null);
@@ -204,7 +200,6 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
     handleMoveStart,
     movingPlant,
     longPressPlantId,
-    startLongPress,
     LONG_PRESS_DELAY_MS,
     plantResize,
   } = useGardenDrag({
@@ -865,7 +860,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
 
       // Pass F: bottom badges
       if (cellSize >= 20) {
-        for (const { plantData, px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
+        for (const { px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
           let badgeText = '';
           let badgeBg = '';
           if (seasonStatus === 'harvest-ready') { badgeText = '\uD83C\uDF3E Ready'; badgeBg = 'hsl(38 92% 50%)'; }

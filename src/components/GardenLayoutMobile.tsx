@@ -1,9 +1,8 @@
 import React from 'react';
-import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { PhotosView } from '@/components/PhotosView';
 import { TasksView } from '@/components/TasksView';
 import { BottomNavBar } from '@/components/BottomNavBar';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { IsometricGardenGrid } from '@/components/IsometricGardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
@@ -68,7 +67,6 @@ export function GardenLayoutMobile(props: GardenLayoutMobileProps) {
     selectedPlant,
     pendingPlantId,
     pendingIsStructure,
-    dragging,
     showSunOverlay,
     structureMode,
     mobileSidebarOpen,
@@ -81,7 +79,6 @@ export function GardenLayoutMobile(props: GardenLayoutMobileProps) {
     onShowWeather,
     onShowRotation,
     onShowDocs,
-    onShowShoppingList,
     onSelectPlant,
     onPlacePlant,
     onRemovePlant,

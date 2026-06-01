@@ -8,7 +8,6 @@ import { generateId } from '@/lib/uuid';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus, Camera } from 'lucide-react';
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { CameraCapture } from '@/components/CameraCapture';
-import { savePhoto } from '@/lib/photoStorage';
 import { sunExposureLabels } from '@/utils/sunCalculator';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 import { suggestBedSizeForPlant } from '@/utils/bedPlantSuggestions';
@@ -24,7 +23,7 @@ interface PlantInfoPanelProps {
   modal?: boolean;
 }
 
-export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask, onUpdatePlaced, modal }: PlantInfoPanelProps) {
+export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposure, onAddSuccessionTask, onUpdatePlaced }: PlantInfoPanelProps) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const plant = getPlantById(placed.plantId);

@@ -18,7 +18,7 @@ import {
 } from '@/utils/bedRotationUtils';
 import { getSowingStatus, getMonthName } from '@/utils/seasonalSowing';
 import { getCompanionReason } from '@/data/companionReasons';
-import { X, PencilIcon, Trash2, Search, ChevronDown, ChevronRight, Check, Copy, Info, Lock, Unlock } from 'lucide-react';
+import { X, PencilIcon, Trash2, Search, ChevronDown, ChevronRight, Copy, Info, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -196,13 +196,6 @@ export function BedPlantingPanel({
     onUpdateBed({ ...bed, rotationHistory: newHistory });
   };
 
-  const cancelMove = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    setMovingCell(null);
-  };
 
   const handleCellPointerDown = (col: number, row: number, e: React.PointerEvent) => {
     if (bedLocked) return;

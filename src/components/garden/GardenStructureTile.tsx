@@ -179,7 +179,6 @@ export function GardenStructureTile({
   cellSize,
   isMobile,
   isMoving,
-  locked,
   favouriteIds,
   onRemoveStructure,
   onResizeStructure,

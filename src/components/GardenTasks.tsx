@@ -114,7 +114,7 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates,
   });
   const handleTabChange = (value: string) => {
     setTab(value);
-    try { localStorage.setItem(TASK_TAB_KEY, value); } catch (_) { /* localStorage unavailable */ }
+    try { localStorage.setItem(TASK_TAB_KEY, value); } catch { /* localStorage unavailable */ }
   };
   const [weeklyFeeding, setWeeklyFeeding] = useState<GeneratedTask[]>([]);
   const [monthlyFeeding, setMonthlyFeeding] = useState<GeneratedTask[]>([]);

@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   PlotSettingsSchema,
   PlacedPlantSchema,
-  GardenPlanRowSchema,
   FavouritePlantRowSchema,
   SeedItemSchema,
 } from '../schemas';
-import { z } from 'zod';
 
 describe('Zod Schemas', () => {
   describe('PlotSettingsSchema', () => {

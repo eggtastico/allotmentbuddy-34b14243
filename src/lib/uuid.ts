@@ -13,7 +13,6 @@ export function generateId(): string {
   }
 
   // UUID v4 implementation using getRandomValues (works in all contexts)
-  const template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
   const arr = new Uint8Array(16);
 
   if (crypto && crypto.getRandomValues) {

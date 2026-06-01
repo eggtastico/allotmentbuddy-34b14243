@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Droplets, Menu, X, BookOpen, Map, HelpCircle, Package, Lightbulb, ListTodo, CalendarRange, Sparkles, ChevronDown, LayoutTemplate } from 'lucide-react';
+import { Sprout, Calendar, Bot, Download, FolderOpen, User, LogOut, Shuffle, CloudSun, Menu, X, BookOpen, Map, HelpCircle, Package, ListTodo, Sparkles, ChevronDown, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { LocationPicker } from '@/components/LocationPicker';
@@ -56,14 +56,10 @@ export function GardenHeader(props: GardenHeaderProps) {
     onMobileSidebarToggle,
     onSignOut,
     onShowCalendar,
-    onShowMonthlyPlanner,
     onShowRotation,
     onShowPlotMap,
-    onShowGrowGuide,
     onShowAI,
-    onShowPlantingSuggestions,
     onShowWeather,
-    onShowWatering,
     onShowTasks,
     onShowSeedInventory,
     onShowJournal,

@@ -590,6 +590,7 @@ const SidebarMenuSubButton = React.forwardRef<
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
 export {
+  // eslint-disable-next-line react-refresh/only-export-components
   useSidebar,
   Sidebar,
   SidebarContent,

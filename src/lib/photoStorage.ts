@@ -1,4 +1,4 @@
-import { db, Photo, saveLocalPhoto, deleteLocalPhoto } from '@/lib/db';
+import { Photo, saveLocalPhoto, deleteLocalPhoto } from '@/lib/db';
 import { PlantPhoto } from '@/types/garden';
 import { supabase } from '@/integrations/supabase/client';
 

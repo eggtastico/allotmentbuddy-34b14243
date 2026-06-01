@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
+import { PlacedPlant, PlotSettings, PlacedStructure } from '@/types/garden';
 import { PlantSidebar } from '@/components/PlantSidebar';
 import { IsometricGardenGrid } from '@/components/IsometricGardenGrid';
 import { PlantInfoPanel } from '@/components/PlantInfoPanel';
@@ -53,7 +53,6 @@ export function GardenLayoutDesktop(props: GardenLayoutDesktopProps) {
     selectedPlant,
     pendingPlantId,
     pendingIsStructure,
-    dragging,
     showSunOverlay,
     structureMode,
     mobileSidebarOpen,

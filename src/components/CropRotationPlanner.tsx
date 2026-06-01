@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlacedPlant } from '@/types/garden';
-import { getPlantById, rotationGroupColors, rotationGroupLabels } from '@/data/plants';
+import { getPlantById, rotationGroupColors } from '@/data/plants';
 import { RefreshCw, AlertTriangle, Info } from 'lucide-react';
 
 interface CropRotationPlannerProps {

@@ -282,7 +282,6 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   plants,
   structures,
   onPlacePlant,
-  onRemovePlant,
   onMovePlantStart,
   onMovePlant,
   onSelectPlant,
@@ -770,7 +769,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       // Deselect
       onSelectPlant(null);
     }
-  }, [plants, structures, pendingPlantId, pendingIsStructure, originX, originY,
+  }, [plants, structures, pendingPlantId, pendingIsStructure, originX, originY, locked,
       onSelectPlant, onPlacePlant, onPlaceStructure, onMovePlantStart, onMoveStructureStart, clientToGrid]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

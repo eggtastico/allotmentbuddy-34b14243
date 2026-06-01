@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
 
-import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
+import { PlacedPlant, PlacedStructure } from '@/types/garden';
 import { GardenPlanRow } from '@/lib/schemas';
 import { initializeSyncStatus } from '@/lib/db';
 import { type NavSection } from '@/components/AppShell';
@@ -63,7 +63,7 @@ const Index = () => {
     selectedBed, setSelectedBed,
     placedStructures, setPlacedStructures,
     currentPlanId, setCurrentPlanId,
-    planName, setPlanName,
+    planName,
     location, setLocation,
     defaultStage, setDefaultStage,
     applyPlan,
@@ -89,7 +89,7 @@ const Index = () => {
   // Solution: we break the circle by having useGardenState accept plans as a mutable ref or
   // by passing plans directly. Since hooks are called every render, we can just memoize.
 
-  const [dragging, setDragging] = useState<string | null>(null); // used only for drag-and-drop dataTransfer
+  const [, setDragging] = useState<string | null>(null); // used only for drag-and-drop dataTransfer
   const frostDates = useFrostDates(location);
   const [pendingPlantId, setPendingPlantId] = useState<string | null>(null);
   const [pendingIsStructure, setPendingIsStructure] = useState(false);

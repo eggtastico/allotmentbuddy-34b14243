@@ -43,7 +43,6 @@ export function BedInfoPanel({
   onClose,
   onUpdateBed,
   onRemoveBed,
-  modal = false,
 }: BedInfoPanelProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(bed.name || '');

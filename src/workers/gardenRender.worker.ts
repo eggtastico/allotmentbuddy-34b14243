@@ -14,7 +14,7 @@
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { getSunExposure } from '@/utils/sunCalculator';
-import { categoryColors, categoryColorsDark, getCompanionReason } from '@/data/companionReasons';
+import { categoryColors, categoryColorsDark } from '@/data/companionReasons';
 import { getPlantSeasonStatus, type PlantSeasonStatus } from '@/utils/seasonalSowing';
 import type { PlacedPlant, PlacedStructure } from '@/types/garden';
 import type { CompanionInfo } from './gardenCompute.worker';
@@ -477,7 +477,7 @@ async function render(state: RenderState): Promise<ImageBitmap> {
 
   // Pass F: bottom badges — centred at bottom of area
   if (cellSize >= 20) {
-    for (const { plantData, px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
+    for (const { px, py, pw, ph, relations, spacingIssues, seasonStatus } of tileMetas) {
       let badgeText = '', badgeBg = '';
       // Harvest-ready badge takes priority over other badges
       if (seasonStatus === 'harvest-ready') { badgeText = '🌾 Ready'; badgeBg = 'hsl(38 92% 50%)'; }

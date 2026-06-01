@@ -10,7 +10,6 @@ import {
   calculateStats,
   exportToCSV,
 } from '@/utils/shoppingListCalculations';
-import { ShoppingItem } from '@/lib/shoppingListSchema';
 
 interface ShoppingListProps {
   placedPlants: PlacedPlant[];

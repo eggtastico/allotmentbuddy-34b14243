@@ -13,7 +13,6 @@ import {
   slotGroupName,
   getRotationStatus,
 } from '@/utils/bedRotationUtils';
-import { Badge } from '@/components/ui/badge';
 
 interface Props {
   onClose: () => void;
@@ -98,7 +97,6 @@ export function PlotMapPanel({ onClose, structures, plants, settings, onUpdateSt
   }, [selectedPlantsInBed]);
 
   const bedName = selectedStruct ? getBedDisplayName(selectedStruct, structures) : '';
-  const currentYear = new Date().getFullYear();
 
   return (
     <div

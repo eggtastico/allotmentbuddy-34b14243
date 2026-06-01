@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { PlacedPlant, PlacedStructure, PlantStage } from '@/types/garden';
+import { PlacedPlant, PlacedStructure } from '@/types/garden';
 import { getPlantById, plants as allPlantsList } from '@/data/plants';
 import { toast } from 'sonner';
 import { GardenState, GardenActions } from './useGardenState';

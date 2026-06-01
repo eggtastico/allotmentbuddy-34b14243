@@ -48,7 +48,6 @@ export function calculateShadeZones(
     }
     processedCount++;
 
-    let cellsFromThisStruct = 0;
     // For each cell of the structure, project shadow in shadow direction
     for (let dx = 0; dx < struct.widthCells; dx++) {
       for (let dy = 0; dy < struct.heightCells; dy++) {
@@ -60,7 +59,6 @@ export function calculateShadeZones(
           const sy = baseY + shadowDy * dist;
           if (sx >= 0 && sx < cols && sy >= 0 && sy < rows) {
             shaded.add(`${sx},${sy}`);
-            cellsFromThisStruct++;
           }
         }
       }

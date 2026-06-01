@@ -1,11 +1,10 @@
-import { plants as allPlants } from '@/data/plants';
 import { PlacedPlant } from '@/types/garden';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { getPlantById } from '@/data/plants';
 import { MONTHS } from '@/components/constants/PlantingCalendar';
 import { useFrostDates } from '@/hooks/useFrostDates';
-import { getFrostSafetyColor, formatFrostDates } from '@/utils/frostDateCalculator';
+import { formatFrostDates } from '@/utils/frostDateCalculator';
 
 interface LocationData {
   lat: number;
@@ -81,7 +80,6 @@ export function PlantingCalendar({ placedPlants, location, onClose }: PlantingCa
                   const harvestMonths = parseMonthRange(plant.harvest);
                   const count = placedPlants.filter(p => p.plantId === plant.id).length;
 
-                  const frostColor = frostDates ? getFrostSafetyColor(plant.frostHardiness, frostDates) : null;
                   const frostEmoji = plant.frostHardiness === 'hardy' ? '🟢' : plant.frostHardiness === 'half-hardy' ? '🟡' : plant.frostHardiness === 'tender' ? '🔴' : '⚪';
 
                   return (
