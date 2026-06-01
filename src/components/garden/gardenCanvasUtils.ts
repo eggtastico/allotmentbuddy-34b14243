@@ -3,6 +3,35 @@
  * Extracted from GardenGrid.tsx to reduce file size.
  */
 
+/**
+ * Map a client (pointer) coordinate to a garden grid cell.
+ *
+ * Pure geometry extracted from GardenGrid's snapToGridFn so it can be unit
+ * tested independently of the DOM/canvas. When `snap` is true the result is
+ * floored to whole cells; otherwise it is rounded to one decimal place. The
+ * result is always clamped to [0, cols-1] / [0, rows-1].
+ */
+export function snapToGrid(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number },
+  cellSize: number,
+  cols: number,
+  rows: number,
+  snap: boolean,
+): { x: number; y: number } {
+  const rawX = (clientX - rect.left) / cellSize;
+  const rawY = (clientY - rect.top) / cellSize;
+  if (snap) {
+    const x = Math.floor(rawX);
+    const y = Math.floor(rawY);
+    return { x: Math.max(0, Math.min(x, cols - 1)), y: Math.max(0, Math.min(y, rows - 1)) };
+  }
+  const x = Math.round(Math.max(0, Math.min(rawX, cols - 1)) * 10) / 10;
+  const y = Math.round(Math.max(0, Math.min(rawY, rows - 1)) * 10) / 10;
+  return { x, y };
+}
+
 // Canvas helper: draw a rounded rectangle path
 export function roundRect(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const minR = Math.min(r, w / 2, h / 2);

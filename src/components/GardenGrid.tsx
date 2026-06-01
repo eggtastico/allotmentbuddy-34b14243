@@ -22,6 +22,7 @@ import {
   preloadTwemojis,
   loadCustomSprite,
   getCachedPath2D,
+  snapToGrid,
 } from './garden/gardenCanvasUtils';
 
 import {
@@ -181,16 +182,7 @@ export function GardenGrid({ settings, plants, structures, onPlacePlant, onRemov
   const snapToGridFn = useCallback((clientX: number, clientY: number) => {
     if (!mainCanvasRef.current) return { x: 0, y: 0 };
     const rect = mainCanvasRef.current.getBoundingClientRect();
-    const rawX = (clientX - rect.left) / cellSize;
-    const rawY = (clientY - rect.top) / cellSize;
-    if (settings.snapToGrid !== false) {
-      const x = Math.floor(rawX);
-      const y = Math.floor(rawY);
-      return { x: Math.max(0, Math.min(x, cols - 1)), y: Math.max(0, Math.min(y, rows - 1)) };
-    }
-    const x = Math.round(Math.max(0, Math.min(rawX, cols - 1)) * 10) / 10;
-    const y = Math.round(Math.max(0, Math.min(rawY, rows - 1)) * 10) / 10;
-    return { x, y };
+    return snapToGrid(clientX, clientY, rect, cellSize, cols, rows, settings.snapToGrid !== false);
   }, [cellSize, cols, rows, settings.snapToGrid]);
 
   // ── Drag / Move / Resize ──
