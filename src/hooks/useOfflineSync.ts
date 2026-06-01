@@ -20,7 +20,8 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
       if (action === "create" || action === "update") {
         const { error } = await supabase
           .from("garden_plans")
-          .upsert(data, { onConflict: "id" });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .upsert(data as any, { onConflict: "id" });
         if (error) throw error;
       } else if (action === "delete") {
         const { error } = await supabase
@@ -34,13 +35,11 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
 
     case "plant": {
       if (action === "create" || action === "update") {
-        const { error } = await supabase
-          .from("placed_plants")
+        const { error } = await (supabase.from as any)("placed_plants")
           .upsert(data, { onConflict: "id" });
         if (error) throw error;
       } else if (action === "delete") {
-        const { error } = await supabase
-          .from("placed_plants")
+        const { error } = await (supabase.from as any)("placed_plants")
           .delete()
           .eq("id", entityId);
         if (error) throw error;
@@ -50,13 +49,11 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
 
     case "bed": {
       if (action === "create" || action === "update") {
-        const { error } = await supabase
-          .from("garden_beds")
+        const { error } = await (supabase.from as any)("garden_beds")
           .upsert(data, { onConflict: "id" });
         if (error) throw error;
       } else if (action === "delete") {
-        const { error } = await supabase
-          .from("garden_beds")
+        const { error } = await (supabase.from as any)("garden_beds")
           .delete()
           .eq("id", entityId);
         if (error) throw error;
@@ -66,18 +63,18 @@ async function syncItemToSupabase(item: SyncQueueItem): Promise<void> {
 
     case "photo": {
       if (action === "create") {
-        // Photos are stored as blobs - this would need special handling
-        // For now, just track metadata
         const photoData = data as Record<string, unknown>;
+        const gardenId = typeof photoData.gardenId === 'string' ? photoData.gardenId : undefined;
+        if (!gardenId) throw new Error('Photo sync: missing gardenId');
         const { error } = await supabase
           .from("garden_photos")
           .insert({
             id: entityId,
-            garden_id: photoData.gardenId as string,
-            plant_id: photoData.plantId as string | null,
-            timestamp: photoData.timestamp as number,
-            width: photoData.width as number | null,
-            height: photoData.height as number | null,
+            garden_id: gardenId,
+            plant_id: typeof photoData.plantId === 'string' ? photoData.plantId : null,
+            timestamp: typeof photoData.timestamp === 'number' ? photoData.timestamp : Date.now(),
+            width: typeof photoData.width === 'number' ? photoData.width : null,
+            height: typeof photoData.height === 'number' ? photoData.height : null,
           });
         if (error) throw error;
       } else if (action === "delete") {

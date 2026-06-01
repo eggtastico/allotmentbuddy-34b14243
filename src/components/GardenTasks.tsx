@@ -10,13 +10,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { plants as plantDB } from '@/data/plants';
 import { PlacedPlant } from '@/types/garden';
-import { Plus, Trash2, Loader2, ListTodo, Leaf, Sprout, Scissors } from 'lucide-react';
+import { Plus, Trash2, Loader2, ListTodo, Leaf, Sprout, Scissors, Bot } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { toast } from 'sonner';
 import { PLANT_FEEDING, NO_FEED, FeedingInfo } from '@/utils/feedingGuide';
 import { getSuccessionSuggestions } from '@/utils/successionPlanting';
 import { generateWeeklyFeedingSchedule, generateMonthlyFeedingSchedule, GeneratedTask } from '@/utils/gardenTaskGeneration';
 import { getSuccessionTasks } from '@/utils/bedPlantSuggestions';
+import { AutomationTask, AutomationTaskType } from '@/utils/automationPlannerUtils';
 
 // ── Local storage for unauthenticated tasks ──────────────────────────────────
 const LOCAL_TASKS_KEY = 'allotment-custom-tasks-v2';
@@ -53,6 +54,8 @@ interface GardenTasksProps {
   placedPlants: PlacedPlant[];
   inline?: boolean;
   frostDates?: { lastSpringFrost?: string; firstFallFrost?: string } | null;
+  automationTasks?: AutomationTask[];
+  onToggleAutomationTask?: (taskId: string) => void;
 }
 
 // ── Month helper ─────────────────────────────────────────────────────────────
@@ -97,7 +100,7 @@ function saveCheckedTasks(ids: Set<string>) {
   localStorage.setItem(CHECKED_TASKS_KEY, JSON.stringify({ date: today, ids: [...ids] }));
 }
 
-export function GardenTasks({ onClose, placedPlants, inline = false, frostDates }: GardenTasksProps) {
+export function GardenTasks({ onClose, placedPlants, inline = false, frostDates, automationTasks = [], onToggleAutomationTask }: GardenTasksProps) {
   const { user } = useAuth();
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,11 +114,12 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
   });
   const handleTabChange = (value: string) => {
     setTab(value);
-    try { localStorage.setItem(TASK_TAB_KEY, value); } catch {}
+    try { localStorage.setItem(TASK_TAB_KEY, value); } catch (_) { /* localStorage unavailable */ }
   };
   const [weeklyFeeding, setWeeklyFeeding] = useState<GeneratedTask[]>([]);
   const [monthlyFeeding, setMonthlyFeeding] = useState<GeneratedTask[]>([]);
   const [checkedTasks, setCheckedTasks] = useState<Set<string>>(loadCheckedTasks);
+
 
   const toggleChecked = (id: string) => {
     setCheckedTasks(prev => {
@@ -125,6 +129,22 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
       return next;
     });
   };
+
+  const toggleAutomationTask = (taskId: string) => {
+    onToggleAutomationTask?.(taskId);
+  };
+
+  const AUTO_TYPE_META: Record<AutomationTaskType, { icon: string; label: string }> = {
+    'sow-indoors':  { icon: '🪴', label: 'Sow Indoors' },
+    'sow-outdoors': { icon: '🌱', label: 'Sow Outdoors' },
+    transplant:     { icon: '⛏️', label: 'Transplant' },
+    harvest:        { icon: '🌾', label: 'Harvest' },
+  };
+
+  function formatAutoDate(iso: string): string {
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 
   // Load custom tasks (Supabase when logged in, localStorage otherwise)
   useEffect(() => {
@@ -403,6 +423,68 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
 
   // ── Shared tab content pieces ──────────────────────────────────────────────
 
+  const pendingAutoCount = automationTasks.filter(t => !t.completed).length;
+
+  const automationTabContent = (
+    <TabsContent value="automation" className="space-y-2 mt-2">
+      {automationTasks.length === 0 ? (
+        <div className="text-center py-6">
+          <Bot className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+          <p className="text-xs font-medium text-foreground mb-1">No automation plan yet</p>
+          <p className="text-[11px] text-muted-foreground">
+            Open <strong>More → Plan → Automation Planner</strong> to generate a sowing &amp; harvest schedule.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+            <Bot className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-[11px] text-muted-foreground flex-1">
+              <strong className="text-foreground">{automationTasks.length} automated task{automationTasks.length !== 1 ? 's' : ''}</strong>
+              {' — '}{pendingAutoCount} pending
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {automationTasks.map(task => {
+              const meta = AUTO_TYPE_META[task.type];
+              return (
+                <div
+                  key={task.id}
+                  className={`p-2.5 rounded-lg border border-border bg-card ${task.completed ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={task.completed}
+                      onCheckedChange={() => toggleAutomationTask(task.id)}
+                      className="mt-0.5 shrink-0"
+                    />
+                    <span className="text-base shrink-0 leading-none mt-0.5">{meta.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className={`text-xs font-semibold ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          {task.title}
+                        </p>
+                        <span className="text-[10px]" title="Automation task">🤖</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{task.description}</p>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <Badge variant="outline" className="text-[9px] h-4 px-1">{meta.label}</Badge>
+                        {task.bedName && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 text-primary border-primary/30">{task.bedName}</Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">{formatAutoDate(task.dueDate)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </TabsContent>
+  );
+
   const todayTabContent = (
     <TabsContent value={inline ? 'today' : 'tasks'} className="space-y-1.5 mt-2">
       {placedPlants.length === 0 ? (
@@ -569,7 +651,7 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
     </TabsContent>
   );
 
-  // ── Inline (mobile) tab layout: Today | This Week | This Month | Feeding | My Tasks ──
+  // ── Inline (mobile) tab layout: Today | This Week | This Month | Feeding | Auto | My Tasks ──
   const inlineTabsContent = (
     <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList className="w-full overflow-x-auto overflow-y-hidden flex-nowrap">
@@ -590,6 +672,12 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
         </TabsTrigger>
         <TabsTrigger value="feeding" className="flex-1 text-xs whitespace-nowrap">
           Feeding
+        </TabsTrigger>
+        <TabsTrigger value="automation" className="flex-1 text-xs whitespace-nowrap">
+          🤖 Auto
+          {pendingAutoCount > 0 && (
+            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5 bg-primary/20 text-primary">{pendingAutoCount}</Badge>
+          )}
         </TabsTrigger>
         <TabsTrigger value="my-tasks" className="flex-1 text-xs whitespace-nowrap">
           My Tasks
@@ -746,12 +834,15 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
       {/* ── Feeding Guide ── */}
       {feedingTabContent}
 
+      {/* ── Automation ── */}
+      {automationTabContent}
+
       {/* ── My Tasks ── */}
       {myTasksTabContent}
     </Tabs>
   );
 
-  // ── Dialog (non-inline) tab layout: Daily | Weekly | Monthly | Feeding | My Tasks ──
+  // ── Dialog (non-inline) tab layout: Daily | Weekly | Monthly | Feeding | Auto | My Tasks ──
   const dialogTabsContent = (
     <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList className="w-full overflow-x-auto overflow-y-hidden flex-nowrap">
@@ -772,6 +863,12 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
         </TabsTrigger>
         <TabsTrigger value="feeding" className="flex-1 text-xs whitespace-nowrap">
           Feeding
+        </TabsTrigger>
+        <TabsTrigger value="automation" className="flex-1 text-xs whitespace-nowrap">
+          🤖 Auto
+          {pendingAutoCount > 0 && (
+            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5 bg-primary/20 text-primary">{pendingAutoCount}</Badge>
+          )}
         </TabsTrigger>
         <TabsTrigger value="my-tasks" className="flex-1 text-xs whitespace-nowrap">
           My Tasks
@@ -927,6 +1024,9 @@ export function GardenTasks({ onClose, placedPlants, inline = false, frostDates 
 
       {/* ── Feeding Guide ── */}
       {feedingTabContent}
+
+      {/* ── Automation ── */}
+      {automationTabContent}
 
       {/* ── My Tasks ── */}
       {myTasksTabContent}

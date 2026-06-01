@@ -13,15 +13,16 @@
  */
 
 import React, {
-  useRef, useEffect, useState, useCallback, useMemo, useLayoutEffect, createPortal,
+  useRef, useEffect, useState, useCallback, useMemo, useLayoutEffect,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { PlacedPlant, PlacedStructure, PlotSettings } from '@/types/garden';
 import { getPlantById } from '@/data/plants';
 import { getStructureById } from '@/data/structures';
 import { calculateShadeZones, getSunExposure } from '@/utils/sunCalculator';
 import {
   tileW, tileH,
-  gridToScreen, gridToScreenCenter,
+  gridToScreenCenter,
   screenToGrid, clampGrid, painterKey, cellNoise,
 } from '@/utils/isoProjection';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
@@ -42,6 +43,7 @@ interface IsometricGardenGridProps {
   onRemoveStructure: (id: string) => void;
   onResizeStructure: (id: string, widthCells: number, heightCells: number) => void;
   onMoveStructure: (id: string, x: number, y: number) => void;
+  onMoveStructureStart?: () => void;
   selectedPlantId: string | null;
   onFillPlantArea?: (plantId: string, x: number, y: number, w: number, h: number) => void;
   onSmartAutoFill?: (x: number, y: number, w: number, h: number, isContainer: boolean) => void;
@@ -57,6 +59,8 @@ interface IsometricGardenGridProps {
   canvasExportRef?: React.MutableRefObject<((scale?: number) => Promise<string | null>) | null>;
   viewMonth?: number | null;
   onSelectBed?: (bed: PlacedStructure | null) => void;
+  /** When true, pan and zoom still work but all modifications (move/resize/place) are blocked. */
+  locked?: boolean;
 }
 
 // ─── constants ───────────────────────────────────────────────────────────────
@@ -74,8 +78,8 @@ const STRUCTURE_DEPTH: Record<string, number> = {
   'grow-bag': 8, 'fruit-tree': 30, 'tree': 36, 'path': 4, 'fence': 22,
 };
 
-// Top-face base colors per structure (canvas fillStyle)
-const STRUCT_TOP: Record<string, string> = {
+// Top-face base colors per structure (canvas fillStyle) — light mode
+const STRUCT_TOP_LM: Record<string, string> = {
   'raised-bed': '#8B6347', 'growing-bed': '#7A5C40', 'flower-bed': '#C47A8A',
   'herb-bed': '#5A8C5A', 'border': '#B8884A', 'fruit-cage': '#7A7A7A',
   'greenhouse': '#A8D4E8', 'polytunnel': '#B8E0C0', 'cold-frame': '#D4E8A8',
@@ -84,32 +88,59 @@ const STRUCT_TOP: Record<string, string> = {
   'basket-rect': '#C08040', 'grow-bag': '#666666', 'fruit-tree': '#5A8A3A',
   'tree': '#4A7A4A', 'path': '#C8B89A', 'fence': '#8B6844',
 };
+// Dark mode — desaturated/dimmed variants for night-sky backdrop
+const STRUCT_TOP_DM: Record<string, string> = {
+  'raised-bed': '#5C4230', 'growing-bed': '#4F3C2A', 'flower-bed': '#7A4A55',
+  'herb-bed': '#3A5C3A', 'border': '#6A5030', 'fruit-cage': '#4A4A4A',
+  'greenhouse': '#5A7A88', 'polytunnel': '#5A7A60', 'cold-frame': '#6A7A50',
+  'shed': '#4A3524', 'compost-bin': '#3A4A28', 'water-butt': '#2A4A6A',
+  'pot-round': '#7A3A28', 'pot-rect': '#7A3A28', 'basket-round': '#5A3A22',
+  'basket-rect': '#6A4828', 'grow-bag': '#3A3A3A', 'fruit-tree': '#3A5A28',
+  'tree': '#2A4A2A', 'path': '#6A6050', 'fence': '#4A3822',
+};
 
 // Plant stage emoji size scale factor (relative to tileH)
 const STAGE_SCALE: Record<string, number> = { seed: 0.42, seedling: 0.65, established: 0.90 };
 
-// Soil colour pair: [lighter, darker] for checkerboard
-const SOIL_LIGHT = '#D4B896';
-const SOIL_DARK  = '#C8A882';
+// Soil colour pairs: [lighter, darker] for checkerboard — light and dark mode variants
+const SOIL_LIGHT_LM = '#D4B896';
+const SOIL_DARK_LM  = '#C8A882';
+const SOIL_LIGHT_DM = '#4A3F2E';
+const SOIL_DARK_DM  = '#3E3525';
+// Sky gradient stops — dark mode uses a muted night sky
+const SKY_TOP_LM = '#b7d8ef'; const SKY_BTM_LM = '#dff0f8';
+const SKY_TOP_DM = '#1a2332'; const SKY_BTM_DM = '#2a3040';
 
-// ─── structure sprite cache (module-level, survives re-renders) ──────────────
-const structSpriteCache = new Map<string, HTMLImageElement>();
-const structSpriteErrors = new Set<string>();
-const structSpritePending = new Set<string>();
+/**
+ * Circumradius of a flat-top regular hexagon for iso ground tiles.
+ * Chosen so that the tile-center-to-tile-center distance ≈ r√3, which
+ * minimises gaps between adjacent hexes in the isometric grid.
+ * r = √((hw² + hh²) / 3)
+ */
+function hexR(zoom: number): number {
+  const hw = tileW(zoom) / 2;
+  const hh = tileH(zoom) / 2;
+  return Math.sqrt((hw * hw + hh * hh) / 3);
+}
 
-function loadStructSprite(relPath: string, onDone: () => void): void {
-  if (structSpriteCache.has(relPath) || structSpriteErrors.has(relPath)) return;
-  if (structSpritePending.has(relPath)) return;
-  structSpritePending.add(relPath);
+// ─── sprite caches (module-level, survive re-renders) ───────────────────────
+const spriteCache = new Map<string, HTMLImageElement>();
+const spriteErrors = new Set<string>();
+const spritePending = new Set<string>();
+
+function loadSprite(relPath: string, onDone: () => void): void {
+  if (spriteCache.has(relPath) || spriteErrors.has(relPath)) return;
+  if (spritePending.has(relPath)) return;
+  spritePending.add(relPath);
   const img = new Image();
   img.onload = () => {
-    structSpriteCache.set(relPath, img);
-    structSpritePending.delete(relPath);
+    spriteCache.set(relPath, img);
+    spritePending.delete(relPath);
     onDone();
   };
   img.onerror = () => {
-    structSpriteErrors.add(relPath);
-    structSpritePending.delete(relPath);
+    spriteErrors.add(relPath);
+    spritePending.delete(relPath);
     onDone();
   };
   img.src = `${import.meta.env.BASE_URL}${relPath}`;
@@ -117,7 +148,11 @@ function loadStructSprite(relPath: string, onDone: () => void): void {
 
 // ─── pure drawing helpers ────────────────────────────────────────────────────
 
-/** Draw a flat ground tile (diamond top face only — no depth) */
+/**
+ * Draw a flat-top regular hexagonal ground tile.
+ * Six vertices at 60° intervals from the tile centre — all sides and
+ * all interior angles (120°) are equal.
+ */
 function drawGroundTile(
   ctx: CanvasRenderingContext2D,
   col: number, row: number,
@@ -125,15 +160,16 @@ function drawGroundTile(
   fillStyle: string,
   strokeAlpha = 0.15,
 ) {
-  const { sx, sy } = gridToScreen(col, row, zoom, ox, oy);
-  const hw = tileW(zoom) / 2;
-  const hh = tileH(zoom) / 2;
+  const { sx: cx, sy: cy } = gridToScreenCenter(col, row, zoom, ox, oy);
+  const r = hexR(zoom);
 
   ctx.beginPath();
-  ctx.moveTo(sx, sy);
-  ctx.lineTo(sx + hw, sy + hh);
-  ctx.lineTo(sx, sy + hh * 2);
-  ctx.lineTo(sx - hw, sy + hh);
+  for (let i = 0; i < 6; i++) {
+    const a  = (i * Math.PI) / 3; // 0°, 60°, 120°, 180°, 240°, 300°
+    const vx = cx + r * Math.cos(a);
+    const vy = cy + r * Math.sin(a);
+    if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
+  }
   ctx.closePath();
   ctx.fillStyle = fillStyle;
   ctx.fill();
@@ -144,7 +180,16 @@ function drawGroundTile(
   }
 }
 
-/** Draw a 3-face isometric box (one grid cell, extruded down by `depth` px at zoom=1) */
+/**
+ * Draw a 3-face isometric box with a regular-hexagon top face.
+ * Vertex layout (flat-top, angles in °):
+ *   V0 =   0° → R (right)
+ *   V1 =  60° → BR (lower-right)
+ *   V2 = 120° → BL (lower-left)
+ *   V3 = 180° → L  (left)
+ *   V4 = 240° → TL (upper-left)
+ *   V5 = 300° → TR (upper-right)
+ */
 function drawIsoBox(
   ctx: CanvasRenderingContext2D,
   col: number, row: number,
@@ -154,43 +199,57 @@ function drawIsoBox(
   rightColor: string,
   depth: number,   // px at zoom=1
 ) {
-  const { sx, sy } = gridToScreen(col, row, zoom, ox, oy);
-  const hw = tileW(zoom) / 2;
-  const hh = tileH(zoom) / 2;
-  const d  = depth * zoom;
+  const { sx: cx, sy: cy } = gridToScreenCenter(col, row, zoom, ox, oy);
+  const r = hexR(zoom);
+  const d = depth * zoom;
 
-  // Diamond corner points (top face)
-  const T  = { x: sx,      y: sy         }; // top  tip
-  const R  = { x: sx + hw, y: sy + hh    }; // right tip
-  const B  = { x: sx,      y: sy + hh*2  }; // bottom tip
-  const L  = { x: sx - hw, y: sy + hh    }; // left  tip
+  // Compute the 6 vertices of the flat-top regular hexagon
+  const v: Array<{ x: number; y: number }> = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3;
+    v.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+  }
+  const [R, BR, BL, L, TL, TR] = v;
 
-  // SW wall (left face): L → B → B+d → L+d
+  // SW wall (left face): L → BL → BL+d → L+d
   ctx.beginPath();
-  ctx.moveTo(L.x, L.y);
-  ctx.lineTo(B.x, B.y);
-  ctx.lineTo(B.x, B.y + d);
-  ctx.lineTo(L.x, L.y + d);
+  ctx.moveTo(L.x,  L.y);
+  ctx.lineTo(BL.x, BL.y);
+  ctx.lineTo(BL.x, BL.y + d);
+  ctx.lineTo(L.x,  L.y  + d);
   ctx.closePath();
   ctx.fillStyle = leftColor;
   ctx.fill();
 
-  // SE wall (right face): B → R → R+d → B+d
+  // Front wall (viewer-facing): BL → BR → BR+d → BL+d
+  const frontColor = shadeHex(topColor, 0.72);
   ctx.beginPath();
-  ctx.moveTo(B.x, B.y);
-  ctx.lineTo(R.x, R.y);
-  ctx.lineTo(R.x, R.y + d);
-  ctx.lineTo(B.x, B.y + d);
+  ctx.moveTo(BL.x, BL.y);
+  ctx.lineTo(BR.x, BR.y);
+  ctx.lineTo(BR.x, BR.y + d);
+  ctx.lineTo(BL.x, BL.y + d);
+  ctx.closePath();
+  ctx.fillStyle = frontColor;
+  ctx.fill();
+
+  // SE wall (right face): BR → R → R+d → BR+d
+  ctx.beginPath();
+  ctx.moveTo(BR.x, BR.y);
+  ctx.lineTo(R.x,  R.y);
+  ctx.lineTo(R.x,  R.y  + d);
+  ctx.lineTo(BR.x, BR.y + d);
   ctx.closePath();
   ctx.fillStyle = rightColor;
   ctx.fill();
 
-  // Top face (drawn last — covers wall seams)
+  // Top face (drawn last — covers all wall seams)
   ctx.beginPath();
-  ctx.moveTo(T.x, T.y);
-  ctx.lineTo(R.x, R.y);
-  ctx.lineTo(B.x, B.y);
-  ctx.lineTo(L.x, L.y);
+  ctx.moveTo(TL.x, TL.y);
+  ctx.lineTo(TR.x, TR.y);
+  ctx.lineTo(R.x,  R.y);
+  ctx.lineTo(BR.x, BR.y);
+  ctx.lineTo(BL.x, BL.y);
+  ctx.lineTo(L.x,  L.y);
   ctx.closePath();
   ctx.fillStyle = topColor;
   ctx.fill();
@@ -229,6 +288,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   onSelectPlant,
   onPlaceStructure,
   onMoveStructure,
+  onMoveStructureStart,
   onResizeStructure,
   showSunOverlay,
   onShowSunOverlayChange,
@@ -238,6 +298,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
   onCancelPending,
   canvasExportRef,
   controlsPortalRef,
+  locked = false,
 }) => {
   const containerRef  = useRef<HTMLDivElement>(null);
   const mainRef       = useRef<HTMLCanvasElement>(null);
@@ -303,19 +364,25 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     centredRef.current = true;
   }, [canvasW, canvasH, gridW, gridH]);
 
-  // ── Load structure sprites ────────────────────────────────────────────────────
+  // ── Load structure + plant sprites ─────────────────────────────────────────
   useEffect(() => {
     const paths = new Set<string>();
     structures.forEach(s => {
       const def = getStructureById(s.structureId);
-      if (def?.sprite && !structSpriteCache.has(def.sprite) && !structSpriteErrors.has(def.sprite)) {
+      if (def?.sprite && !spriteCache.has(def.sprite) && !spriteErrors.has(def.sprite)) {
+        paths.add(def.sprite);
+      }
+    });
+    plants.forEach(pp => {
+      const def = getPlantById(pp.plantId);
+      if (def?.sprite && !spriteCache.has(def.sprite) && !spriteErrors.has(def.sprite)) {
         paths.add(def.sprite);
       }
     });
     if (paths.size === 0) return;
     const bump = () => setSpriteVer(v => v + 1);
-    paths.forEach(p => loadStructSprite(p, bump));
-  }, [structures]);
+    paths.forEach(p => loadSprite(p, bump));
+  }, [structures, plants]);
 
   // ── Build sorted render list (structures + plants) ──────────────────────────
   const renderItems = useMemo<RenderItem[]>(() => {
@@ -332,10 +399,12 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       const th    = tileH(zoom);
       const d     = depth * zoom;
 
-      // Try sprite first
-      const sprite = def.sprite ? structSpriteCache.get(def.sprite) : undefined;
+      // Try sprite — only when dimensions match the sprite's design size,
+      // otherwise the hardcoded diamond shape inside the SVG gets distorted.
+      const sprite = def.sprite ? spriteCache.get(def.sprite) : undefined;
+      const spriteMatchesSize = sprite && W === def.widthCells && H === def.heightCells;
 
-      if (sprite) {
+      if (spriteMatchesSize) {
         // Bounding box that encloses the full isometric footprint + depth walls
         const bboxL = originX + (s.x - s.y - H) * tw / 2;
         const bboxT = originY + (s.x + s.y) * th / 2;
@@ -351,6 +420,8 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
         });
       } else {
         // Fallback: per-cell 3D boxes
+        const isoDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+        const STRUCT_TOP = isoDark ? STRUCT_TOP_DM : STRUCT_TOP_LM;
         const topHex   = STRUCT_TOP[s.structureId] ?? '#999999';
         const leftClr  = shadeHex(topHex, 0.65);
         const rightClr = shadeHex(topHex, 0.80);
@@ -393,6 +464,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       const ph = pp.areaH ?? 1;
       const isSelected = pp.id === selectedPlantId;
       const scale = STAGE_SCALE[pp.stage] ?? 0.9;
+      const plantSprite = plantDef.sprite ? spriteCache.get(plantDef.sprite) : undefined;
 
       for (let dr = 0; dr < ph; dr++) {
         for (let dc = 0; dc < pw; dc++) {
@@ -405,13 +477,14 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
             draw: (ctx) => {
               const { sx, sy } = gridToScreenCenter(capturedCol, capturedRow, zoom, originX, originY);
               const lift = tileH(zoom) * 0.18;
-              const sz   = Math.max(10, tileH(zoom) * scale);
+              const th = tileH(zoom);
+              const tw = tileW(zoom);
 
               // Shadow ellipse
               ctx.save();
               ctx.fillStyle = 'rgba(0,0,0,0.18)';
               ctx.beginPath();
-              ctx.ellipse(sx, sy + tileH(zoom) * 0.28, tileW(zoom) * 0.22, tileH(zoom) * 0.1, 0, 0, Math.PI * 2);
+              ctx.ellipse(sx, sy + th * 0.28, tw * 0.22, th * 0.1, 0, 0, Math.PI * 2);
               ctx.fill();
 
               // Selection glow
@@ -420,17 +493,30 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
                 ctx.shadowBlur  = 18 * zoom;
                 ctx.fillStyle   = 'rgba(255, 215, 0, 0.12)';
                 ctx.beginPath();
-                ctx.arc(sx, sy - lift, tileH(zoom) * 0.55, 0, Math.PI * 2);
+                ctx.arc(sx, sy - lift, th * 0.55, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowColor = 'transparent';
                 ctx.shadowBlur  = 0;
               }
 
-              // Emoji
-              ctx.font = `${sz}px sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(plantDef.emoji, sx, sy - lift);
+              // Sprite or emoji
+              if (plantSprite) {
+                const spriteH = th * scale * 1.6;
+                const spriteW = spriteH * (plantSprite.naturalWidth / plantSprite.naturalHeight || 1);
+                ctx.drawImage(
+                  plantSprite,
+                  sx - spriteW / 2,
+                  sy - lift - spriteH * 0.75,
+                  spriteW,
+                  spriteH,
+                );
+              } else {
+                const sz = Math.max(10, th * scale);
+                ctx.font = `${sz}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(plantDef.emoji, sx, sy - lift);
+              }
               ctx.restore();
             },
           });
@@ -440,6 +526,8 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
     items.sort((a, b) => a.sortKey - b.sortKey);
     return items;
+  // spriteVer is an intentional cache-buster: incremented when sprite images finish loading
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structures, plants, selectedPlantId, zoom, originX, originY, spriteVer]);
 
   // ── Main canvas draw ─────────────────────────────────────────────────────────
@@ -451,10 +539,15 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
     ctx.clearRect(0, 0, canvasW, canvasH);
 
+    // Dark mode detection
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    const SOIL_LIGHT = isDark ? SOIL_LIGHT_DM : SOIL_LIGHT_LM;
+    const SOIL_DARK  = isDark ? SOIL_DARK_DM : SOIL_DARK_LM;
+
     // Sky gradient background
     const bg = ctx.createLinearGradient(0, 0, 0, canvasH);
-    bg.addColorStop(0, '#b7d8ef');
-    bg.addColorStop(1, '#dff0f8');
+    bg.addColorStop(0, isDark ? SKY_TOP_DM : SKY_TOP_LM);
+    bg.addColorStop(1, isDark ? SKY_BTM_DM : SKY_BTM_LM);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, canvasW, canvasH);
 
@@ -480,9 +573,9 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
         for (let col = 0; col < gridW; col++) {
           const exposure = getSunExposure(col, row, shadeZones);
           let tint: string | null = null;
-          if      (exposure === 'full')    tint = 'rgba(255,220,0,0.10)';
-          else if (exposure === 'partial') tint = 'rgba(255,190,0,0.14)';
-          else if (exposure === 'shade')   tint = 'rgba(80,80,120,0.18)';
+          if      (exposure === 'full-sun')    tint = 'rgba(255,220,0,0.10)';
+          else if (exposure === 'partial-shade') tint = 'rgba(255,190,0,0.14)';
+          else if (exposure === 'full-shade')   tint = 'rgba(80,80,120,0.18)';
           if (tint) drawGroundTile(ctx, col, row, zoom, originX, originY, tint, 0);
         }
       }
@@ -506,15 +599,16 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       const { col, row } = hoverCell;
       // Only highlight if cell is in-bounds
       if (col >= 0 && col < gridW && row >= 0 && row < gridH) {
-        const { sx, sy } = gridToScreen(col, row, zoom, originX, originY);
-        const hw = tileW(zoom) / 2;
-        const hh = tileH(zoom) / 2;
+        const { sx: cx, sy: cy } = gridToScreenCenter(col, row, zoom, originX, originY);
+        const r = hexR(zoom);
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx + hw, sy + hh);
-        ctx.lineTo(sx, sy + hh * 2);
-        ctx.lineTo(sx - hw, sy + hh);
+        for (let i = 0; i < 6; i++) {
+          const a  = (i * Math.PI) / 3;
+          const vx = cx + r * Math.cos(a);
+          const vy = cy + r * Math.sin(a);
+          if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
+        }
         ctx.closePath();
         ctx.fillStyle = pendingPlantId ? 'rgba(100,200,100,0.22)' : 'rgba(200,220,255,0.20)';
         ctx.fill();
@@ -547,7 +641,9 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
         const def = getStructureById(pendingPlantId);
         if (def) {
           const depth   = STRUCTURE_DEPTH[pendingPlantId] ?? 12;
-          const topHex  = STRUCT_TOP[pendingPlantId] ?? '#999999';
+          const ghostDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+          const ghostStructTop = ghostDark ? STRUCT_TOP_DM : STRUCT_TOP_LM;
+          const topHex  = ghostStructTop[pendingPlantId] ?? '#999999';
           const leftClr = shadeHex(topHex, 0.65);
           const rightClr= shadeHex(topHex, 0.80);
           for (let dr = 0; dr < def.heightCells; dr++) {
@@ -606,7 +702,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
 
   // ── Mouse handlers ───────────────────────────────────────────────────────────
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Middle button or right button = pan
+    // Middle button or right button = pan (always allowed)
     if (e.button === 1 || e.button === 2) {
       e.preventDefault();
       isPanningRef.current = true;
@@ -614,6 +710,13 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       return;
     }
     if (e.button !== 0) return;
+
+    // Left-button pan (locked mode — modifications blocked, panning still works)
+    if (locked) {
+      isPanningRef.current = true;
+      panStartRef.current  = { mx: e.clientX, my: e.clientY, ox: originX, oy: originY };
+      return;
+    }
 
     const cell = clientToGrid(e.clientX, e.clientY);
     if (!cell) return;
@@ -639,8 +742,10 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
     );
     if (hitStructure) {
       onSelectPlant(null);
-      const atRight  = col === hitStructure.x + hitStructure.widthCells - 1;
-      const atBottom = row === hitStructure.y + hitStructure.heightCells - 1;
+      // Only treat as edge resize if the structure has ≥2 cells in that dimension,
+      // otherwise every cell is "the edge" and moves become impossible.
+      const atRight  = hitStructure.widthCells >= 2 && col === hitStructure.x + hitStructure.widthCells - 1;
+      const atBottom = hitStructure.heightCells >= 2 && row === hitStructure.y + hitStructure.heightCells - 1;
       if (atRight && atBottom) {
         resizingStructRef.current = { id: hitStructure.id, edge: 'corner', startW: hitStructure.widthCells, startH: hitStructure.heightCells, startCol: col, startRow: row };
       } else if (atRight) {
@@ -648,6 +753,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       } else if (atBottom) {
         resizingStructRef.current = { id: hitStructure.id, edge: 'bottom', startW: hitStructure.widthCells, startH: hitStructure.heightCells, startCol: col, startRow: row };
       } else {
+        onMoveStructureStart?.();
         draggingStructRef.current = hitStructure.id;
       }
       return;
@@ -665,7 +771,7 @@ export const IsometricGardenGrid: React.FC<IsometricGardenGridProps> = ({
       onSelectPlant(null);
     }
   }, [plants, structures, pendingPlantId, pendingIsStructure, originX, originY,
-      onSelectPlant, onPlacePlant, onPlaceStructure, onMovePlantStart, clientToGrid]);
+      onSelectPlant, onPlacePlant, onPlaceStructure, onMovePlantStart, onMoveStructureStart, clientToGrid]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Pan

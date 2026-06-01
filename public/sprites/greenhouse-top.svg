@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Single glass pane — tiles at 3×3 cells to form window grid -->
+
+  <!-- Aluminium frame edges (merge with adjacent tiles to form glazing bars) -->
+  <rect width="48" height="48" fill="rgba(110,125,140,0.55)"/>
+
+  <!-- Glass pane (inset from frame) -->
+  <rect x="1.5" y="1.5" width="45" height="45" fill="rgba(170,215,240,0.4)"/>
+
+  <!-- Frame highlight on top & left edges -->
+  <rect x="0" y="0" width="48" height="0.6" fill="rgba(200,220,235,0.45)"/>
+  <rect x="0" y="0" width="0.6" height="48" fill="rgba(200,220,235,0.45)"/>
+
+  <!-- Diagonal glare streak across pane -->
+  <line x1="6" y1="4" x2="28" y2="26" stroke="rgba(255,255,255,0.16)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="9" y1="4" x2="31" y2="26" stroke="rgba(255,255,255,0.08)" stroke-width="1.2"/>
+
+  <!-- Condensation droplets -->
+  <circle cx="12" cy="12" r="0.7" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="20" cy="18" r="0.5" fill="rgba(255,255,255,0.18)"/>
+  <circle cx="8" cy="28" r="0.6" fill="rgba(255,255,255,0.20)"/>
+  <circle cx="34" cy="14" r="0.5" fill="rgba(255,255,255,0.16)"/>
+  <circle cx="30" cy="34" r="0.7" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="38" cy="38" r="0.5" fill="rgba(255,255,255,0.18)"/>
+  <circle cx="16" cy="40" r="0.6" fill="rgba(255,255,255,0.20)"/>
+</svg>

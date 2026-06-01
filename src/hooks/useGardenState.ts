@@ -1,114 +1,163 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { PlacedPlant, PlotSettings, PlacedStructure, PlantStage } from '@/types/garden';
 import { GardenPlanRow, type LocationData } from '@/lib/schemas';
-import { getStructureById } from '@/data/structures';
+import { getLocalGardens } from '@/lib/db';
+import { logError } from '@/utils/errorUtils';
+import { toast } from 'sonner';
 
 // Re-export LocationData so existing imports from this module still work
 export type { LocationData } from '@/lib/schemas';
 
-export interface GardenState {
+export interface GardenStateReturn {
+  /* ── Core state ─────────────────────────────────────── */
   settings: PlotSettings;
+  setSettings: React.Dispatch<React.SetStateAction<PlotSettings>>;
   placedPlants: PlacedPlant[];
+  setPlacedPlants: React.Dispatch<React.SetStateAction<PlacedPlant[]>>;
   selectedPlant: PlacedPlant | null;
+  setSelectedPlant: React.Dispatch<React.SetStateAction<PlacedPlant | null>>;
+  selectedBed: PlacedStructure | null;
+  setSelectedBed: React.Dispatch<React.SetStateAction<PlacedStructure | null>>;
   placedStructures: PlacedStructure[];
+  setPlacedStructures: React.Dispatch<React.SetStateAction<PlacedStructure[]>>;
   currentPlanId: string | null;
+  setCurrentPlanId: React.Dispatch<React.SetStateAction<string | null>>;
   planName: string;
+  setPlanName: React.Dispatch<React.SetStateAction<string>>;
   location: LocationData | null;
+  setLocation: React.Dispatch<React.SetStateAction<LocationData | null>>;
   defaultStage: PlantStage;
+  setDefaultStage: React.Dispatch<React.SetStateAction<PlantStage>>;
+
+  /* ── Actions ────────────────────────────────────────── */
+  /** Apply a full plan (from Supabase or IndexedDB) to state. */
+  applyPlan: (plan: GardenPlanRow) => void;
+  /** Reset to blank canvas. */
+  handleNewPlan: () => void;
 }
 
-export interface GardenActions {
-  setSettings: (s: PlotSettings) => void;
-  setPlacedPlants: (p: PlacedPlant[]) => void;
-  setSelectedPlant: (p: PlacedPlant | null) => void;
-  setPlacedStructures: (s: PlacedStructure[]) => void;
-  setCurrentPlanId: (id: string | null) => void;
-  setPlanName: (name: string) => void;
-  setLocation: (loc: LocationData | null) => void;
-  setDefaultStage: (stage: PlantStage) => void;
-  loadPlan: (plan: GardenPlanRow) => void;
-  clearAll: () => void;
+/** Subset of GardenStateReturn exposing read-only state values (used by hooks like usePlantPlacement). */
+export type GardenState = Pick<
+  GardenStateReturn,
+  'settings' | 'placedPlants' | 'placedStructures' | 'selectedPlant' | 'defaultStage'
+>;
+
+/** Subset of GardenStateReturn exposing setter actions (used by hooks like usePlantPlacement). */
+export type GardenActions = Pick<
+  GardenStateReturn,
+  'setPlacedPlants' | 'setSelectedPlant' | 'setPlacedStructures'
+>;
+
+export interface UseGardenStateOptions {
+  /** The authenticated user (or null). Used for auto-load. */
+  user: { id: string } | null;
+  /** Available remote plans (from useGardenPlans). */
+  plans: GardenPlanRow[];
 }
 
-export function useGardenState(): [GardenState, GardenActions] {
+export function useGardenState({ user, plans }: UseGardenStateOptions): GardenStateReturn {
   const [settings, setSettings] = useState<PlotSettings>({
-    widthM: 6,
-    heightM: 4,
-    unit: 'meters',
-    cellSizePx: 32,
-    cellSizeCm: 20,
-    southDirection: 180,
-    snapToGrid: true,
+    widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180, snapToGrid: true,
   });
-
   const [placedPlants, setPlacedPlants] = useState<PlacedPlant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlacedPlant | null>(null);
+  const [selectedBed, setSelectedBed] = useState<PlacedStructure | null>(null);
   const [placedStructures, setPlacedStructures] = useState<PlacedStructure[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('My Garden');
   const [location, setLocation] = useState<LocationData | null>(null);
   const [defaultStage, setDefaultStage] = useState<PlantStage>('seed');
 
-  const loadPlan = useCallback((plan: GardenPlanRow) => {
-    // plan.plot_settings is already validated by Zod in GardenPlanRowSchema
-    setSettings(plan.plot_settings);
+  // ── Auto-load most recent plan ──────────────────────
+  const autoLoaded = useRef(false);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    // Reset the guard when the user identity changes (login, logout, switch account)
+    if (prevUserRef.current !== undefined && prevUserRef.current !== (user?.id ?? null)) {
+      autoLoaded.current = false;
+    }
+    prevUserRef.current = user?.id ?? null;
+
+    if (autoLoaded.current) return;
+
+    if (user && plans.length > 0) {
+      // Load from Supabase
+      autoLoaded.current = true;
+      const latest = plans[0]; // already sorted by updated_at desc
+      setCurrentPlanId(latest.id);
+      setPlanName(latest.name);
+      setSettings(latest.plot_settings);
+      // Plans are already validated and transformed by GardenPlansResponseSchema
+      setPlacedPlants(latest.plants || []);
+      setPlacedStructures(latest.beds || []);
+    } else if (!user || (plans.length === 0 && user)) {
+      // Load from IndexedDB for offline support or if no remote plans
+      getLocalGardens()
+        .then((localPlans) => {
+          if (localPlans.length > 0) {
+            autoLoaded.current = true;
+            const latest = localPlans[localPlans.length - 1]; // Most recently saved
+            setCurrentPlanId(latest.id);
+            setPlanName(latest.name);
+            setSettings(latest.settings);
+            setPlacedPlants(latest.plants || []);
+            setPlacedStructures(latest.beds || []);
+          }
+        })
+        .catch((err) => {
+          logError(err, 'Failed to load garden plans from IndexedDB');
+        });
+    }
+  }, [user, plans]);
+
+  // ── Apply a full plan from load / conflict resolution ──
+  const applyPlan = useCallback((plan: GardenPlanRow) => {
     setCurrentPlanId(plan.id);
     setPlanName(plan.name);
-    setLocation(plan.location ?? null);
-
-    setPlacedPlants(plan.plants as PlacedPlant[]);
-
-    // beds are already migrated by RawStructureSchema (handles legacy field names)
-    const migratedStructures = plan.beds.map(s => {
-      if (s.widthCells === undefined || s.heightCells === undefined) {
-        const structDef = getStructureById(s.structureId);
-        return {
-          ...s,
-          widthCells: s.widthCells ?? structDef?.widthCells ?? 2,
-          heightCells: s.heightCells ?? structDef?.heightCells ?? 2,
-        };
-      }
-      return s;
-    });
-    setPlacedStructures(migratedStructures);
-
+    setSettings(plan.plot_settings as PlotSettings);
+    setPlacedPlants(((plan.plants as PlacedPlant[]) || []).map(p => ({
+      ...p,
+      plantedAt: p.plantedAt || new Date().toISOString(),
+      stage: p.stage || 'seed' as PlantStage,
+    })));
+    setPlacedStructures(((plan.beds as PlacedStructure[]) || []).map((s: PlacedStructure) => ({
+      id: s.id || `struct-${Date.now()}`,
+      structureId: s.structureId || (s as any).type || 'raised-bed',
+      x: s.x ?? 0,
+      y: s.y ?? 0,
+      widthCells: s.widthCells ?? (s as any).width ?? 4,
+      heightCells: s.heightCells ?? (s as any).height ?? 2,
+      name: s.name,
+      rotationHistory: s.rotationHistory,
+    })));
     setSelectedPlant(null);
-    setDefaultStage('seed');
+    setSelectedBed(null);
+    toast.success(`Loaded "${plan.name}" 🌿`);
   }, []);
 
-  const clearAll = useCallback(() => {
+  // ── New blank plan ──────────────────────────────────
+  const handleNewPlan = useCallback(() => {
+    setCurrentPlanId(null);
+    setPlanName('My Garden');
+    setSettings({ widthM: 6, heightM: 4, unit: 'meters', cellSizePx: 32, cellSizeCm: 20, southDirection: 180 });
     setPlacedPlants([]);
     setPlacedStructures([]);
     setSelectedPlant(null);
-    setCurrentPlanId(null);
-    setPlanName('My Garden');
-    setLocation(null);
-    setDefaultStage('seed');
+    setSelectedBed(null);
   }, []);
 
-  const state: GardenState = {
-    settings,
-    placedPlants,
-    selectedPlant,
-    placedStructures,
-    currentPlanId,
-    planName,
-    location,
-    defaultStage,
+  return {
+    settings, setSettings,
+    placedPlants, setPlacedPlants,
+    selectedPlant, setSelectedPlant,
+    selectedBed, setSelectedBed,
+    placedStructures, setPlacedStructures,
+    currentPlanId, setCurrentPlanId,
+    planName, setPlanName,
+    location, setLocation,
+    defaultStage, setDefaultStage,
+    applyPlan,
+    handleNewPlan,
   };
-
-  const actions: GardenActions = {
-    setSettings,
-    setPlacedPlants,
-    setSelectedPlant,
-    setPlacedStructures,
-    setCurrentPlanId,
-    setPlanName,
-    setLocation,
-    setDefaultStage,
-    loadPlan,
-    clearAll,
-  };
-
-  return [state, actions];
 }

@@ -89,7 +89,7 @@ export async function generateWeatherTasks(
       const tenderPlants = placedPlants
         .filter(pp => {
           const p = plantDB.find(x => x.id === pp.plantId);
-          return p && p.hardiness === 'tender';
+          return p && p.frostHardiness === 'tender';
         })
         .map(pp => plantDB.find(p => p.id === pp.plantId)?.emoji || '🌱')
         .join(' ');

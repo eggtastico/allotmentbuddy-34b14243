@@ -29,7 +29,7 @@ export interface GardenLayoutDesktopProps {
   onMovePlantStart: () => void;
   onFillPlantArea: (plantId: string, originX: number, originY: number, w: number, h: number) => void;
   onSmartAutoFill: (originX: number, originY: number, w: number, h: number, isContainer: boolean) => void;
-  onSelectForPlacement: (plantId: string, isStructure: boolean) => void;
+  onSelectForPlacement: (plantId: string, isStructure?: boolean) => void;
   onCancelPending: () => void;
   onPlaceStructure: (structureId: string, x: number, y: number) => void;
   onRemoveStructure: (id: string) => void;

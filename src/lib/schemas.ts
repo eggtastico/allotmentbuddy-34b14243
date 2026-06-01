@@ -31,7 +31,7 @@ export const PlacedPlantSchema = z.object({
   x: z.number(),
   y: z.number(),
   plantedAt: z.string().datetime(),
-  stage: z.enum(['seed', 'seedling', 'established'] as const),
+  stage: z.enum(['seed', 'seedling', 'established', 'harvested'] as const),
   photos: z.array(PlantPhotoSchema).optional(),
 }) satisfies z.ZodType<PlacedPlant>;
 

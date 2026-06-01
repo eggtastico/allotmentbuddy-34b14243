@@ -3,7 +3,7 @@ import { PlacedPlant } from '@/types/garden';
 import { getPlantById, rotationGroupLabels, rotationGroupColors } from '@/data/plants';
 import { getCompanionReason } from '@/data/companionReasons';
 import { Badge } from '@/components/ui/badge';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { generateId } from '@/lib/uuid';
 import { X, Check, AlertTriangle, Timer, Sprout, Sun, CloudSun, Cloud, Layers, Ruler, CalendarPlus, Camera } from 'lucide-react';
 import { PhotoGallery } from '@/components/PhotoGallery';
@@ -47,7 +47,7 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
     }
   };
 
-  const handleDeletePhoto = (photoId: string) => {
+  const handleDeletePhoto = (photoId: string | number) => {
     if (onUpdatePlaced) {
       const updated = {
         ...placed,
@@ -193,8 +193,16 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         )}
       </div>
 
+      {/* Harvested banner */}
+      {placed.stage === 'harvested' && (
+        <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          <span className="text-base">🌾</span>
+          <span className="font-medium">Harvested — this planting is complete</span>
+        </div>
+      )}
+
       {/* "Days until next action" countdown pills */}
-      {placed.plantedAt && placed.stage !== 'established' && (() => {
+      {placed.plantedAt && placed.stage !== 'established' && placed.stage !== 'harvested' && (() => {
         const now = new Date();
         const plantedDate = new Date(placed.plantedAt);
         const daysElapsed = Math.floor((now.getTime() - plantedDate.getTime()) / 86400000);
@@ -248,19 +256,21 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
       {onUpdatePlaced && (
         <div className="mb-3">
           <p className="text-xs text-muted-foreground mb-1.5">Stage</p>
-          <div className="flex gap-1.5">
-            {(['seed', 'seedling', 'established'] as const).map(s => (
+          <div className="flex flex-wrap gap-1.5">
+            {(['seed', 'seedling', 'established', 'harvested'] as const).map(s => (
               <button
                 key={s}
                 onClick={() => onUpdatePlaced({ ...placed, stage: s })}
                 className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
                   placed.stage === s
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? s === 'harvested'
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-primary text-primary-foreground border-primary'
                     : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
                 }`}
               >
-                {s === 'seed' ? '🌰' : s === 'seedling' ? '🌱' : '🌳'}
-                {s === 'seed' ? 'Seed' : s === 'seedling' ? 'Seedling' : 'Established'}
+                {s === 'seed' ? '🌰' : s === 'seedling' ? '🌱' : s === 'established' ? '🌳' : '🌾'}
+                {s === 'seed' ? 'Seed' : s === 'seedling' ? 'Seedling' : s === 'established' ? 'Established' : 'Harvested'}
               </button>
             ))}
           </div>
@@ -461,6 +471,26 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
         />
       </div>
 
+      {/* Personal notes */}
+      {onUpdatePlaced && (
+        <div className="mb-3">
+          <p className="text-xs text-muted-foreground mb-1.5">📝 Your notes</p>
+          <textarea
+            value={placed.userNotes ?? ''}
+            onChange={e => onUpdatePlaced({ ...placed, userNotes: e.target.value || undefined })}
+            placeholder={`Add notes about this ${plant.name}…`}
+            rows={2}
+            className="w-full text-xs rounded-md border border-input bg-background px-2.5 py-1.5 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+      )}
+      {!onUpdatePlaced && placed.userNotes && (
+        <div className="bg-accent/10 border border-accent/20 rounded-md p-2 mb-3 text-xs text-accent-foreground">
+          <p className="font-medium">📝 Your notes</p>
+          <p className="mt-0.5">{placed.userNotes}</p>
+        </div>
+      )}
+
       <button
         onClick={() => onRemove(placed.id)}
         className="w-full text-xs py-2 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
@@ -479,25 +509,11 @@ export function PlantInfoPanel({ placed, allPlaced, onClose, onRemove, sunExposu
     </div>
   );
 
-  // Render as drawer on mobile
-  if (modal) {
-    return (
-      <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DrawerContent className="max-h-[90vh]">
-          <div className="p-4 overflow-y-auto">
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="font-semibold text-foreground text-lg">{plant.name}</h3>
-            </div>
-            {panelContent}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
-    <div className="hidden lg:block w-72 border-l border-border bg-card p-4 overflow-y-auto animate-fade-in">
-      {panelContent}
-    </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto w-full sm:max-w-md p-4">
+        {panelContent}
+      </DialogContent>
+    </Dialog>
   );
 }

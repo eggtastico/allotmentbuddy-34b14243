@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Top-down view of an open compost bin/heap - NON-tiling, cover mode -->
+
+  <!-- Interior decomposing material base -->
+  <rect x="4" y="4" width="40" height="40" fill="#2A1A0A"/>
+
+  <!-- Decomposing material layers - browns, greens, yellows -->
+  <ellipse cx="18" cy="18" rx="6" ry="4" fill="#3D2810" opacity="0.8"/>
+  <ellipse cx="32" cy="14" rx="5" ry="3.5" fill="#45301A" opacity="0.7"/>
+  <ellipse cx="14" cy="30" rx="5" ry="4" fill="#3D2810" opacity="0.75"/>
+  <ellipse cx="28" cy="32" rx="6" ry="4.5" fill="#45301A" opacity="0.7"/>
+  <ellipse cx="36" cy="24" rx="4" ry="3" fill="#3A2510" opacity="0.8"/>
+  <ellipse cx="22" cy="24" rx="4.5" ry="3.5" fill="#38220E" opacity="0.7"/>
+
+  <!-- Green decomposing matter -->
+  <ellipse cx="16" cy="14" rx="3" ry="2" fill="#3A5518" opacity="0.5"/>
+  <ellipse cx="30" cy="26" rx="3.5" ry="2.5" fill="#3D5A1A" opacity="0.45"/>
+  <ellipse cx="36" cy="36" rx="2.5" ry="2" fill="#3A5518" opacity="0.4"/>
+  <ellipse cx="12" cy="36" rx="2.5" ry="1.8" fill="#3D5A1A" opacity="0.45"/>
+
+  <!-- Yellow/brown decomposing patches -->
+  <ellipse cx="26" cy="18" rx="2" ry="1.5" fill="#6B5520" opacity="0.4"/>
+  <ellipse cx="20" cy="34" rx="2.5" ry="1.5" fill="#7A6525" opacity="0.35"/>
+  <ellipse cx="38" cy="30" rx="2" ry="1.5" fill="#6B5520" opacity="0.4"/>
+
+  <!-- Darker fully decomposed patches -->
+  <circle cx="20" cy="22" r="2.5" fill="#1A0E05" opacity="0.5"/>
+  <circle cx="34" cy="18" r="2" fill="#1A0E05" opacity="0.45"/>
+  <circle cx="14" cy="26" r="1.8" fill="#1A0E05" opacity="0.5"/>
+
+  <!-- Identifiable leaf shapes -->
+  <path d="M16 20c1-2 3-2 4-1s0 3-1.5 3.5-3.5-0.5-2.5-2.5z" fill="#4A6020" opacity="0.5"/>
+  <path d="M28 28c0.8-1.5 2.5-1.5 3.2-0.5s-0.2 2.5-1.5 3-2.5-1-1.7-2.5z" fill="#3A5015" opacity="0.45"/>
+  <path d="M10 20c0.6-1 1.8-1 2.2 0s-0.4 1.8-1.1 2-1.7-1-1.1-2z" fill="#556B2F" opacity="0.35"/>
+  <path d="M34 34c0.7-1.2 2-1 2.5 0s-0.3 2-1.2 2.2-2-0.2-1.3-2.2z" fill="#4A6020" opacity="0.4"/>
+
+  <!-- Small twig lines -->
+  <line x1="12" y1="16" x2="16" y2="18" stroke="#5C3A1E" stroke-width="0.8" stroke-linecap="round" opacity="0.7"/>
+  <line x1="30" y1="20" x2="34" y2="22" stroke="#5C3A1E" stroke-width="0.7" stroke-linecap="round" opacity="0.6"/>
+  <line x1="22" y1="30" x2="25" y2="28" stroke="#5C3A1E" stroke-width="0.8" stroke-linecap="round" opacity="0.65"/>
+  <line x1="36" y1="28" x2="38" y2="26" stroke="#5C3A1E" stroke-width="0.7" stroke-linecap="round" opacity="0.6"/>
+  <line x1="10" y1="34" x2="13" y2="33" stroke="#5C3A1E" stroke-width="0.7" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Warm/steaming centre - subtle lighter glow -->
+  <radialGradient id="steam" cx="50%" cy="50%" r="30%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.03"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <circle cx="24" cy="24" r="10" fill="url(#steam)"/>
+
+  <!-- Tiny steam wisps near centre -->
+  <path d="M22 22c0-1 0.5-2 1-2s0.5 1 0 2" fill="none" stroke="#FFFFFF" stroke-width="0.4" opacity="0.1"/>
+  <path d="M25 21c0-0.8 0.4-1.5 0.8-1.5s0.4 0.7 0 1.5" fill="none" stroke="#FFFFFF" stroke-width="0.3" opacity="0.08"/>
+
+  <!-- Wooden slat walls - TOP edge -->
+  <rect x="0" y="0" width="48" height="4" fill="#6B4E28"/>
+  <line x1="0" y1="1.5" x2="48" y2="1.5" stroke="#5A3E1C" stroke-width="0.5" opacity="0.6"/>
+  <line x1="0" y1="3" x2="48" y2="3" stroke="#7A5E35" stroke-width="0.4" opacity="0.4"/>
+  <!-- Plank divisions top -->
+  <line x1="12" y1="0" x2="12" y2="4" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+  <line x1="24" y1="0" x2="24" y2="4" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+  <line x1="36" y1="0" x2="36" y2="4" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- Wooden slat walls - BOTTOM edge -->
+  <rect x="0" y="44" width="48" height="4" fill="#5E4422"/>
+  <line x1="0" y1="45.5" x2="48" y2="45.5" stroke="#4E3418" stroke-width="0.5" opacity="0.6"/>
+  <line x1="0" y1="47" x2="48" y2="47" stroke="#6B5030" stroke-width="0.4" opacity="0.4"/>
+  <!-- Plank divisions bottom -->
+  <line x1="10" y1="44" x2="10" y2="48" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+  <line x1="22" y1="44" x2="22" y2="48" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+  <line x1="34" y1="44" x2="34" y2="48" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- Wooden slat walls - LEFT edge -->
+  <rect x="0" y="0" width="4" height="48" fill="#6B4E28"/>
+  <line x1="1.5" y1="0" x2="1.5" y2="48" stroke="#5A3E1C" stroke-width="0.5" opacity="0.6"/>
+  <line x1="3" y1="0" x2="3" y2="48" stroke="#7A5E35" stroke-width="0.4" opacity="0.4"/>
+  <!-- Plank divisions left -->
+  <line x1="0" y1="12" x2="4" y2="12" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+  <line x1="0" y1="24" x2="4" y2="24" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+  <line x1="0" y1="36" x2="4" y2="36" stroke="#5A3E1C" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- Wooden slat walls - RIGHT edge -->
+  <rect x="44" y="0" width="4" height="48" fill="#5E4422"/>
+  <line x1="45.5" y1="0" x2="45.5" y2="48" stroke="#4E3418" stroke-width="0.5" opacity="0.6"/>
+  <line x1="47" y1="0" x2="47" y2="48" stroke="#6B5030" stroke-width="0.4" opacity="0.4"/>
+  <!-- Plank divisions right -->
+  <line x1="44" y1="10" x2="48" y2="10" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+  <line x1="44" y1="22" x2="48" y2="22" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+  <line x1="44" y1="34" x2="48" y2="34" stroke="#4E3418" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- Corner posts (darker, thicker) -->
+  <rect x="0" y="0" width="4" height="4" fill="#4E3418"/>
+  <rect x="44" y="0" width="4" height="4" fill="#4E3418"/>
+  <rect x="0" y="44" width="4" height="4" fill="#4E3418"/>
+  <rect x="44" y="44" width="4" height="4" fill="#4E3418"/>
+</svg>

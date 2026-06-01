@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30">
+  <!-- Top-down view of a window box -->
+
+  <!-- Ceramic/terracotta base -->
+  <rect width="120" height="30" rx="2" fill="#C8923A"/>
+
+  <!-- Soil strip -->
+  <rect x="4" y="4" width="112" height="22" rx="1" fill="#2E2010"/>
+
+  <!-- Plant/flower dots — 7 positions, alternating sizes and colours -->
+  <circle cx="15" cy="15" r="5" fill="#4A7830" opacity="0.9"/>
+  <circle cx="30" cy="15" r="4" fill="#6A9840" opacity="0.9"/>
+  <circle cx="45" cy="15" r="5" fill="#E88828" opacity="0.9"/>
+  <circle cx="60" cy="15" r="4" fill="#4A7830" opacity="0.9"/>
+  <circle cx="75" cy="15" r="5" fill="#D06080" opacity="0.9"/>
+  <circle cx="90" cy="15" r="4" fill="#4A7830" opacity="0.9"/>
+  <circle cx="105" cy="15" r="5" fill="#E88828" opacity="0.9"/>
+
+  <!-- Rim highlight -->
+  <rect x="4" y="5" width="112" height="1.5" fill="#D09A50" opacity="0.4"/>
+</svg>

@@ -196,11 +196,11 @@ async function render(state: RenderState): Promise<ImageBitmap> {
   }
   ctx.drawImage(staticBitmap, 0, 0, gridW, gridH);
 
-  // Structure fills
+  // Structure fills + bed perimeter strokes
   for (const struct of structures) {
     const data = getStructureById(struct.structureId);
     if (!data?.showCells) continue;
-    ctx.fillStyle = data.color; ctx.globalAlpha = 0.4;
+    ctx.fillStyle = data.color; ctx.globalAlpha = 0.6;
     for (let row = 0; row < struct.heightCells; row++) {
       for (let col = 0; col < struct.widthCells; col++) {
         roundRect(ctx, (struct.x + col) * cellSize + 1, (struct.y + row) * cellSize + 1, cellSize - 2, cellSize - 2, 2);
@@ -208,6 +208,15 @@ async function render(state: RenderState): Promise<ImageBitmap> {
       }
     }
     ctx.globalAlpha = 1;
+    // Bed perimeter stroke — single outline around the full structure
+    const bx = struct.x * cellSize;
+    const by = struct.y * cellSize;
+    const bw = struct.widthCells * cellSize;
+    const bh = struct.heightCells * cellSize;
+    roundRect(ctx, bx + 0.5, by + 0.5, bw - 1, bh - 1, 4);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 
   // Sun/shade overlay
@@ -313,7 +322,7 @@ async function render(state: RenderState): Promise<ImageBitmap> {
   }
 
   // Plant tile passes A–F
-  const hasLabel = cellSize >= 28;
+  const hasLabel = cellSize >= 20;
   const tilePath = getCachedPath2D(cellSize - 2, cellSize - 2, 5);
   const sortedPlants = [...plants].sort((a, b) => {
     const aD = getPlantById(a.plantId), bD = getPlantById(b.plantId);
@@ -352,7 +361,7 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     const emojiSize = aw > 1 || ah > 1
       ? Math.max(Math.min(pw, ph) * 0.82, 20)
       : Math.max(cellSize * (0.88 + Math.min(0.1, growthPct * 0.1)), 18);
-    const emojiOffsetY = aw > 1 || ah > 1 ? 0 : (hasLabel ? -3 : 0);
+    const emojiOffsetY = aw > 1 || ah > 1 ? 0 : (hasLabel ? -5 : 0);
     const seasonStatus: PlantSeasonStatus = viewMonth != null
       ? getPlantSeasonStatus(plantData, placed.plantedAt, viewMonth)
       : 'active';
@@ -419,14 +428,23 @@ async function render(state: RenderState): Promise<ImageBitmap> {
     if (seasonStatus === 'dormant') ctx.globalAlpha = 1;
   }
 
-  // Pass D: name labels — centred at bottom of area
+  // Pass D: name labels with pill background — centred at bottom of area
   if (hasLabel) {
-    ctx.font = '600 7px system-ui,sans-serif';
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+    ctx.font = '600 8px system-ui,sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     for (const { plantData, px, py, pw, ph } of tileMetas) {
-      const name = plantData.name.length > 6 ? plantData.name.slice(0, 5) + '…' : plantData.name;
-      ctx.fillText(name, px + pw / 2, py + ph - 2);
+      const maxChars = cellSize >= 28 ? 7 : 5;
+      const name = plantData.name.length > maxChars ? plantData.name.slice(0, maxChars - 1) + '…' : plantData.name;
+      const tw = ctx.measureText(name).width;
+      const pillW = Math.min(tw + 6, pw - 4);
+      const pillH = 11;
+      const pillX = px + (pw - pillW) / 2;
+      const pillY = py + ph - pillH - 1;
+      roundRect(ctx, pillX, pillY, pillW, pillH, 3);
+      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.75)';
+      ctx.fill();
+      ctx.fillStyle = isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.8)';
+      ctx.fillText(name, px + pw / 2, pillY + pillH - 2);
     }
   }
 
@@ -539,6 +557,63 @@ async function render(state: RenderState): Promise<ImageBitmap> {
           ctx.stroke(); ctx.setLineDash([]);
         }
       }
+    }
+  }
+
+  // Spacing rings for same-type plants — when a companion heatmap is active (plant being dragged),
+  // show dotted spacing circles around all existing plants of that same type
+  if (companionHeatmapCompanion || companionHeatmapEnemy) {
+    // Determine the active drag plant id from the heatmap source
+    // Draw spacing circles around existing same-type plants
+    const dragPlantIds = new Set<string>();
+    for (const plant of plants) {
+      const pData = getPlantById(plant.plantId);
+      if (!pData) continue;
+      // Check if this plant is the type being placed (heatmap only shows when placing)
+      dragPlantIds.add(plant.plantId);
+    }
+    // Since we can't easily determine the exact dragged plant type from the heatmap alone,
+    // we'll show spacing rings for ALL plants that have spacing conflicts nearby
+    for (const plant of plants) {
+      const ax = Math.floor(plant.x), ay = Math.floor(plant.y);
+      if (!inViewport(ax, ay)) continue;
+      const pData = getPlantById(plant.plantId);
+      if (!pData) continue;
+      const spacingCells = Math.ceil(pData.spacingCm / (gridW / cols)); // approximate cellSizeCm
+      if (spacingCells <= 1) continue;
+      const cx2 = (ax + 0.5) * cellSize;
+      const cy2 = (ay + 0.5) * cellSize;
+      const radius = spacingCells * cellSize;
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(99,102,241,0.18)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Seasonal ground tinting — subtle overlay to convey the time of year
+  if (viewMonth != null) {
+    const seasonTints: Record<number, string> = {
+      0: 'rgba(180,200,220,0.06)',  // Jan — cool blue
+      1: 'rgba(180,200,220,0.05)',  // Feb — cool blue lighter
+      2: 'rgba(144,238,144,0.05)', // Mar — spring green
+      3: 'rgba(144,238,144,0.06)', // Apr — spring green
+      4: 'rgba(144,238,144,0.04)', // May — light green
+      5: 'rgba(255,235,150,0.05)', // Jun — warm gold
+      6: 'rgba(255,230,120,0.06)', // Jul — warm gold
+      7: 'rgba(255,220,100,0.06)', // Aug — golden
+      8: 'rgba(255,180,80,0.05)',  // Sep — amber
+      9: 'rgba(200,140,60,0.06)',  // Oct — brown/autumn
+      10: 'rgba(160,140,120,0.06)', // Nov — grey-brown
+      11: 'rgba(180,200,220,0.06)', // Dec — cool blue
+    };
+    const tint = seasonTints[viewMonth];
+    if (tint) {
+      ctx.fillStyle = tint;
+      ctx.fillRect(0, 0, gridW, gridH);
     }
   }
 

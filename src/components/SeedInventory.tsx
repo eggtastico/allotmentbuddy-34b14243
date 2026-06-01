@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { SignedImage } from '@/components/SignedImage';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -106,7 +107,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       purchased_date: form.purchased_date || null,
       expiry_date: form.expiry_date || null,
       notes: form.notes.trim(),
-      ai_extracted_data: { ...existingData, _meta: meta },
+      ai_extracted_data: { ...existingData, _meta: meta } as unknown as Json,
     };
 
     if (editId) {
@@ -262,6 +263,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       reader.onload = async (e) => {
         try {
           const imgSrc = e.target?.result as string;
+          // @ts-expect-error - scanImage exists at runtime but is missing from type definitions
           const barcode = await Html5QrcodeScanner.scanImage(imgSrc, {
             qrbox: { width: 250, height: 250 },
             fps: 10,
@@ -290,6 +292,7 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
       reader.onload = async (e) => {
         try {
           const imgSrc = e.target?.result as string;
+          // @ts-expect-error - scanImage exists at runtime but is missing from type definitions
           const qrData = await Html5QrcodeScanner.scanImage(imgSrc, {
             qrbox: { width: 250, height: 250 },
             fps: 10,
@@ -527,9 +530,9 @@ export function SeedInventory({ onClose }: SeedInventoryProps) {
                           )}
                           {seed.ai_extracted_data && Object.keys(seed.ai_extracted_data).filter(k => k !== '_meta').length > 0 && (
                             <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {seed.ai_extracted_data.sow_indoors && <span>Sow indoors: {seed.ai_extracted_data.sow_indoors as string} </span>}
-                              {seed.ai_extracted_data.sow_outdoors && <span>Sow outdoors: {seed.ai_extracted_data.sow_outdoors as string} </span>}
-                              {seed.ai_extracted_data.harvest && <span>Harvest: {seed.ai_extracted_data.harvest as string}</span>}
+                              {'sow_indoors' in seed.ai_extracted_data && seed.ai_extracted_data.sow_indoors ? <span>Sow indoors: {String(seed.ai_extracted_data.sow_indoors)} </span> : null}
+                              {'sow_outdoors' in seed.ai_extracted_data && seed.ai_extracted_data.sow_outdoors ? <span>Sow outdoors: {String(seed.ai_extracted_data.sow_outdoors)} </span> : null}
+                              {'harvest' in seed.ai_extracted_data && seed.ai_extracted_data.harvest ? <span>Harvest: {String(seed.ai_extracted_data.harvest)}</span> : null}
                             </div>
                           )}
                         </div>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Top-down view of a water butt/barrel -->
+
+  <!-- Outer barrel body -->
+  <circle cx="24" cy="24" r="23" fill="#3A4A3A"/>
+
+  <!-- Barrel hoop ring 1 -->
+  <circle cx="24" cy="24" r="20" fill="none" stroke="#2A3828" stroke-width="3"/>
+
+  <!-- Water surface -->
+  <circle cx="24" cy="24" r="18" fill="#2C3E38"/>
+
+  <!-- Barrel hoop ring 2 -->
+  <circle cx="24" cy="24" r="15" fill="none" stroke="#2A3828" stroke-width="2"/>
+
+  <!-- Water highlight ellipse -->
+  <ellipse cx="18" cy="18" rx="6" ry="3" fill="#3A5048" opacity="0.5"/>
+
+  <!-- Tap at bottom -->
+  <rect x="21" y="42" width="6" height="4" rx="1" fill="#2A3828"/>
+</svg>

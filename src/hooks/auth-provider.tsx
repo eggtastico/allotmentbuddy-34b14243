@@ -45,6 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Remove Supabase session tokens from localStorage so they are not
+    // accessible to the next user on a shared device (the Supabase client
+    // stores them under keys prefixed with "sb-").
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-')) localStorage.removeItem(key);
+    }
   };
 
   return (

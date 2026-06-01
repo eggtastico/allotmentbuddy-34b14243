@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,51 +36,61 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const uniquePlants = [...new Set(plants.map(p => p.plantId))];
-  const plantSummary = uniquePlants
-    .map(id => { const plant = getPlantById(id); return plant ? `${plant.emoji} ${plant.name} (x${plants.filter(pp => pp.plantId === id).length})` : ''; })
-    .filter(Boolean).join(', ');
+  // Memoised context: these computations can be expensive (analyzeRotation does graph
+  // traversal; relation summary is O(n²) without a Set). Recompute only when inputs change.
+  const { systemContext, quickPrompts, rotationConflictCount, rotationScore } = useMemo(() => {
+    const uniquePlantIds = [...new Set(plants.map(p => p.plantId))];
+    const uniqueSet = new Set(uniquePlantIds);
 
-  // JSON.stringify the user-influenced location values so they cannot break out of
-  // the prompt string (prevents prompt injection via crafted location names).
-  const locationStr = location
-    ? `Location: ${JSON.stringify(location.name)} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${JSON.stringify(location.region)}` : ''}.`
-    : '';
+    // Count occurrences in a single pass for O(n) plant summary
+    const countMap = new Map<string, number>();
+    for (const p of plants) countMap.set(p.plantId, (countMap.get(p.plantId) ?? 0) + 1);
 
-  // Build rich context about the current layout
-  const rotationAnalysis = analyzeRotation(plants);
-  const conflictSummary = rotationAnalysis.conflicts.length > 0
-    ? `Rotation conflicts: ${rotationAnalysis.conflicts.map(c => c.reason).join('; ')}.`
-    : 'No rotation conflicts.';
+    const plantSummary = uniquePlantIds
+      .map(id => { const plant = getPlantById(id); return plant ? `${plant.emoji} ${plant.name} (x${countMap.get(id) ?? 1})` : ''; })
+      .filter(Boolean).join(', ');
 
-  // Companion/enemy summary
-  const relationSummary = uniquePlants.map(id => {
-    const p = getPlantById(id);
-    if (!p) return '';
-    const enemies = p.enemies.filter(e => uniquePlants.includes(e)).map(e => getPlantById(e)?.name).filter(Boolean);
-    const companions = p.companions.filter(c => uniquePlants.includes(c)).map(c => getPlantById(c)?.name).filter(Boolean);
-    const parts: string[] = [];
-    if (enemies.length) parts.push(`enemies nearby: ${enemies.join(', ')}`);
-    if (companions.length) parts.push(`companions: ${companions.join(', ')}`);
-    return parts.length ? `${p.name}: ${parts.join('; ')}` : '';
-  }).filter(Boolean).join('. ');
+    // JSON.stringify the user-influenced location values so they cannot break out of
+    // the prompt string (prevents prompt injection via crafted location names).
+    const locationStr = location
+      ? `Location: ${JSON.stringify(location.name)} (lat ${location.lat.toFixed(2)}, lon ${location.lon.toFixed(2)})${location.region ? `, region: ${JSON.stringify(location.region)}` : ''}.`
+      : '';
 
-  const systemContext = `User has a ${settings.widthM}×${settings.heightM} ${settings.unit} garden plot (grid ${Math.round(settings.widthM * 100 / settings.cellSizeCm)}×${Math.round(settings.heightM * 100 / settings.cellSizeCm)} cells, ${settings.cellSizeCm}cm each). ${locationStr} Plants: ${plantSummary || 'none yet'}. ${conflictSummary} ${relationSummary} Rotation score: ${rotationAnalysis.score}/100.`;
+    const rotationAnalysis = analyzeRotation(plants);
+    const conflictSummary = rotationAnalysis.conflicts.length > 0
+      ? `Rotation conflicts: ${rotationAnalysis.conflicts.map(c => c.reason).join('; ')}.`
+      : 'No rotation conflicts.';
 
-  // Context-aware quick prompts
-  const quickPrompts: string[] = [];
-  if (plants.length > 0) {
-    quickPrompts.push('Analyze my layout and suggest improvements');
-    if (rotationAnalysis.conflicts.length > 0) quickPrompts.push('Fix my spacing & companion issues');
-    quickPrompts.push('Create a 3-year rotation plan for my plot');
-    quickPrompts.push('Maximize yield with my current layout');
-    quickPrompts.push('Suggest pest-resistant companion planting');
-  } else {
-    quickPrompts.push('Suggest a beginner-friendly layout');
-    quickPrompts.push('What should I plant this month?');
-    quickPrompts.push('Design a low-maintenance herb garden');
-  }
-  if (location) quickPrompts.push(`Best crops for ${location.name} climate`);
+    // Companion/enemy summary — use Set for O(1) membership checks
+    const relationSummary = uniquePlantIds.map(id => {
+      const p = getPlantById(id);
+      if (!p) return '';
+      const enemies = p.enemies.filter(e => uniqueSet.has(e)).map(e => getPlantById(e)?.name).filter(Boolean);
+      const companions = p.companions.filter(c => uniqueSet.has(c)).map(c => getPlantById(c)?.name).filter(Boolean);
+      const parts: string[] = [];
+      if (enemies.length) parts.push(`enemies nearby: ${enemies.join(', ')}`);
+      if (companions.length) parts.push(`companions: ${companions.join(', ')}`);
+      return parts.length ? `${p.name}: ${parts.join('; ')}` : '';
+    }).filter(Boolean).join('. ');
+
+    const ctx = `User has a ${settings.widthM}×${settings.heightM} ${settings.unit} garden plot (grid ${Math.round(settings.widthM * 100 / settings.cellSizeCm)}×${Math.round(settings.heightM * 100 / settings.cellSizeCm)} cells, ${settings.cellSizeCm}cm each). ${locationStr} Plants: ${plantSummary || 'none yet'}. ${conflictSummary} ${relationSummary} Rotation score: ${rotationAnalysis.score}/100.`;
+
+    const prompts: string[] = [];
+    if (plants.length > 0) {
+      prompts.push('Analyze my layout and suggest improvements');
+      if (rotationAnalysis.conflicts.length > 0) prompts.push('Fix my spacing & companion issues');
+      prompts.push('Create a 3-year rotation plan for my plot');
+      prompts.push('Maximize yield with my current layout');
+      prompts.push('Suggest pest-resistant companion planting');
+    } else {
+      prompts.push('Suggest a beginner-friendly layout');
+      prompts.push('What should I plant this month?');
+      prompts.push('Design a low-maintenance herb garden');
+    }
+    if (location) prompts.push(`Best crops for ${location.name} climate`);
+
+    return { systemContext: ctx, quickPrompts: prompts, rotationConflictCount: rotationAnalysis.conflicts.length, rotationScore: rotationAnalysis.score };
+  }, [plants, location, settings]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -133,7 +143,7 @@ export function AIChat({ settings, plants, location, onClose }: AIChatProps) {
               <p className="text-sm text-muted-foreground">I know your plot layout — ask me anything!</p>
               {plants.length > 0 && (
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  📊 {plants.length} plants · Rotation score: {rotationAnalysis.score}/100 · {rotationAnalysis.conflicts.length} issues
+                  📊 {plants.length} plants · Rotation score: {rotationScore}/100 · {rotationConflictCount} issues
                 </p>
               )}
               {location && (

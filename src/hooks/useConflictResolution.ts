@@ -121,8 +121,8 @@ export function useConflictResolution() {
           ...conflict.remotePlan,
           name: local.name,
           plot_settings: local.settings,
-          plants: local.plants,
-          beds: local.beds,
+          plants: local.plants as GardenPlanRow['plants'],
+          beds: local.beds as GardenPlanRow['beds'],
           updated_at: local.updated_at,
         };
         setConflict(null);

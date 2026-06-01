@@ -90,6 +90,7 @@ export const SyncStatusBar: React.FC = () => {
     },
   };
 
+  if (state === 'hidden') return null;
   const { icon, text, bgClass, textClass } = config[state];
 
   return (

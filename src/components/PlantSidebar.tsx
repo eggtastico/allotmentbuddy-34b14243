@@ -21,7 +21,13 @@ interface PlantSidebarProps {
   onDragStart: (plantId: string) => void;
   pendingPlantId?: string | null;
   onSelectPlant?: (plantId: string, isStructure?: boolean) => void;
+  onSelectStructure?: (id: string, w: number, h: number) => void;
   onStructureModeChange?: (mode: boolean) => void;
+  fullScreen?: boolean;
+  defaultTab?: 'plants' | 'favourites' | 'structures';
+  cellSizeCm?: number;
+  /** When 'beds': show only beds/containers/growing structures. When 'other': show only non-growing structures. */
+  structureFilter?: 'beds' | 'other';
 }
 
 function PlantHoverInfo({ plant }: { plant: Plant }) {
@@ -106,14 +112,16 @@ function PlantHoverInfo({ plant }: { plant: Plant }) {
   );
 }
 
-function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPending, onSelectPlant, sowLabel }: {
+function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPending, onSelectPlant, onStructureModeChange, sowLabel, hoverSide = 'right' }: {
   plant: Plant;
   onDragStart: (id: string) => void;
   isFavourite: boolean;
   onToggleFavourite: (id: string) => void;
   isPending?: boolean;
   onSelectPlant?: (id: string) => void;
+  onStructureModeChange?: (mode: boolean) => void;
   sowLabel?: string;
+  hoverSide?: 'right' | 'bottom';
 }) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
@@ -133,6 +141,15 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPendi
         >
           <span className="sm:text-base text-lg group-hover:animate-plant-bounce flex-shrink-0">{plant.emoji}</span>
           <span className="truncate text-foreground font-medium flex-1">{plant.name}</span>
+          {sowLabel && (
+            <span className={`shrink-0 text-[9px] px-1 py-0.5 rounded-full font-semibold leading-none ${
+              sowLabel === 'Sow outdoors' ? 'bg-emerald-100 text-emerald-700' :
+              sowLabel === 'Sow indoors' ? 'bg-blue-100 text-blue-700' :
+              'bg-green-100 text-green-700'
+            }`}>
+              {sowLabel === 'Sow outdoors' ? '🌿' : sowLabel === 'Sow indoors' ? '🏠' : '🌱'}
+            </span>
+          )}
           <button
             onClick={e => { e.stopPropagation(); e.preventDefault(); onToggleFavourite(plant.id); }}
             onMouseDown={e => e.stopPropagation()}
@@ -145,7 +162,7 @@ function PlantItem({ plant, onDragStart, isFavourite, onToggleFavourite, isPendi
           </button>
         </div>
       </HoverCardTrigger>
-      <HoverCardContent side="right" align="start" className="w-72 p-3 rounded-2xl">
+      <HoverCardContent side={hoverSide} align="start" className="w-72 p-3 rounded-2xl">
         <PlantHoverInfo plant={plant} />
       </HoverCardContent>
     </HoverCard>
@@ -251,17 +268,25 @@ function FavouritesTab({ onDragStart, favouriteIds, reorder, toggleFavourite, ge
     </div>
   );
 }
-export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStructureModeChange }: PlantSidebarProps) {
+export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onSelectStructure, onStructureModeChange, fullScreen = false, defaultTab = 'plants', cellSizeCm = 20, structureFilter }: PlantSidebarProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [tab, setTab] = useState<'plants' | 'favourites' | 'structures'>('plants');
+  const [tab, setTab] = useState<'plants' | 'favourites' | 'structures'>(defaultTab);
+  const [expandedStructureId, setExpandedStructureId] = useState<string | null>(null);
+  const [structureW, setStructureW] = useState(1);
+  const [structureH, setStructureH] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null);
   const [sunFilter, setSunFilter] = useState<string | null>(null);
   const [varietyFilter, setVarietyFilter] = useState<string | null>(null);
   const [groupMode, setGroupMode] = useState<GroupMode>('category');
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // In full-screen mode the "other plants" section starts collapsed
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => fullScreen ? new Set(['__other']) : new Set()
+  );
+
+  const currentMonth = new Date().getMonth();
 
   const { isFavourite, toggleFavourite, reorder, getFavouriteIds, getQuantity, setQuantity } = useFavouritePlants();
   const favouriteIds = getFavouriteIds();
@@ -281,11 +306,37 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
     return matchesSearch && matchesCategory && matchesDifficulty && matchesSeason && matchesSun && matchesVariety;
   });
 
-  const filteredStructures = structures.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStructures = structures.filter(s => {
+    if (!s.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (structureFilter === 'beds') return !!(s.showCells || s.isContainer || s.canGrowInside);
+    if (structureFilter === 'other') return !(s.showCells || s.isContainer || s.canGrowInside);
+    return true;
+  });
 
   const grouped = useMemo(() => {
+    if (fullScreen) {
+      // Full-screen: seasonal-first grouping
+      const inSeason = filtered.filter(p => getSowingStatus(p, currentMonth).canSowNow);
+      // Sort in-season: outdoors first, then indoors only
+      inSeason.sort((a, b) => {
+        const sa = getSowingStatus(a, currentMonth);
+        const sb = getSowingStatus(b, currentMonth);
+        const scoreA = sa.sowOutdoorsNow ? 2 : sa.sowIndoorsNow ? 1 : 0;
+        const scoreB = sb.sowOutdoorsNow ? 2 : sb.sowIndoorsNow ? 1 : 0;
+        return scoreB - scoreA || a.name.localeCompare(b.name);
+      });
+      const outOfSeason = filtered
+        .filter(p => !getSowingStatus(p, currentMonth).canSowNow)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const groups: { key: string; label: string; items: Plant[] }[] = [];
+      if (inSeason.length > 0) {
+        groups.push({ key: '__sow_now', label: `Sow in ${getMonthName(currentMonth)}`, items: inSeason });
+      }
+      if (outOfSeason.length > 0) {
+        groups.push({ key: '__other', label: `All other plants`, items: outOfSeason });
+      }
+      return groups;
+    }
     if (groupMode === 'category') {
       return categoryOrder.reduce((acc, cat) => {
         const items = filtered.filter(p => p.category === cat);
@@ -307,7 +358,7 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
           items,
         }));
     }
-  }, [filtered, groupMode]);
+  }, [filtered, groupMode, fullScreen, currentMonth]);
 
   const toggleGroup = (key: string) => {
     setCollapsedGroups(prev => {
@@ -318,23 +369,30 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
     });
   };
 
-  // Flatten grouped plants into virtual rows: group headers + 2-column plant rows
+  // Flatten grouped plants into virtual rows: group headers + N-column plant rows
   type VItem =
     | { kind: 'header'; groupKey: string; label: string; count: number }
-    | { kind: 'row'; rowPlants: Plant[] };
+    | { kind: 'row'; rowPlants: Plant[]; sowLabels?: Record<string, string> };
+
+  const colsPerRow = 2;
 
   const flatPlantItems = useMemo<VItem[]>(() => {
     const items: VItem[] = [];
     for (const group of grouped) {
       items.push({ kind: 'header', groupKey: group.key, label: group.label, count: group.items.length });
       if (!collapsedGroups.has(group.key)) {
-        for (let i = 0; i < group.items.length; i += 2) {
-          items.push({ kind: 'row', rowPlants: group.items.slice(i, i + 2) });
+        const isSeasonalGroup = group.key === '__sow_now';
+        for (let i = 0; i < group.items.length; i += colsPerRow) {
+          const rowPlants = group.items.slice(i, i + colsPerRow);
+          const sowLabels = isSeasonalGroup
+            ? Object.fromEntries(rowPlants.map(p => [p.id, getSowingStatus(p, currentMonth).label]))
+            : undefined;
+          items.push({ kind: 'row', rowPlants, sowLabels });
         }
       }
     }
     return items;
-  }, [grouped, collapsedGroups]);
+  }, [grouped, collapsedGroups, colsPerRow, currentMonth]);
 
   const plantScrollRef = useRef<HTMLDivElement>(null);
   const plantVirtualizer = useVirtualizer({
@@ -347,7 +405,7 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
   const activeFilterCount = [difficultyFilter, seasonFilter, sunFilter, varietyFilter].filter(Boolean).length;
 
   return (
-    <div className="w-full sm:w-64 border-r border-border bg-card flex flex-col h-full">
+    <div className={`${fullScreen ? 'w-full' : 'w-full sm:w-64 border-r border-border'} bg-card flex flex-col h-full`}>
       <div className="p-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm text-foreground">🌱 Plant Library <span className="text-muted-foreground font-normal text-xs">({plants.length})</span></h2>
@@ -406,7 +464,7 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
           </div>
         )}
 
-        {tab === 'plants' && (
+        {tab === 'plants' && !fullScreen && (
           <>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">Group by:</span>
@@ -510,57 +568,124 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
         )}
       </div>
 
-      {/* Favourites + Structures tabs: normal scroll */}
+      {/* Favourites + Structures tabs */}
       {tab !== 'plants' && (
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
-          {tab === 'favourites' ? (
-            <FavouritesTab
-              onDragStart={onDragStart}
-              favouriteIds={favouriteIds}
-              reorder={reorder}
-              toggleFavourite={toggleFavourite}
-              getQuantity={getQuantity}
-              setQuantity={setQuantity}
-            />
-          ) : (
-          <>
-            <p className="text-xs text-muted-foreground px-1 hidden sm:block">Drag structures onto your plot.</p>
-            <p className="text-xs text-muted-foreground px-1 sm:hidden">Tap a structure to select it, then tap the grid to place it.</p>
-            <div className="space-y-1">
-              {filteredStructures.map(structure => (
-                <div
-                  key={structure.id}
-                  draggable
-                  onDragStart={e => {
-                    e.dataTransfer.setData('structureId', structure.id);
-                    onDragStart(structure.id);
-                  }}
-                  onClick={() => {
-                    onSelectPlant?.(structure.id, true);
-                    onStructureModeChange?.(true);
-                  }}
-                  className={`flex items-center gap-2 p-2.5 rounded-2xl bg-background hover:bg-muted cursor-grab active:cursor-grabbing transition-colors text-xs border border-transparent hover:border-border group min-h-[44px] ${pendingPlantId === structure.id ? 'ring-2 ring-primary bg-primary/10' : ''}`}
-                  title={structure.description}
-                >
-                  <span className="text-lg">{structure.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground">{structure.name}</span>
-                      {structure.canGrowInside && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-lg bg-primary/15 text-primary font-semibold">Grow</span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">{structure.widthCells}×{structure.heightCells} cells</span>
-                  </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-2">
+            {tab === 'favourites' ? (
+              <div className="space-y-1">
+                <FavouritesTab
+                  onDragStart={onDragStart}
+                  favouriteIds={favouriteIds}
+                  reorder={reorder}
+                  toggleFavourite={toggleFavourite}
+                  getQuantity={getQuantity}
+                  setQuantity={setQuantity}
+                />
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground px-1 mb-2">Tap a structure to size it, then place it on the garden.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {filteredStructures.map(structure => {
+                    const isSelected = expandedStructureId === structure.id;
+                    const isPending = pendingPlantId === structure.id;
+                    return (
+                      <div
+                        key={structure.id}
+                        draggable
+                        onDragStart={e => {
+                          e.dataTransfer.setData('structureId', structure.id);
+                          onDragStart(structure.id);
+                        }}
+                        onClick={() => {
+                          if (isSelected) {
+                            setExpandedStructureId(null);
+                          } else {
+                            setExpandedStructureId(structure.id);
+                            setStructureW(structure.widthCells);
+                            setStructureH(structure.heightCells);
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 text-center cursor-pointer transition-colors select-none ${
+                          isSelected
+                            ? 'border-primary bg-primary/5'
+                            : isPending
+                              ? 'border-primary/60 bg-primary/10'
+                              : 'border-border bg-background hover:bg-muted'
+                        }`}
+                        title={structure.description}
+                      >
+                        <span className="text-3xl leading-none">{structure.emoji}</span>
+                        <div className="w-full">
+                          <p className="text-xs font-semibold text-foreground leading-tight">{structure.name}</p>
+                          {structure.canGrowInside && (
+                            <p className="text-[9px] text-primary font-semibold mt-0.5">Grow inside</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {structure.widthCells}×{structure.heightCells} tiles
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {structure.widthCells * cellSizeCm}×{structure.heightCells * cellSizeCm}cm
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-            {filteredStructures.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-8">No structures found</p>
+                {filteredStructures.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-8">No structures found</p>
+                )}
+              </>
             )}
-          </>
-        )}
-      </div>
+          </div>
+
+          {/* Sticky size picker — shown when a structure card is selected */}
+          {tab === 'structures' && expandedStructureId && (() => {
+            const structure = filteredStructures.find(s => s.id === expandedStructureId);
+            if (!structure) return null;
+            return (
+              <div className="shrink-0 border-t border-border bg-background px-4 py-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl leading-none">{structure.emoji}</span>
+                  <span className="text-sm font-semibold text-foreground">{structure.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground w-4">W</span>
+                    <button onClick={() => setStructureW(v => Math.max(1, v - 1))} className="h-6 w-6 rounded border border-border bg-muted flex items-center justify-center text-sm font-bold hover:bg-muted/80 active:scale-95">−</button>
+                    <span className="text-xs font-semibold w-5 text-center">{structureW}</span>
+                    <button onClick={() => setStructureW(v => Math.min(20, v + 1))} className="h-6 w-6 rounded border border-border bg-muted flex items-center justify-center text-sm font-bold hover:bg-muted/80 active:scale-95">+</button>
+                  </div>
+                  <span className="text-muted-foreground text-xs">×</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground w-4">H</span>
+                    <button onClick={() => setStructureH(v => Math.max(1, v - 1))} className="h-6 w-6 rounded border border-border bg-muted flex items-center justify-center text-sm font-bold hover:bg-muted/80 active:scale-95">−</button>
+                    <span className="text-xs font-semibold w-5 text-center">{structureH}</span>
+                    <button onClick={() => setStructureH(v => Math.min(20, v + 1))} className="h-6 w-6 rounded border border-border bg-muted flex items-center justify-center text-sm font-bold hover:bg-muted/80 active:scale-95">+</button>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground ml-auto">
+                    {structureW * cellSizeCm}cm × {structureH * cellSizeCm}cm
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (onSelectStructure) {
+                      onSelectStructure(structure.id, structureW, structureH);
+                    } else {
+                      onSelectPlant?.(structure.id, true);
+                      onStructureModeChange?.(true);
+                    }
+                    setExpandedStructureId(null);
+                  }}
+                  className="w-full py-2.5 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 active:bg-primary/80 transition-colors"
+                >
+                  Place on garden →
+                </button>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* Plants tab — virtualised flat list */}
@@ -599,17 +724,47 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
                     }}
                   >
                     {item.kind === 'header' ? (
-                      <button
-                        onClick={() => toggleGroup(item.groupKey)}
-                        className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors text-left"
-                      >
-                        {collapsedGroups.has(item.groupKey)
-                          ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        }
-                        <span className="text-xs font-bold text-foreground">{item.label}</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{item.count}</span>
-                      </button>
+                      item.groupKey === '__sow_now' ? (
+                        <button
+                          onClick={() => toggleGroup(item.groupKey)}
+                          className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors text-left"
+                        >
+                          {collapsedGroups.has(item.groupKey)
+                            ? <ChevronRight className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            : <ChevronDown className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          }
+                          <Sprout className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-bold text-emerald-800">{item.label}</span>
+                          <span className="text-[10px] text-emerald-600 ml-auto font-semibold">{item.count}</span>
+                        </button>
+                      ) : item.groupKey === '__other' ? (
+                        <button
+                          onClick={() => toggleGroup(item.groupKey)}
+                          className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors text-left"
+                        >
+                          {collapsedGroups.has(item.groupKey)
+                            ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          }
+                          <span className="text-xs font-semibold text-muted-foreground">{item.label}</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{item.count}</span>
+                          {collapsedGroups.has(item.groupKey) && (
+                            <span className="text-[10px] text-muted-foreground/60 ml-1">tap to expand</span>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => toggleGroup(item.groupKey)}
+                          className="flex items-center gap-1.5 w-full px-1.5 py-1.5 rounded-xl hover:bg-muted transition-colors text-left"
+                        >
+                          {collapsedGroups.has(item.groupKey)
+                            ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          }
+                          <span className="text-xs font-bold text-foreground">{item.label}</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto font-semibold">{item.count}</span>
+                        </button>
+                      )
                     ) : (
                       <div className="grid grid-cols-2 gap-1 mb-0.5">
                         {item.rowPlants.map(plant => (
@@ -621,6 +776,9 @@ export function PlantSidebar({ onDragStart, pendingPlantId, onSelectPlant, onStr
                             onToggleFavourite={toggleFavourite}
                             isPending={pendingPlantId === plant.id}
                             onSelectPlant={onSelectPlant}
+                            onStructureModeChange={onStructureModeChange}
+                            sowLabel={item.sowLabels?.[plant.id]}
+                            hoverSide={fullScreen ? 'bottom' : 'right'}
                           />
                         ))}
                       </div>

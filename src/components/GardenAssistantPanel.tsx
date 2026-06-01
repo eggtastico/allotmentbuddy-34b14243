@@ -678,6 +678,7 @@ export function GardenAssistantPanel({ placedPlants, frostDates, defaultExpanded
                       {insights.map((insight) => {
                         const bgColors = {
                           weather: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+                          watering: 'bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800',
                           feeding: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
                           pest: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800',
                           harvest: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800',

@@ -69,6 +69,17 @@ export class AllotmentBuddyDB extends Dexie {
       harvestLogs: "id, gardenId, plantId, harvestDate",
       pestLogs: "id, gardenId, plantId, logDate, resolved",
     });
+    // Version 4: automation planner plan stored per-device in IndexedDB (backup to localStorage)
+    this.version(4).stores({
+      gardens: "id, updated_at",
+      plants: "id, plantId",
+      beds: "id",
+      photos: "id, gardenId, plantId",
+      syncQueue: "++id, timestamp",
+      syncStatus: "id",
+      harvestLogs: "id, gardenId, plantId, harvestDate",
+      pestLogs: "id, gardenId, plantId, logDate, resolved",
+    });
   }
 }
 
@@ -103,7 +114,7 @@ export async function saveLocalGarden(garden: GardenPlan): Promise<string> {
     ...garden,
     updated_at: garden.updated_at || new Date().toISOString(),
   };
-  return db.gardens.put(gardenWithTimestamp);
+  return db.gardens.put(gardenWithTimestamp) as Promise<string>;
 }
 
 // Delete garden from local database
@@ -113,7 +124,7 @@ export async function deleteLocalGarden(id: string): Promise<void> {
     action: "delete",
     entityType: "garden",
     entityId: id,
-    data: null,
+    data: { id },
     timestamp: Date.now(),
   });
 }
@@ -157,7 +168,7 @@ export async function deleteLocalPhoto(id: string): Promise<void> {
       action: "delete",
       entityType: "photo",
       entityId: id,
-      data: null,
+      data: { id },
       timestamp: Date.now(),
     });
   }

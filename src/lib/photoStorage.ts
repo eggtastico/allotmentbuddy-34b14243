@@ -1,5 +1,8 @@
 import { db, Photo, saveLocalPhoto, deleteLocalPhoto } from '@/lib/db';
 import { PlantPhoto } from '@/types/garden';
+import { supabase } from '@/integrations/supabase/client';
+
+const PHOTO_BUCKET = 'garden-photos';
 
 /**
  * Convert data URL to blob for efficient storage
@@ -127,7 +130,58 @@ export async function getImageDimensions(dataUrl: string): Promise<{ width: numb
 }
 
 /**
- * Save a photo to IndexedDB
+ * Upload a photo to Supabase Storage (non-blocking, best-effort).
+ * Falls back silently if offline or unauthenticated.
+ */
+async function uploadToCloud(
+  photoId: string,
+  gardenId: string,
+  blob: Blob
+): Promise<string | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const path = `${user.id}/${gardenId}/${photoId}.jpg`;
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+
+    if (error) {
+      console.warn('Cloud photo upload failed:', error.message);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(PHOTO_BUCKET)
+      .getPublicUrl(path);
+
+    return urlData.publicUrl;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Delete a photo from Supabase Storage (best-effort).
+ */
+async function deleteFromCloud(
+  photoId: string,
+  gardenId: string
+): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const path = `${user.id}/${gardenId}/${photoId}.jpg`;
+    await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+  } catch {
+    // Non-critical — photo will be orphaned in storage
+  }
+}
+
+/**
+ * Save a photo to IndexedDB and upload to Supabase Storage.
  */
 export async function savePhoto(
   gardenId: string,
@@ -147,6 +201,11 @@ export async function savePhoto(
       height,
     });
 
+    // Upload to cloud in the background (non-blocking)
+    if (id) {
+      uploadToCloud(id, gardenId, blob).catch(() => {});
+    }
+
     return id;
   } catch (error) {
     console.error('Failed to save photo:', error);
@@ -155,13 +214,36 @@ export async function savePhoto(
 }
 
 /**
- * Delete a photo from IndexedDB
+ * Delete a photo from IndexedDB and Supabase Storage.
  */
-export async function deletePhoto(photoId: string): Promise<void> {
+export async function deletePhoto(photoId: string, gardenId?: string): Promise<void> {
   try {
     await deleteLocalPhoto(photoId);
+    if (gardenId) {
+      deleteFromCloud(photoId, gardenId).catch(() => {});
+    }
   } catch (error) {
     console.error('Failed to delete photo:', error);
+  }
+}
+
+/**
+ * Get a photo URL from Supabase Storage.
+ * Useful for loading photos on a new device that doesn't have IndexedDB data.
+ */
+export async function getCloudPhotoUrl(
+  userId: string,
+  gardenId: string,
+  photoId: string
+): Promise<string | null> {
+  try {
+    const path = `${userId}/${gardenId}/${photoId}.jpg`;
+    const { data } = supabase.storage
+      .from(PHOTO_BUCKET)
+      .getPublicUrl(path);
+    return data.publicUrl;
+  } catch {
+    return null;
   }
 }
 

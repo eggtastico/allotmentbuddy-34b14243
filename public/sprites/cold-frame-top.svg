@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="90" height="60" viewBox="0 0 90 60">
+  <!-- Top-down cold frame with wooden frame and glass panels -->
+
+  <!-- Wooden frame base -->
+  <rect width="90" height="60" rx="2" fill="#7A5A2E"/>
+
+  <!-- Top plank (lighter) -->
+  <rect x="0" y="0" width="90" height="10" fill="#8A6838"/>
+  <!-- Bottom plank (darker, shadow) -->
+  <rect x="0" y="50" width="90" height="10" fill="#6E5028"/>
+  <!-- Left plank -->
+  <rect x="0" y="0" width="10" height="60" fill="#866030"/>
+  <!-- Right plank (darker, shadow) -->
+  <rect x="80" y="0" width="10" height="60" fill="#6A4E28"/>
+
+  <!-- Glass panel (interior) -->
+  <rect x="10" y="10" width="70" height="40" rx="1" fill="rgba(180,215,245,0.4)"/>
+
+  <!-- Glass divider -->
+  <line x1="45" y1="10" x2="45" y2="50" stroke="rgba(170,185,200,0.7)" stroke-width="2"/>
+
+  <!-- Glass glare 1 (left panel) -->
+  <line x1="12" y1="12" x2="30" y2="30" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Glass glare 2 (right panel) -->
+  <line x1="47" y1="12" x2="65" y2="30" stroke="rgba(255,255,255,0.18)" stroke-width="2" stroke-linecap="round"/>
+</svg>

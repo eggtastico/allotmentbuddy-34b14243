@@ -18,8 +18,8 @@ function monthInRange(rangeStr: string | undefined, monthIndex: number): boolean
   for (const part of parts) {
     const [start, end] = part.split('-').map(s => s.trim());
     if (!end) { if (start === abbr) return true; continue; }
-    const si = MONTH_ABBRS.indexOf(start);
-    const ei = MONTH_ABBRS.indexOf(end);
+    const si = (MONTH_ABBRS as readonly string[]).indexOf(start);
+    const ei = (MONTH_ABBRS as readonly string[]).indexOf(end);
     const ci = MONTH_ABBRS.indexOf(abbr);
     if (si < 0 || ei < 0 || ci < 0) continue;
     if (si <= ei) { if (ci >= si && ci <= ei) return true; }

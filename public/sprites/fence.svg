@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+  <!-- Top-down fence tile — post on left, 3 rails to the right, tiles seamlessly -->
+  <!-- Background between rails -->
+  <rect width="48" height="48" fill="#5E4020"/>
+
+  <!-- Fence post (left edge, full height) — dark hardwood -->
+  <rect x="0" y="0" width="7" height="48" fill="#4A3015"/>
+  <!-- Post left highlight -->
+  <rect x="1" y="0" width="2" height="48" fill="#7A5830" opacity="0.55"/>
+  <!-- Post right edge shadow -->
+  <rect x="5" y="0" width="2" height="48" fill="#2E1C08" opacity="0.4"/>
+
+  <!-- Rail 1 (top) -->
+  <rect x="7" y="4" width="41" height="10" rx="1" fill="#8B6535"/>
+  <!-- Rail 1 top highlight -->
+  <rect x="7" y="4" width="41" height="2.5" fill="#AE8450" opacity="0.65"/>
+  <!-- Rail 1 bottom shadow -->
+  <rect x="7" y="12.5" width="41" height="1.5" fill="#3A2010" opacity="0.35"/>
+
+  <!-- Rail 2 (middle) -->
+  <rect x="7" y="19" width="41" height="10" rx="1" fill="#866030"/>
+  <rect x="7" y="19" width="41" height="2.5" fill="#A87C48" opacity="0.65"/>
+  <rect x="7" y="27.5" width="41" height="1.5" fill="#3A2010" opacity="0.35"/>
+
+  <!-- Rail 3 (bottom) -->
+  <rect x="7" y="34" width="41" height="10" rx="1" fill="#8B6535"/>
+  <rect x="7" y="34" width="41" height="2.5" fill="#AE8450" opacity="0.65"/>
+  <rect x="7" y="42.5" width="41" height="1.5" fill="#3A2010" opacity="0.35"/>
+
+  <!-- Wood grain knots on rails -->
+  <ellipse cx="22" cy="9" rx="2.5" ry="1" fill="#5A3A18" opacity="0.35"/>
+  <ellipse cx="38" cy="24" rx="2" ry="1" fill="#5A3A18" opacity="0.3"/>
+  <ellipse cx="18" cy="39" rx="2.5" ry="1" fill="#5A3A18" opacity="0.35"/>
+</svg>

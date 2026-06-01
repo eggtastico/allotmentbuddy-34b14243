@@ -15,6 +15,7 @@ interface CropStatus {
   progressClass: string;
   needsAttention: boolean;
   message: string;
+  isEstablished?: boolean;
 }
 
 function getCropStatus(

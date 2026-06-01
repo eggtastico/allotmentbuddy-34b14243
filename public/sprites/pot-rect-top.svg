@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="90" height="60" viewBox="0 0 90 60">
+  <!-- Top-down view of a rectangular pot/planter -->
+
+  <!-- Terracotta base -->
+  <rect width="90" height="60" rx="4" fill="#B85C30"/>
+
+  <!-- Inner wall (rim) -->
+  <rect x="6" y="6" width="78" height="48" rx="2" fill="#8B3E18"/>
+
+  <!-- Soil inside -->
+  <rect x="9" y="9" width="72" height="42" rx="1" fill="#3A2510"/>
+
+  <!-- Soil lumps -->
+  <circle cx="25" cy="25" r="2" fill="#2A1A08" opacity="0.5"/>
+  <circle cx="50" cy="35" r="1.5" fill="#2A1A08" opacity="0.5"/>
+  <circle cx="70" cy="22" r="2" fill="#2A1A08" opacity="0.5"/>
+
+  <!-- Rim top highlight -->
+  <line x1="6" y1="8" x2="84" y2="8" stroke="#D07840" stroke-width="1" opacity="0.4"/>
+</svg>

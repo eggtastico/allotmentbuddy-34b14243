@@ -1,5 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
 
+@keyframes longPressCharge {
+  0%   { opacity: 0;   transform: scale(0.80); }
+  15%  { opacity: 0.6; }
+  100% { opacity: 1;   transform: scale(1.08); }
+}
+
+@keyframes plantPop {
+  0%   { transform: scale(0.3); opacity: 0.6; }
+  50%  { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes plantRipple {
+  0%   { transform: scale(0.5); opacity: 0.4; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

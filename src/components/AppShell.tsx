@@ -1,5 +1,6 @@
 import React from 'react';
 import { BottomNavBar, NavSection } from '@/components/BottomNavBar';
+export type { NavSection };
 import { Menu, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

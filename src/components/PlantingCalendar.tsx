@@ -18,7 +18,7 @@ function parseMonthRange(range?: string): number[] {
   const months: number[] = [];
   const parts = range.split(',').map(s => s.trim());
   for (const part of parts) {
-    const [start, end] = part.split('-').map(m => MONTHS.indexOf(m.trim()));
+    const [start, end] = part.split('-').map(m => (MONTHS as readonly string[]).indexOf(m.trim()));
     if (start === -1) continue;
     if (end === undefined || end === -1) {
       months.push(start);
@@ -36,7 +36,7 @@ interface PlantingCalendarProps {
 }
 
 export function PlantingCalendar({ placedPlants, location, onClose }: PlantingCalendarProps) {
-  const frostDates = useFrostDates(location);
+  const frostDates = useFrostDates(location ?? null);
   const uniquePlantIds = [...new Set(placedPlants.map(p => p.plantId))];
   const gardenPlants = uniquePlantIds.map(id => getPlantById(id)).filter(Boolean);
 

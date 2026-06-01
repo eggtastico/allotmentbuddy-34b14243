@@ -2,7 +2,7 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'allotment-buddy-v1';
+const CACHE_NAME = 'allotment-buddy-v5';
 const STATIC_ASSETS = [
   '/allotment/',
   '/allotment/index.html',

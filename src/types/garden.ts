@@ -25,7 +25,7 @@ export interface Plant {
   seedPackData?: Record<string, unknown>;
 }
 
-export type PlantStage = 'seed' | 'seedling' | 'established';
+export type PlantStage = 'seed' | 'seedling' | 'established' | 'harvested';
 
 export interface PlantPhoto {
   id: string;
@@ -46,6 +46,7 @@ export interface PlacedPlant {
   areaW?: number; // width in grid cells when filling an area (defaults to 1)
   areaH?: number; // height in grid cells when filling an area (defaults to 1)
   photos?: PlantPhoto[];
+  userNotes?: string; // free-text notes the gardener has attached to this placed plant
 }
 
 export interface GardenBed {
@@ -63,6 +64,8 @@ export interface RotationYearEntry {
   group: string; // one of the rotationGroup values
 }
 
+export type CoverType = 'outdoor' | 'greenhouse' | 'polytunnel' | 'cold-frame';
+
 export interface PlacedStructure {
   id: string;
   structureId: string;
@@ -71,7 +74,11 @@ export interface PlacedStructure {
   widthCells: number;
   heightCells: number;
   name?: string; // Custom bed name
-  rotationHistory?: RotationYearEntry[]; // Historical rotation data per year
+  rotationHistory?: RotationYearEntry[]; // Historical rotation data per year (overrides slot-based plan)
+  coverType?: CoverType; // outdoor (default) or protected growing environment
+  rotationSlot?: number; // 1–4: which position in the 4-year cycle this bed occupies this year
+  locked?: boolean; // when true, prevents accidental modifications from the bed panel
+  notes?: string; // free-text notes for this bed
 }
 
 export interface PlotSettings {

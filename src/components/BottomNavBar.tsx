@@ -1,6 +1,6 @@
-import { Sprout, Leaf, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
+import { Sprout, LayoutGrid, Building2, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
 
-export type NavSection = 'garden' | 'crops' | 'tasks' | 'plan' | 'more';
+export type NavSection = 'garden' | 'beds' | 'structures' | 'tasks' | 'plan' | 'more' | 'plants' | 'photos';
 
 interface BottomNavBarProps {
   active: NavSection;
@@ -8,12 +8,13 @@ interface BottomNavBarProps {
 }
 
 export function BottomNavBar({ active, onNavigate }: BottomNavBarProps) {
-  const navItems: Array<{ id: NavSection; label: string; icon: React.ReactNode }> = [
-    { id: 'garden', label: 'Garden', icon: <Sprout className="w-6 h-6" /> },
-    { id: 'crops', label: 'Crops', icon: <Leaf className="w-6 h-6" /> },
-    { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-6 h-6" /> },
-    { id: 'plan', label: 'Plan', icon: <Calendar className="w-6 h-6" /> },
-    { id: 'more', label: 'More', icon: <MoreHorizontal className="w-6 h-6" /> },
+  const navItems: Array<{ id: NavSection; label: string; shortLabel: string; icon: React.ReactNode }> = [
+    { id: 'garden', label: 'Garden', shortLabel: 'Garden', icon: <Sprout className="w-6 h-6" /> },
+    { id: 'beds', label: 'Beds & Pots', shortLabel: 'Beds', icon: <LayoutGrid className="w-6 h-6" /> },
+    { id: 'structures', label: 'Structures', shortLabel: 'Build', icon: <Building2 className="w-6 h-6" /> },
+    { id: 'tasks', label: 'Tasks', shortLabel: 'Tasks', icon: <CheckSquare className="w-6 h-6" /> },
+    { id: 'plan', label: 'Plan', shortLabel: 'Plan', icon: <Calendar className="w-6 h-6" /> },
+    { id: 'more', label: 'More', shortLabel: 'More', icon: <MoreHorizontal className="w-6 h-6" /> },
   ];
 
   return (
@@ -22,8 +23,11 @@ export function BottomNavBar({ active, onNavigate }: BottomNavBarProps) {
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={`flex-1 flex flex-col items-center justify-center py-3 px-2 transition-colors relative min-h-20 ${
+            onClick={() => {
+              navigator.vibrate?.(5);
+              onNavigate(item.id);
+            }}
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors relative min-h-[60px] ${
               active === item.id
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground'
@@ -31,9 +35,11 @@ export function BottomNavBar({ active, onNavigate }: BottomNavBarProps) {
             title={item.label}
           >
             {item.icon}
-            <span className="text-xs mt-1 truncate">{item.label}</span>
+            <span className="text-[10px] mt-0.5 truncate max-w-full leading-tight">
+              {item.shortLabel}
+            </span>
             {active === item.id && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-primary rounded-b-full" />
+              <div className="absolute top-0 left-1 right-1 h-0.5 bg-primary rounded-b-full" />
             )}
           </button>
         ))}

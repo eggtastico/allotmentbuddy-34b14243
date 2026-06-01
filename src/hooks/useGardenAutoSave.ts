@@ -26,13 +26,17 @@ export function useGardenAutoSave(
   useEffect(() => {
     if (!user || (placedPlants.length === 0 && placedStructures.length === 0)) return;
 
+    // Generate the plan ID once so both timers use the same value,
+    // preventing a situation where local and cloud saves create two separate plans.
+    const planId = currentPlanId ?? generateId();
+
     // Save to IndexedDB immediately (debounced)
     if (localSaveTimer.current) clearTimeout(localSaveTimer.current);
 
     localSaveTimer.current = setTimeout(() => {
       const now = new Date().toISOString();
       const gardenPlan: GardenPlan = {
-        id: currentPlanId || generateId(),
+        id: planId,
         name: planName,
         settings,
         plants: placedPlants,
@@ -43,7 +47,7 @@ export function useGardenAutoSave(
       saveLocalGarden(gardenPlan)
         .then(() => {
           if (!currentPlanId) {
-            onPlanIdChange(gardenPlan.id);
+            onPlanIdChange(planId);
           }
         })
         .catch(console.error);
@@ -55,7 +59,7 @@ export function useGardenAutoSave(
     autoSaveTimer.current = setTimeout(() => {
       const now = new Date().toISOString();
       const gardenPlan: GardenPlan = {
-        id: currentPlanId ?? generateId(),
+        id: planId,
         name: planName,
         settings,
         plants: placedPlants,
@@ -72,7 +76,7 @@ export function useGardenAutoSave(
       })
         .then((queueId) => {
           return save({
-            id: currentPlanId ?? undefined,
+            id: planId,
             name: planName,
             settings,
             plants: placedPlants,
@@ -82,7 +86,7 @@ export function useGardenAutoSave(
         .then(({ result, queueId }) => {
           // Direct save succeeded — remove the queue item so it isn't double-synced
           markAsSynced(queueId).catch(console.error);
-          if (!currentPlanId && result?.id) onPlanIdChange(result.id);
+          if (!currentPlanId && result?.id) onPlanIdChange(result.id || planId);
           // Sync local updated_at with the server timestamp
           if (result?.updated_at) {
             saveLocalGarden({

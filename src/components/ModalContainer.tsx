@@ -89,12 +89,16 @@ export interface ModalContainerProps {
   planName: string;
   frostDates: FrostDates | null;
   user: { id: string } | null;
+  automationTasks?: import('@/utils/automationPlannerUtils').AutomationTask[];
+  onToggleAutomationTask?: (taskId: string) => void;
 
   // Callbacks
   onLoadPlan: (plan: GardenPlanRow) => void;
   onNewPlan: () => void;
   onOptimizeRotation: () => void;
   onClearConfirm: () => void;
+  onUpdateStructure: (s: PlacedStructure) => void;
+  onImport?: (data: import('@/utils/gardenExportImport').GardenExportData) => void;
 }
 
 export function ModalContainer(props: ModalContainerProps) {
@@ -126,6 +130,7 @@ export function ModalContainer(props: ModalContainerProps) {
             onLoad={props.onLoadPlan}
             onNewPlan={props.onNewPlan}
             onClose={() => props.setShowSaveLoad(false)}
+            onImport={props.onImport ?? (() => {})}
           />
         </Suspense>
       )}
@@ -146,7 +151,13 @@ export function ModalContainer(props: ModalContainerProps) {
       )}
       {props.showPlotMap && (
         <Suspense fallback={<PanelSkeleton />}>
-          <PlotMapPanel onClose={() => props.setShowPlotMap(false)} />
+          <PlotMapPanel
+            onClose={() => props.setShowPlotMap(false)}
+            structures={props.placedStructures}
+            plants={props.placedPlants}
+            settings={props.settings}
+            onUpdateStructure={props.onUpdateStructure}
+          />
         </Suspense>
       )}
       {props.showJournal && (
@@ -171,7 +182,7 @@ export function ModalContainer(props: ModalContainerProps) {
       )}
       {props.showTasks && (
         <Suspense fallback={<PanelSkeleton />}>
-          <GardenTasks placedPlants={props.placedPlants} frostDates={props.frostDates} onClose={() => props.setShowTasks(false)} />
+          <GardenTasks placedPlants={props.placedPlants} frostDates={props.frostDates ? { lastSpringFrost: props.frostDates.lastFrostDate.toLocaleDateString(), firstFallFrost: props.frostDates.firstFrostDate.toLocaleDateString() } : null} automationTasks={props.automationTasks} onToggleAutomationTask={props.onToggleAutomationTask} onClose={() => props.setShowTasks(false)} />
         </Suspense>
       )}
       {props.showMonthlyPlanner && (

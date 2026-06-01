@@ -101,6 +101,52 @@ export function GardenMinimap({
       ctx.globalAlpha = 1;
     }
 
+    // Density heatmap overlay (4×4 cell buckets)
+    const bucketSize = 4;
+    const bucketCols = Math.ceil(cols / bucketSize);
+    const bucketRows = Math.ceil(rows / bucketSize);
+    const buckets = new Uint16Array(bucketCols * bucketRows);
+    for (const plant of plants) {
+      const bx = Math.min(Math.floor(plant.x / bucketSize), bucketCols - 1);
+      const by = Math.min(Math.floor(plant.y / bucketSize), bucketRows - 1);
+      buckets[by * bucketCols + bx]++;
+    }
+    let maxDensity = 0;
+    for (let i = 0; i < buckets.length; i++) {
+      if (buckets[i] > maxDensity) maxDensity = buckets[i];
+    }
+    if (maxDensity >= 3) {
+      for (let by = 0; by < bucketRows; by++) {
+        for (let bx = 0; bx < bucketCols; bx++) {
+          const count = buckets[by * bucketCols + bx];
+          if (count < 3) continue;
+          // Normalize: 3 plants = coolest (green), maxDensity = hottest (red)
+          const t = Math.min((count - 3) / Math.max(maxDensity - 3, 1), 1);
+          // Interpolate green(120,200,80) → yellow(220,200,50) → red(220,60,40)
+          let r: number, g: number, b: number;
+          if (t < 0.5) {
+            const s = t * 2; // 0..1 within green→yellow
+            r = Math.round(120 + (220 - 120) * s);
+            g = 200;
+            b = Math.round(80 + (50 - 80) * s);
+          } else {
+            const s = (t - 0.5) * 2; // 0..1 within yellow→red
+            r = 220;
+            g = Math.round(200 + (60 - 200) * s);
+            b = Math.round(50 + (40 - 50) * s);
+          }
+          // Opacity ramps from 0.25 (at threshold) to 0.4 (at max)
+          const alpha = 0.25 + 0.15 * t;
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+          const px = Math.round(bx * bucketSize * cellSize * scale);
+          const py = Math.round(by * bucketSize * cellSize * scale);
+          const pw = Math.ceil(bucketSize * cellSize * scale);
+          const ph = Math.ceil(bucketSize * cellSize * scale);
+          ctx.fillRect(px, py, pw, ph);
+        }
+      }
+    }
+
     // Plants as small coloured dots
     const dotR = Math.max(cellSize * scale * 0.38, 1.5);
     for (const plant of plants) {
@@ -141,7 +187,7 @@ export function GardenMinimap({
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.strokeRect(vpX + 0.75, vpY + 0.75, vpW - 1.5, vpH - 1.5);
-  }, [mmW, mmH, plants, structures, shadeZones, panOffset, containerRef, scale, cellSize, gridW, gridH, showSunOverlay]);
+  }, [mmW, mmH, plants, structures, shadeZones, panOffset, containerRef, scale, cellSize, gridW, gridH, showSunOverlay, cols, rows]);
 
   // Convert a minimap canvas coordinate to the pan offset that centres the
   // viewport on that garden point.

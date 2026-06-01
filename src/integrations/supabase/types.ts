@@ -199,6 +199,66 @@ export type Database = {
         }
         Relationships: []
       }
+      favourite_plants: {
+        Row: {
+          id: string
+          user_id: string
+          plant_id: string
+          order: number
+          quantity: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plant_id: string
+          order?: number
+          quantity?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plant_id?: string
+          order?: number
+          quantity?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      garden_photos: {
+        Row: {
+          id: string
+          garden_id: string
+          plant_id: string | null
+          timestamp: number
+          width: number | null
+          height: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          garden_id: string
+          plant_id?: string | null
+          timestamp?: number
+          width?: number | null
+          height?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          garden_id?: string
+          plant_id?: string | null
+          timestamp?: number
+          width?: number | null
+          height?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

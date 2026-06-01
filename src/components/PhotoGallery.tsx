@@ -136,7 +136,7 @@ export function PhotoGallery({
                   onClick={() => {
                     const id =
                       typeof selectedPhoto === 'string'
-                        ? photoArray.indexOf(selectedPhoto)
+                        ? (photoArray.find(p => p.dataUrl === selectedPhoto)?.id ?? 0)
                         : selectedPhoto.id;
                     setDeleteConfirmId(id);
                     setSelectedPhoto(null);

@@ -1,6 +1,151 @@
-import { PlacedPlant, PlotSettings } from '@/types/garden';
+import { PlacedPlant, PlacedStructure, PlotSettings } from '@/types/garden';
 import { getPlantById, rotationGroupLabels } from '@/data/plants';
+import { getStructureById } from '@/data/structures';
 import { getCompanionReason } from '@/data/companionReasons';
+
+// ── Category color map (shared between legend and grid) ─────────────────────
+const catColors: Record<string, [number, number, number]> = {
+  vegetable: [76, 175, 80],  // green
+  fruit: [233, 30, 99],      // pink
+  herb: [0, 150, 136],       // teal
+  flower: [255, 193, 7],     // amber
+};
+
+/**
+ * Renders an enhanced Plant Legend and Structures Legend section.
+ * Handles page overflow by adding new pages as needed.
+ */
+function renderPlantLegend(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  doc: any,
+  plants: PlacedPlant[],
+  placedStructures: PlacedStructure[],
+  startY: number,
+  margin: number,
+  pageW: number,
+  pageH: number,
+) {
+  const uniquePlantIds = [...new Set(plants.map(p => p.plantId))];
+  const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+  uniquePlantIds.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
+
+  let curY = startY;
+
+  // Helper: check if we need a new page, and add one if so
+  const ensureSpace = (needed: number) => {
+    if (curY + needed > pageH - margin) {
+      doc.addPage();
+      curY = margin + 6;
+    }
+  };
+
+  // ── Plant Legend Header ──
+  ensureSpace(20);
+  doc.setTextColor(46, 139, 87);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Plant Legend', margin, curY);
+  curY += 5;
+
+  // Category key (colored dots with labels)
+  doc.setFontSize(7);
+  let cx = margin;
+  Object.entries(catColors).forEach(([cat, color]) => {
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.circle(cx + 1.5, curY + 1.2, 1.5, 'F');
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, curY + 2);
+    cx += 25;
+  });
+  curY += 7;
+
+  // ── Plant entries in 3-column grid layout ──
+  const colCount = 3;
+  const colWidth = (pageW - 2 * margin) / colCount;
+  const rowHeight = 7; // mm per row (enough for two lines of info)
+
+  doc.setFontSize(7);
+
+  // Process plants in column order
+  let col = 0;
+  let rowStartY = curY;
+
+  uniquePlantIds.forEach((id) => {
+    const plant = plantDataMap.get(id);
+    if (!plant) return;
+    const count = plants.filter(p => p.plantId === id).length;
+    const rotLabel = rotationGroupLabels[plant.rotationGroup] || plant.rotationGroup;
+
+    // Check if current row fits on page
+    if (rowStartY + rowHeight > pageH - margin) {
+      doc.addPage();
+      rowStartY = margin + 6;
+      curY = rowStartY;
+      col = 0;
+    }
+
+    const x = margin + col * colWidth;
+    const y = rowStartY;
+
+    // Color dot for category
+    const cc = catColors[plant.category] || [120, 120, 120];
+    doc.setFillColor(cc[0], cc[1], cc[2]);
+    doc.circle(x + 1.2, y + 0.5, 1, 'F');
+
+    // Emoji + plant name (bold)
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text(`${plant.emoji} ${plant.name} x${count}`, x + 3.5, y + 1);
+
+    // Category, rotation group (normal, slightly smaller)
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(6);
+    const catLabel = plant.category.charAt(0).toUpperCase() + plant.category.slice(1);
+    doc.text(`${catLabel} | ${rotLabel}`, x + 3.5, y + 4.5);
+    doc.setFontSize(7);
+
+    col++;
+    if (col >= colCount) {
+      col = 0;
+      rowStartY += rowHeight;
+    }
+  });
+
+  // Move curY past the last row
+  curY = rowStartY + (col > 0 ? rowHeight : 0) + 4;
+
+  // ── Structures Legend ──
+  const uniqueStructureIds = [...new Set((placedStructures || []).map(s => s.structureId))];
+  if (uniqueStructureIds.length > 0) {
+    ensureSpace(14);
+    doc.setTextColor(46, 139, 87);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Structures', margin, curY);
+    curY += 5;
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+
+    uniqueStructureIds.forEach(id => {
+      const structData = getStructureById(id);
+      if (!structData) return;
+
+      ensureSpace(5);
+
+      // Find the placed instance to get actual dimensions (may differ from defaults for containers)
+      const placed = placedStructures.find(s => s.structureId === id);
+      const w = placed?.widthCells ?? structData.widthCells;
+      const h = placed?.heightCells ?? structData.heightCells;
+
+      doc.setTextColor(50, 50, 50);
+      doc.text(`${structData.emoji}  ${structData.name}  —  ${w}x${h} cells`, margin + 2, curY);
+      curY += 4.5;
+    });
+  }
+}
 
 export async function exportGardenPDF(
   settings: PlotSettings,
@@ -8,6 +153,8 @@ export async function exportGardenPDF(
   planName: string,
   /** PNG data URL from the live garden canvas — when provided, page 1 shows the real visual. */
   canvasDataUrl?: string | null,
+  /** Placed structures/beds in the garden */
+  structures?: PlacedStructure[],
 ) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -55,44 +202,7 @@ export async function exportGardenPDF(
     doc.rect(gridX, gridY, imgW, imgH);
 
     // Legend below the image
-    const uniquePlants = [...new Set(plants.map(p => p.plantId))];
-    const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
-    uniquePlants.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
-
-    const catColors: Record<string, [number, number, number]> = {
-      vegetable: [76, 175, 80], fruit: [233, 30, 99], herb: [0, 150, 136], flower: [255, 193, 7],
-    };
-    const legendY = gridY + imgH + 6;
-    doc.setTextColor(46, 139, 87);
-    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-    doc.text('Plant Legend', margin, legendY);
-
-    doc.setFontSize(7);
-    let cx = margin;
-    Object.entries(catColors).forEach(([cat, color]) => {
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.circle(cx + 1.5, legendY + 5, 1.5, 'F');
-      doc.setTextColor(60, 60, 60);
-      doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, legendY + 6);
-      cx += 25;
-    });
-
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
-    const ly = legendY + 12;
-    const colWidth = (pageW - 2 * margin) / 3;
-    uniquePlants.forEach((id, i) => {
-      const plant = plantDataMap.get(id);
-      if (!plant) return;
-      const count = plants.filter(p => p.plantId === id).length;
-      const col = i % 3, row = Math.floor(i / 3);
-      const x = margin + col * colWidth, y = ly + row * 5;
-      if (y > pageH - margin) return;
-      const cc = catColors[plant.category] || [120, 120, 120];
-      doc.setFillColor(cc[0], cc[1], cc[2]);
-      doc.circle(x + 1, y - 0.8, 0.8, 'F');
-      doc.setTextColor(50, 50, 50);
-      doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
-    });
+    renderPlantLegend(doc, plants, structures || [], gridY + imgH + 6, margin, pageW, pageH);
   } else {
     // ── Fallback: jsPDF-drawn grid (no canvas available) ─────────────────────────
     const cellSizeCm = settings.cellSizeCm || 25;
@@ -123,16 +233,13 @@ export async function exportGardenPDF(
       }
     }
 
-    const catColors: Record<string, [number, number, number]> = {
-      vegetable: [76, 175, 80], fruit: [233, 30, 99], herb: [0, 150, 136], flower: [255, 193, 7],
-    };
-    const uniquePlants = [...new Set(plants.map(p => p.plantId))];
-    const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
-    uniquePlants.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
+    const fallbackUniquePlants = [...new Set(plants.map(p => p.plantId))];
+    const fallbackPlantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+    fallbackUniquePlants.forEach(id => { const d = getPlantById(id); if (d) fallbackPlantDataMap.set(id, d); });
 
     doc.setFontSize(Math.min(cellW * 0.55, 7)); doc.setFont('helvetica', 'bold');
     plants.forEach(placed => {
-      const plant = plantDataMap.get(placed.plantId);
+      const plant = fallbackPlantDataMap.get(placed.plantId);
       if (!plant) return;
       const x = gridX + placed.x * cellW, y = gridY + placed.y * cellW;
       const cc = catColors[plant.category] || [120, 120, 120];
@@ -142,40 +249,17 @@ export async function exportGardenPDF(
       doc.text(plant.name.substring(0, 2).toUpperCase(), x + cellW / 2, y + cellW / 2 + 1, { align: 'center' });
     });
 
-    doc.setTextColor(46, 139, 87);
-    const legendY = gridY + gridH + 6;
-    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-    doc.text('Plant Legend', margin, legendY);
-    doc.setFontSize(7);
-    let cx = margin;
-    Object.entries(catColors).forEach(([cat, color]) => {
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.circle(cx + 1.5, legendY + 5, 1.5, 'F');
-      doc.setTextColor(60, 60, 60);
-      doc.text(cat.charAt(0).toUpperCase() + cat.slice(1), cx + 4.5, legendY + 6);
-      cx += 25;
-    });
-
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
-    const ly = legendY + 12;
-    const colWidth = (pageW - 2 * margin) / 3;
-    uniquePlants.forEach((id, i) => {
-      const plant = plantDataMap.get(id);
-      if (!plant) return;
-      const count = plants.filter(p => p.plantId === id).length;
-      const col = i % 3, row = Math.floor(i / 3);
-      const x = margin + col * colWidth, y = ly + row * 5;
-      if (y > pageH - margin) return;
-      const cc = catColors[plant.category] || [120, 120, 120];
-      doc.setFillColor(cc[0], cc[1], cc[2]);
-      doc.circle(x + 1, y - 0.8, 0.8, 'F');
-      doc.setTextColor(50, 50, 50);
-      doc.text(`${plant.name} x${count}  |  ${plant.spacingCm}cm spacing${plant.harvest ? `  |  Harvest: ${plant.harvest}` : ''}`, x + 3, y);
-    });
+    // Legend below the grid
+    renderPlantLegend(doc, plants, structures || [], gridY + gridH + 6, margin, pageW, pageH);
   }
 
   // ── Page 2: Shopping List & Spacing Notes ──
   doc.addPage();
+
+  // Build plant data for page 2 (shared across sections)
+  const uniquePlants = [...new Set(plants.map(p => p.plantId))];
+  const plantDataMap = new Map<string, ReturnType<typeof getPlantById>>();
+  uniquePlants.forEach(id => { const d = getPlantById(id); if (d) plantDataMap.set(id, d); });
 
   // Header
   doc.setFillColor(46, 139, 87);
@@ -321,18 +405,15 @@ export async function exportGardenPDF(
     }
   }
 
-  // Footer
-  doc.setFontSize(7);
-  doc.setTextColor(150, 150, 150);
-  doc.text('Generated by Allotment Buddy', margin, pageH - 5);
-  doc.text(new Date().toLocaleDateString('en-GB'), pageW - margin, pageH - 5, { align: 'right' });
-
-  // Page 1 footer too
-  doc.setPage(1);
-  doc.setFontSize(7);
-  doc.setTextColor(150, 150, 150);
-  doc.text('Generated by Allotment Buddy', margin, pageH - 5);
-  doc.text('Page 1 of 2', pageW - margin, pageH - 5, { align: 'right' });
+  // Footer on all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Generated by Allotment Buddy', margin, pageH - 5);
+    doc.text(`Page ${i} of ${totalPages}`, pageW - margin, pageH - 5, { align: 'right' });
+  }
 
   doc.save(`${planName.replace(/\s+/g, '-').toLowerCase()}-garden-plan.pdf`);
 }

@@ -3,8 +3,8 @@
  * Generates shopping items from placed plants with quantities and units
  */
 
-import { PlacedPlant } from '@/types/garden';
-import { getPlantById, type Plant } from '@/data/plants';
+import { PlacedPlant, Plant } from '@/types/garden';
+import { getPlantById } from '@/data/plants';
 import { ShoppingItem } from '@/lib/shoppingListSchema';
 
 /**

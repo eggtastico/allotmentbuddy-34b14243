@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Fruit cage netting - top-down view, tileable 48x48 -->
+
+  <!-- Very transparent background to show plants beneath -->
+  <rect width="48" height="48" fill="rgba(80, 90, 80, 0.08)"/>
+
+  <!-- Shadow layer for netting (offset 0.5px down-right, very faint) -->
+  <g opacity="0.15" transform="translate(0.5, 0.5)">
+    <!-- Diamond mesh shadows - diagonal lines going top-left to bottom-right -->
+    <path d="M0,0 Q4,4.5 8,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,0 Q12,4.5 16,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,0 Q20,4.5 24,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,0 Q28,4.5 32,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,0 Q36,4.5 40,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,0 Q44,4.5 48,8" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M0,8 Q4,12.5 8,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,8 Q12,12.5 16,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,8 Q20,12.5 24,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,8 Q28,12.5 32,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,8 Q36,12.5 40,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,8 Q44,12.5 48,16" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M0,16 Q4,20.5 8,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,16 Q12,20.5 16,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,16 Q20,20.5 24,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,16 Q28,20.5 32,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,16 Q36,20.5 40,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,16 Q44,20.5 48,24" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M0,24 Q4,28.5 8,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,24 Q12,28.5 16,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,24 Q20,28.5 24,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,24 Q28,28.5 32,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,24 Q36,28.5 40,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,24 Q44,28.5 48,32" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M0,32 Q4,36.5 8,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,32 Q12,36.5 16,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,32 Q20,36.5 24,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,32 Q28,36.5 32,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,32 Q36,36.5 40,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,32 Q44,36.5 48,40" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M0,40 Q4,44.5 8,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M8,40 Q12,44.5 16,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M16,40 Q20,44.5 24,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M24,40 Q28,44.5 32,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M32,40 Q36,44.5 40,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+    <path d="M40,40 Q44,44.5 48,48" stroke="#2a2f2a" stroke-width="0.6" fill="none"/>
+  </g>
+
+  <!-- Main netting layer - diamond pattern (diagonals going \ direction) with slight sag -->
+  <g fill="none" stroke="#4A5548" stroke-width="0.6">
+    <!-- Top-left to bottom-right diagonals with slight downward curve (sag) -->
+    <path d="M0,0 Q4,4.3 8,8"/>
+    <path d="M8,0 Q12,4.3 16,8"/>
+    <path d="M16,0 Q20,4.3 24,8"/>
+    <path d="M24,0 Q28,4.3 32,8"/>
+    <path d="M32,0 Q36,4.3 40,8"/>
+    <path d="M40,0 Q44,4.3 48,8"/>
+    <path d="M0,8 Q4,12.3 8,16"/>
+    <path d="M8,8 Q12,12.3 16,16"/>
+    <path d="M16,8 Q20,12.3 24,16"/>
+    <path d="M24,8 Q28,12.3 32,16"/>
+    <path d="M32,8 Q36,12.3 40,16"/>
+    <path d="M40,8 Q44,12.3 48,16"/>
+    <path d="M0,16 Q4,20.3 8,24"/>
+    <path d="M8,16 Q12,20.3 16,24"/>
+    <path d="M16,16 Q20,20.3 24,24"/>
+    <path d="M24,16 Q28,20.3 32,24"/>
+    <path d="M32,16 Q36,20.3 40,24"/>
+    <path d="M40,16 Q44,20.3 48,24"/>
+    <path d="M0,24 Q4,28.3 8,32"/>
+    <path d="M8,24 Q12,28.3 16,32"/>
+    <path d="M16,24 Q20,28.3 24,32"/>
+    <path d="M24,24 Q28,28.3 32,32"/>
+    <path d="M32,24 Q36,28.3 40,32"/>
+    <path d="M40,24 Q44,28.3 48,32"/>
+    <path d="M0,32 Q4,36.3 8,40"/>
+    <path d="M8,32 Q12,36.3 16,40"/>
+    <path d="M16,32 Q20,36.3 24,40"/>
+    <path d="M24,32 Q28,36.3 32,40"/>
+    <path d="M32,32 Q36,36.3 40,40"/>
+    <path d="M40,32 Q44,36.3 48,40"/>
+    <path d="M0,40 Q4,44.3 8,48"/>
+    <path d="M8,40 Q12,44.3 16,48"/>
+    <path d="M16,40 Q20,44.3 24,48"/>
+    <path d="M24,40 Q28,44.3 32,48"/>
+    <path d="M32,40 Q36,44.3 40,48"/>
+    <path d="M40,40 Q44,44.3 48,48"/>
+  </g>
+
+  <!-- Diamond pattern - diagonals going / direction with slight sag -->
+  <g fill="none" stroke="#4A5548" stroke-width="0.6">
+    <!-- Top-right to bottom-left diagonals with slight downward curve (sag) -->
+    <path d="M8,0 Q4,4.3 0,8"/>
+    <path d="M16,0 Q12,4.3 8,8"/>
+    <path d="M24,0 Q20,4.3 16,8"/>
+    <path d="M32,0 Q28,4.3 24,8"/>
+    <path d="M40,0 Q36,4.3 32,8"/>
+    <path d="M48,0 Q44,4.3 40,8"/>
+    <path d="M8,8 Q4,12.3 0,16"/>
+    <path d="M16,8 Q12,12.3 8,16"/>
+    <path d="M24,8 Q20,12.3 16,16"/>
+    <path d="M32,8 Q28,12.3 24,16"/>
+    <path d="M40,8 Q36,12.3 32,16"/>
+    <path d="M48,8 Q44,12.3 40,16"/>
+    <path d="M8,16 Q4,20.3 0,24"/>
+    <path d="M16,16 Q12,20.3 8,24"/>
+    <path d="M24,16 Q20,20.3 16,24"/>
+    <path d="M32,16 Q28,20.3 24,24"/>
+    <path d="M40,16 Q36,20.3 32,24"/>
+    <path d="M48,16 Q44,20.3 40,24"/>
+    <path d="M8,24 Q4,28.3 0,32"/>
+    <path d="M16,24 Q12,28.3 8,32"/>
+    <path d="M24,24 Q20,28.3 16,32"/>
+    <path d="M32,24 Q28,28.3 24,32"/>
+    <path d="M40,24 Q36,28.3 32,32"/>
+    <path d="M48,24 Q44,28.3 40,32"/>
+    <path d="M8,32 Q4,36.3 0,40"/>
+    <path d="M16,32 Q12,36.3 8,40"/>
+    <path d="M24,32 Q20,36.3 16,40"/>
+    <path d="M32,32 Q28,36.3 24,40"/>
+    <path d="M40,32 Q36,36.3 32,40"/>
+    <path d="M48,32 Q44,36.3 40,40"/>
+    <path d="M8,40 Q4,44.3 0,48"/>
+    <path d="M16,40 Q12,44.3 8,48"/>
+    <path d="M24,40 Q20,44.3 16,48"/>
+    <path d="M32,40 Q28,44.3 24,48"/>
+    <path d="M40,40 Q36,44.3 32,48"/>
+    <path d="M48,40 Q44,44.3 40,48"/>
+  </g>
+
+  <!-- Slight opacity variation on some strands for realism -->
+  <g fill="none" stroke="#4A5548" stroke-width="0.8" opacity="0.7">
+    <path d="M0,0 Q4,4.3 8,8"/>
+    <path d="M16,16 Q20,20.3 24,24"/>
+    <path d="M32,32 Q36,36.3 40,40"/>
+    <path d="M48,0 Q44,4.3 40,8"/>
+    <path d="M32,16 Q28,20.3 24,24"/>
+    <path d="M16,32 Q12,36.3 8,40"/>
+  </g>
+
+  <!-- Knot points at mesh intersections (where diagonals cross) -->
+  <g fill="#3d4a3f" opacity="0.5">
+    <circle cx="0" cy="0" r="0.7"/>
+    <circle cx="8" cy="0" r="0.5"/>
+    <circle cx="16" cy="0" r="0.7"/>
+    <circle cx="24" cy="0" r="0.5"/>
+    <circle cx="32" cy="0" r="0.7"/>
+    <circle cx="40" cy="0" r="0.5"/>
+    <circle cx="48" cy="0" r="0.7"/>
+    <circle cx="0" cy="8" r="0.5"/>
+    <circle cx="8" cy="8" r="0.7"/>
+    <circle cx="16" cy="8" r="0.5"/>
+    <circle cx="24" cy="8" r="0.7"/>
+    <circle cx="32" cy="8" r="0.5"/>
+    <circle cx="40" cy="8" r="0.7"/>
+    <circle cx="48" cy="8" r="0.5"/>
+    <circle cx="0" cy="16" r="0.7"/>
+    <circle cx="8" cy="16" r="0.5"/>
+    <circle cx="16" cy="16" r="0.7"/>
+    <circle cx="24" cy="16" r="0.5"/>
+    <circle cx="32" cy="16" r="0.7"/>
+    <circle cx="40" cy="16" r="0.5"/>
+    <circle cx="48" cy="16" r="0.7"/>
+    <circle cx="0" cy="24" r="0.5"/>
+    <circle cx="8" cy="24" r="0.7"/>
+    <circle cx="16" cy="24" r="0.5"/>
+    <circle cx="24" cy="24" r="0.7"/>
+    <circle cx="32" cy="24" r="0.5"/>
+    <circle cx="40" cy="24" r="0.7"/>
+    <circle cx="48" cy="24" r="0.5"/>
+    <circle cx="0" cy="32" r="0.7"/>
+    <circle cx="8" cy="32" r="0.5"/>
+    <circle cx="16" cy="32" r="0.7"/>
+    <circle cx="24" cy="32" r="0.5"/>
+    <circle cx="32" cy="32" r="0.7"/>
+    <circle cx="40" cy="32" r="0.5"/>
+    <circle cx="48" cy="32" r="0.7"/>
+    <circle cx="0" cy="40" r="0.5"/>
+    <circle cx="8" cy="40" r="0.7"/>
+    <circle cx="16" cy="40" r="0.5"/>
+    <circle cx="24" cy="40" r="0.7"/>
+    <circle cx="32" cy="40" r="0.5"/>
+    <circle cx="40" cy="40" r="0.7"/>
+    <circle cx="48" cy="40" r="0.5"/>
+    <circle cx="0" cy="48" r="0.7"/>
+    <circle cx="8" cy="48" r="0.5"/>
+    <circle cx="16" cy="48" r="0.7"/>
+    <circle cx="24" cy="48" r="0.5"/>
+    <circle cx="32" cy="48" r="0.7"/>
+    <circle cx="40" cy="48" r="0.5"/>
+    <circle cx="48" cy="48" r="0.7"/>
+  </g>
+
+  <!-- Support posts in two opposite corners (top-left and bottom-right) for tiling -->
+  <!-- Top-left corner post -->
+  <rect x="0" y="0" width="3" height="3" fill="#2d3530" opacity="0.85" rx="0.3"/>
+  <rect x="0.4" y="0.4" width="2.2" height="2.2" fill="#3a4238" opacity="0.6" rx="0.2"/>
+
+  <!-- Bottom-right corner post -->
+  <rect x="45" y="45" width="3" height="3" fill="#2d3530" opacity="0.85" rx="0.3"/>
+  <rect x="45.4" y="45.4" width="2.2" height="2.2" fill="#3a4238" opacity="0.6" rx="0.2"/>
+</svg>
