@@ -48,8 +48,8 @@ const htmlOptions = { maxAge: '0' };
 // Middleware to serve dist folder as static at / prefix
 app.use(express.static(distPath, staticOptions));
 
-// Create a middleware to serve dist as /allotment
-app.use('/allotment', express.static(distPath, staticOptions));
+// Create a middleware to serve dist as /allotment-v1 (parked v1 fallback after v2 cutover)
+app.use('/allotment-v1', express.static(distPath, staticOptions));
 
 // For SPA, catch unknown routes and serve index.html
 app.use((req, res) => {
